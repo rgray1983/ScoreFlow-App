@@ -6,8 +6,23 @@ import {
   getDoc,
   setDoc,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const params = new URLSearchParams(window.location.search);
 const GAME_ID_FROM_URL = params.get("game");
@@ -116,7 +131,26 @@ const els = {
   liveStartAway: $("liveStartAway"),
   liveStartMeta: $("liveStartMeta"),
   liveStartWatchBtn: $("liveStartWatchBtn"),
-  firebaseNote: $("firebaseNote")
+  firebaseNote: $("firebaseNote"),
+  homeScreen: $("homeScreen"),
+  openScoreboardBtn: $("openScoreboardBtn"),
+  homeNewMatchBtn: $("homeNewMatchBtn"),
+  homeCreateLiveBtn: $("homeCreateLiveBtn"),
+  homeSettingsBtn: $("homeSettingsBtn"),
+  appSettingsDialog: $("appSettingsDialog"),
+  closeAppSettingsBtn: $("closeAppSettingsBtn"),
+  userEmail: $("userEmail"),
+  userPassword: $("userPassword"),
+  emailSignInBtn: $("emailSignInBtn"),
+  emailCreateBtn: $("emailCreateBtn"),
+  googleSignInBtn: $("googleSignInBtn"),
+  appleSignInBtn: $("appleSignInBtn"),
+  signOutBtn: $("signOutBtn"),
+  authStatus: $("authStatus"),
+  savedTeamsList: $("savedTeamsList"),
+  favoriteTeamsList: $("favoriteTeamsList"),
+  matchHistoryList: $("matchHistoryList"),
+  accountChip: $("accountChip")
 };
 
 
@@ -127,6 +161,9 @@ function selectExistingText(event) {
 }
 
 let db = null;
+let auth = null;
+let currentUser = null;
+let lastSavedWinnerKey = "";
 let liveGameId = GAME_ID_FROM_URL || "";
 let unsubscribeLive = null;
 let applyingRemote = false;
@@ -224,11 +261,341 @@ function initFirebase() {
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    auth = getAuth(app);
+    watchAuth();
     return true;
   } catch (error) {
     console.error(error);
     return false;
   }
+}
+
+function userDocPath(...parts) {
+  if (!currentUser) return null;
+  return ["users", currentUser.uid, ...parts];
+}
+
+function setAuthStatus(message) {
+  if (els.authStatus) els.authStatus.textContent = message;
+  if (els.accountChip) els.accountChip.textContent = currentUser ? (currentUser.email || "Signed In") : "Guest Mode";
+  if (els.signOutBtn) els.signOutBtn.hidden = !currentUser;
+}
+
+function watchAuth() {
+  if (!auth) return;
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user || null;
+    setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
+    await syncLocalDataToCloud();
+    await renderHomeData();
+  });
+}
+
+async function emailSignIn(createAccount = false) {
+  if (!auth) {
+    toast("Firebase Auth is not ready", true);
+    return;
+  }
+  const email = els.userEmail?.value?.trim();
+  const password = els.userPassword?.value || "";
+  if (!email || password.length < 6) {
+    toast("Enter email and 6+ character password", true);
+    return;
+  }
+  try {
+    if (createAccount) await createUserWithEmailAndPassword(auth, email, password);
+    else await signInWithEmailAndPassword(auth, email, password);
+    toast(createAccount ? "Account created" : "Signed in");
+  } catch (error) {
+    console.error(error);
+    toast(error.message || "Sign in failed", true);
+  }
+}
+
+async function providerSignIn(providerName) {
+  if (!auth) {
+    toast("Firebase Auth is not ready", true);
+    return;
+  }
+  const provider = providerName === "apple"
+    ? new OAuthProvider("apple.com")
+    : new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+    toast("Signed in");
+  } catch (error) {
+    console.error(error);
+    toast(`${providerName === "apple" ? "Apple" : "Google"} sign in needs to be enabled`, true);
+  }
+}
+
+async function doSignOut() {
+  if (!auth) return;
+  await signOut(auth);
+  toast("Signed out");
+}
+
+function showHomeScreen() {
+  if (isViewer) return;
+  document.body.classList.add("home-active");
+  document.body.classList.remove("scoreboard-active");
+  updateRotateScreenState();
+  renderHomeData();
+}
+
+function openScoreboardFromHome(startFresh = false) {
+  if (isViewer) return;
+  document.body.classList.remove("home-active");
+  document.body.classList.add("scoreboard-active");
+  if (startFresh) {
+    resetMatchState(false);
+    toast("New match ready");
+  }
+  if (!setupComplete && isPortraitOrientation()) {
+    initialSetupActive = true;
+    document.body.classList.add("setup-active");
+    openSettings();
+  } else {
+    setupComplete = true;
+    updateRotateScreenState();
+  }
+}
+
+function resetMatchState(keepHistory = true) {
+  if (keepHistory) snapshot();
+  state.homeScore = 0;
+  state.awayScore = 0;
+  state.homeSets = 0;
+  state.awaySets = 0;
+  state.setNumber = 1;
+  state.lastAlert = "";
+  state.winner = "";
+  state.setFlashTeam = "";
+  state.setFlashId = 0;
+  state.completedSets = [];
+  state.lastPointFlashId = 0;
+  lastSavedWinnerKey = "";
+  stopConfetti();
+  hideWinner();
+  render();
+  queueRemoteUpdate();
+}
+
+function getLocalJson(key, fallback = []) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch {
+    return fallback;
+  }
+}
+
+function setLocalJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function currentTeamEntries() {
+  return [
+    {
+      id: `team-${teamName("home").toLowerCase().replace(/[^a-z0-9]+/g, "-") || "home"}`,
+      name: teamName("home"),
+      color: state.homeColor,
+      logo: els.homeLogo?.src?.startsWith("data:") ? els.homeLogo.src : "",
+      favorite: false,
+      updatedAtMs: Date.now()
+    },
+    {
+      id: `team-${teamName("away").toLowerCase().replace(/[^a-z0-9]+/g, "-") || "away"}`,
+      name: teamName("away"),
+      color: state.awayColor,
+      logo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : "",
+      favorite: false,
+      updatedAtMs: Date.now()
+    }
+  ];
+}
+
+function localTeams() {
+  return getLocalJson("scoreflowTeamsV2", []);
+}
+
+function saveLocalTeam(team) {
+  const teams = localTeams();
+  const existing = teams.findIndex((item) => item.id === team.id);
+  const next = existing >= 0 ? { ...teams[existing], ...team, favorite: teams[existing].favorite || team.favorite } : team;
+  if (existing >= 0) teams[existing] = next;
+  else teams.unshift(next);
+  setLocalJson("scoreflowTeamsV2", teams.slice(0, 40));
+  return next;
+}
+
+async function saveCloudTeam(team) {
+  if (!currentUser || !db) return;
+  await setDoc(doc(db, ...userDocPath("teams", team.id)), {
+    ...team,
+    updatedAt: serverTimestamp(),
+    updatedAtMs: Date.now()
+  }, { merge: true });
+}
+
+async function syncLocalDataToCloud() {
+  if (!currentUser || !db) return;
+  const teams = localTeams();
+  await Promise.allSettled(teams.map((team) => saveCloudTeam(team)));
+  const matches = getLocalJson("scoreflowMatchHistoryV2", []);
+  await Promise.allSettled(matches.slice(0, 20).map((match) =>
+    setDoc(doc(db, ...userDocPath("matches", match.id)), { ...match, updatedAt: serverTimestamp() }, { merge: true })
+  ));
+}
+
+async function getAllTeams() {
+  const local = localTeams();
+  if (!currentUser || !db) return local;
+  try {
+    const snap = await getDocs(query(collection(db, ...userDocPath("teams")), orderBy("updatedAtMs", "desc"), limit(50)));
+    const cloud = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const merged = [...cloud];
+    local.forEach((team) => {
+      if (!merged.some((item) => item.id === team.id)) merged.push(team);
+    });
+    setLocalJson("scoreflowTeamsV2", merged);
+    return merged;
+  } catch (error) {
+    console.warn(error);
+    return local;
+  }
+}
+
+function applyTeamToSlot(team, slot) {
+  if (!team) return;
+  state[`${slot}Name`] = team.name || (slot === "home" ? "Team 1" : "Team 2");
+  setTeamColor(slot, team.color || (slot === "home" ? state.homeColor : state.awayColor), false);
+  const img = slot === "home" ? els.homeLogo : els.awayLogo;
+  if (team.logo && img) {
+    img.src = team.logo;
+    img.closest(".logo-picker")?.classList.add("has-logo");
+  }
+  render();
+  queueRemoteUpdate();
+  toast(`${team.name} loaded`);
+}
+
+async function toggleFavoriteTeam(teamId) {
+  const teams = localTeams();
+  const team = teams.find((item) => item.id === teamId);
+  if (!team) return;
+  team.favorite = !team.favorite;
+  setLocalJson("scoreflowTeamsV2", teams);
+  await saveCloudTeam(team);
+  await renderHomeData();
+}
+
+function localMatches() {
+  return getLocalJson("scoreflowMatchHistoryV2", []);
+}
+
+async function getAllMatches() {
+  const local = localMatches();
+  if (!currentUser || !db) return local;
+  try {
+    const snap = await getDocs(query(collection(db, ...userDocPath("matches")), orderBy("updatedAtMs", "desc"), limit(30)));
+    const cloud = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const merged = [...cloud];
+    local.forEach((match) => {
+      if (!merged.some((item) => item.id === match.id)) merged.push(match);
+    });
+    setLocalJson("scoreflowMatchHistoryV2", merged);
+    return merged;
+  } catch (error) {
+    console.warn(error);
+    return local;
+  }
+}
+
+async function saveMatchHistory() {
+  if (!state.winner) return;
+  const winnerKey = `${state.winner}-${state.homeSets}-${state.awaySets}-${state.completedSets.length}`;
+  if (lastSavedWinnerKey === winnerKey) return;
+  lastSavedWinnerKey = winnerKey;
+  const match = {
+    id: `match-${Date.now().toString(36)}`,
+    title: state.matchTitle || "Game Night",
+    homeName: teamName("home"),
+    awayName: teamName("away"),
+    homeSets: state.homeSets,
+    awaySets: state.awaySets,
+    winner: teamName(state.winner),
+    completedSets: state.completedSets,
+    matchFormat: state.matchFormat,
+    updatedAtMs: Date.now()
+  };
+  const matches = localMatches();
+  matches.unshift(match);
+  setLocalJson("scoreflowMatchHistoryV2", matches.slice(0, 50));
+  if (currentUser && db) {
+    await setDoc(doc(db, ...userDocPath("matches", match.id)), {
+      ...match,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+  await renderHomeData();
+}
+
+function teamCard(team) {
+  return `
+    <article class="home-list-card">
+      <div class="mini-logo" style="--mini-color:${team.color || "#ffd166"}">
+        ${team.logo ? `<img src="${team.logo}" alt="">` : `<span>${(team.name || "T").charAt(0).toUpperCase()}</span>`}
+      </div>
+      <div>
+        <strong>${team.name || "Saved Team"}</strong>
+        <small>${team.favorite ? "Favorite team" : "Saved team"}</small>
+      </div>
+      <div class="mini-actions">
+        <button type="button" data-load-team="${team.id}" data-slot="home">T1</button>
+        <button type="button" data-load-team="${team.id}" data-slot="away">T2</button>
+        <button type="button" data-favorite-team="${team.id}">${team.favorite ? "★" : "☆"}</button>
+      </div>
+    </article>`;
+}
+
+function matchCard(match) {
+  const date = match.updatedAtMs ? new Date(match.updatedAtMs).toLocaleDateString() : "Saved match";
+  return `
+    <article class="home-list-card match-history-card">
+      <div class="mini-logo match-mini">🏆</div>
+      <div>
+        <strong>${match.homeName || "Team 1"} ${match.homeSets ?? 0} - ${match.awaySets ?? 0} ${match.awayName || "Team 2"}</strong>
+        <small>${match.winner || "Final"} won · ${date}</small>
+      </div>
+    </article>`;
+}
+
+async function renderHomeData() {
+  if (!els.homeScreen) return;
+  const teams = await getAllTeams();
+  const favorites = teams.filter((team) => team.favorite);
+  const matches = await getAllMatches();
+  if (els.savedTeamsList) {
+    els.savedTeamsList.innerHTML = teams.length ? teams.slice(0, 6).map(teamCard).join("") : `<p class="empty-note">No saved teams yet. Save teams from Game Setup or after entering team names.</p>`;
+  }
+  if (els.favoriteTeamsList) {
+    els.favoriteTeamsList.innerHTML = favorites.length ? favorites.slice(0, 4).map(teamCard).join("") : `<p class="empty-note">Tap ☆ on a saved team to favorite it.</p>`;
+  }
+  if (els.matchHistoryList) {
+    els.matchHistoryList.innerHTML = matches.length ? matches.slice(0, 6).map(matchCard).join("") : `<p class="empty-note">Completed matches will show up here.</p>`;
+  }
+  setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
+}
+
+function wireHomeListClicks(event) {
+  const loadBtn = event.target.closest("[data-load-team]");
+  if (loadBtn) {
+    const team = localTeams().find((item) => item.id === loadBtn.dataset.loadTeam);
+    applyTeamToSlot(team, loadBtn.dataset.slot || "home");
+    return;
+  }
+  const favBtn = event.target.closest("[data-favorite-team]");
+  if (favBtn) toggleFavoriteTeam(favBtn.dataset.favoriteTeam);
 }
 
 function isPortraitOrientation() {
@@ -624,22 +991,7 @@ function newMatch() {
   if (isViewer) return;
   const ok = confirm("Start a new match? This clears scores and sets.");
   if (!ok) return;
-  snapshot();
-  state.homeScore = 0;
-  state.awayScore = 0;
-  state.homeSets = 0;
-  state.awaySets = 0;
-  state.setNumber = 1;
-  state.lastAlert = "";
-  state.winner = "";
-  state.setFlashTeam = "";
-  state.setFlashId = 0;
-  state.completedSets = [];
-  state.lastPointFlashId = 0;
-  stopConfetti();
-  hideWinner();
-  render();
-  queueRemoteUpdate();
+  resetMatchState(true);
   toast("New match ready");
 }
 
@@ -941,17 +1293,22 @@ function downloadPoster() {
   link.click();
 }
 
-function saveTeamProfiles() {
+async function saveTeamProfiles() {
+  const entries = currentTeamEntries();
+  entries.forEach(saveLocalTeam);
+  await Promise.allSettled(entries.map(saveCloudTeam));
+
   const saved = {
-    homeName: els.homeNameSetting.value.trim() || state.homeName,
-    awayName: els.awayNameSetting.value.trim() || state.awayName,
-    homeColor: state.homeColor,
-    awayColor: state.awayColor,
-    homeLogo: els.homeLogo?.src?.startsWith("data:") ? els.homeLogo.src : "",
-    awayLogo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : ""
+    homeName: entries[0].name,
+    awayName: entries[1].name,
+    homeColor: entries[0].color,
+    awayColor: entries[1].color,
+    homeLogo: entries[0].logo,
+    awayLogo: entries[1].logo
   };
   localStorage.setItem("scoreflowSavedTeams", JSON.stringify(saved));
-  toast("Teams saved");
+  await renderHomeData();
+  toast(currentUser ? "Teams saved and synced" : "Teams saved locally");
 }
 
 function loadTeamProfiles() {
@@ -1109,6 +1466,7 @@ function showWinner(team, sync = false) {
   document.body.classList.add("celebrating");
   els.winnerOverlay.classList.add("show");
   startConfetti();
+  saveMatchHistory();
   if (sync) queueRemoteUpdate();
 }
 
@@ -1168,6 +1526,22 @@ function wireEvents() {
   els.splashImageInput?.addEventListener("change", handleSplashImageUpload);
   els.resetSplashBtn?.addEventListener("click", resetSplashImage);
   els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
+  els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(false));
+  els.homeNewMatchBtn?.addEventListener("click", () => openScoreboardFromHome(true));
+  els.homeCreateLiveBtn?.addEventListener("click", async () => {
+    openScoreboardFromHome(false);
+    await createLiveGame();
+    openShare();
+  });
+  els.homeSettingsBtn?.addEventListener("click", () => els.appSettingsDialog?.showModal());
+  els.closeAppSettingsBtn?.addEventListener("click", () => els.appSettingsDialog?.close());
+  els.emailSignInBtn?.addEventListener("click", () => emailSignIn(false));
+  els.emailCreateBtn?.addEventListener("click", () => emailSignIn(true));
+  els.googleSignInBtn?.addEventListener("click", () => providerSignIn("google"));
+  els.appleSignInBtn?.addEventListener("click", () => providerSignIn("apple"));
+  els.signOutBtn?.addEventListener("click", doSignOut);
+  els.savedTeamsList?.addEventListener("click", wireHomeListClicks);
+  els.favoriteTeamsList?.addEventListener("click", wireHomeListClicks);
   els.homeLogoInput.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
   els.awayLogoInput.addEventListener("change", () => handleLogo(els.awayLogoInput, els.awayLogo, els.awayLogoInput.closest(".logo-picker")));
   els.homeName.addEventListener("change", () => updateNameFromInline("home"));
@@ -1206,6 +1580,7 @@ async function boot() {
   setTeamColor("away", state.awayColor, false);
   applyMatchFormat(state.matchFormat);
   render();
+  await renderHomeData();
 
   if (initFirebase()) {
     setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
@@ -1214,13 +1589,14 @@ async function boot() {
     setConnectionStatus("offline", "Offline");
   }
   applyViewerMode();
+  if (!isViewer && liveGameId) document.body.classList.add("scoreboard-active");
   updateRotateScreenState();
   registerServiceWorker();
 
   window.setTimeout(() => {
     hideSplash();
     if (isViewer) requestAnimationFrame(showLiveStartOverlay);
-    else requestAnimationFrame(beginInitialPortraitSetup);
+    else requestAnimationFrame(showHomeScreen);
   }, 2500);
 }
 

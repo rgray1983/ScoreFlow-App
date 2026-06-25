@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2.1.0";
+const SCORE_FLOW_CACHE = "scoreflow-v2.2.0";
 
 const CORE_ASSETS = [
   "./",
