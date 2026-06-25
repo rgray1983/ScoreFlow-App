@@ -106,6 +106,16 @@ const els = {
   downloadPosterBtn: $("downloadPosterBtn"),
   saveTeamsBtn: $("saveTeamsBtn"),
   loadTeamsBtn: $("loadTeamsBtn"),
+  splashLogoImg: document.querySelector(".splash-logo-img"),
+  splashPreview: $("splashPreview"),
+  splashImageInput: $("splashImageInput"),
+  resetSplashBtn: $("resetSplashBtn"),
+  liveStartOverlay: $("liveStartOverlay"),
+  liveStartTitle: $("liveStartTitle"),
+  liveStartHome: $("liveStartHome"),
+  liveStartAway: $("liveStartAway"),
+  liveStartMeta: $("liveStartMeta"),
+  liveStartWatchBtn: $("liveStartWatchBtn"),
   firebaseNote: $("firebaseNote")
 };
 
@@ -130,6 +140,59 @@ function hideSplash() {
   if (splashClosed) return;
   splashClosed = true;
   document.body.classList.add("splash-done");
+}
+
+function applySplashImageFromStorage() {
+  const savedSplash = localStorage.getItem("scoreflowSplashImage");
+  const src = savedSplash || "splash-logo.png";
+  if (els.splashLogoImg) els.splashLogoImg.src = src;
+  if (els.splashPreview) els.splashPreview.src = src;
+}
+
+function handleSplashImageUpload() {
+  if (isViewer) return;
+  const file = els.splashImageInput?.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const imageData = String(reader.result || "");
+    localStorage.setItem("scoreflowSplashImage", imageData);
+    applySplashImageFromStorage();
+    toast("Splash image updated");
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetSplashImage() {
+  if (isViewer) return;
+  localStorage.removeItem("scoreflowSplashImage");
+  if (els.splashImageInput) els.splashImageInput.value = "";
+  applySplashImageFromStorage();
+  toast("Default splash restored");
+}
+
+function updateLiveStartOverlay() {
+  if (!els.liveStartOverlay) return;
+  els.liveStartTitle.textContent = state.matchTitle || "Game Night";
+  els.liveStartHome.textContent = teamName("home");
+  els.liveStartAway.textContent = teamName("away");
+  els.liveStartMeta.textContent = `Set ${state.setNumber} · Race to ${pointsToWinForCurrentSet()}`;
+  els.liveStartOverlay.style.setProperty("--live-home", state.homeColor);
+  els.liveStartOverlay.style.setProperty("--live-away", state.awayColor);
+}
+
+function showLiveStartOverlay() {
+  if (!isViewer || !els.liveStartOverlay) return;
+  updateLiveStartOverlay();
+  els.liveStartOverlay.classList.add("show");
+  els.liveStartOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideLiveStartOverlay() {
+  if (!els.liveStartOverlay) return;
+  els.liveStartOverlay.classList.remove("show");
+  els.liveStartOverlay.setAttribute("aria-hidden", "true");
 }
 
 function registerServiceWorker() {
@@ -418,6 +481,7 @@ function render() {
   renderSetDots(els.homeSetDots, state.homeSets);
   renderSetDots(els.awaySetDots, state.awaySets);
   updateAlertBanner();
+  updateLiveStartOverlay();
 }
 
 function updateAlertBanner() {
@@ -1094,6 +1158,9 @@ function wireEvents() {
   els.downloadPosterBtn?.addEventListener("click", downloadPoster);
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
   els.loadTeamsBtn?.addEventListener("click", loadTeamProfiles);
+  els.splashImageInput?.addEventListener("change", handleSplashImageUpload);
+  els.resetSplashBtn?.addEventListener("click", resetSplashImage);
+  els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
   els.homeLogoInput.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
   els.awayLogoInput.addEventListener("change", () => handleLogo(els.awayLogoInput, els.awayLogo, els.awayLogoInput.closest(".logo-picker")));
   els.homeName.addEventListener("change", () => updateNameFromInline("home"));
@@ -1116,7 +1183,7 @@ function applyViewerMode() {
   if (!isViewer) return;
   document.body.classList.add("viewer-mode");
   document.querySelectorAll("button, input").forEach((el) => {
-    if (el.id === "fullscreenBtn") return;
+    if (["fullscreenBtn", "liveStartWatchBtn"].includes(el.id)) return;
     el.disabled = true;
   });
   els.settingsDialog?.close?.();
@@ -1124,6 +1191,7 @@ function applyViewerMode() {
 }
 
 async function boot() {
+  applySplashImageFromStorage();
   buildSwatches(els.homeSwatches, "home");
   buildSwatches(els.awaySwatches, "away");
   wireEvents();
@@ -1144,8 +1212,9 @@ async function boot() {
 
   window.setTimeout(() => {
     hideSplash();
-    requestAnimationFrame(beginInitialPortraitSetup);
-  }, 3000);
+    if (isViewer) requestAnimationFrame(showLiveStartOverlay);
+    else requestAnimationFrame(beginInitialPortraitSetup);
+  }, 2500);
 }
 
 boot();

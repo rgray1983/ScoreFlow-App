@@ -39,6 +39,21 @@
     </div>
   </div>
 
+  <div class="live-start-overlay" id="liveStartOverlay" aria-hidden="true">
+    <div class="live-start-card">
+      <div class="live-chip">🏐 Live Now</div>
+      <h2 id="liveStartTitle">Game Night</h2>
+      <div class="live-start-matchup">
+        <strong id="liveStartHome">Team 1</strong>
+        <span>vs</span>
+        <strong id="liveStartAway">Team 2</strong>
+      </div>
+      <p id="liveStartMeta">Set 1 · Race to 25</p>
+      <button id="liveStartWatchBtn" type="button">Tap to Watch Live</button>
+      <small>Powered by ScoreFlow</small>
+    </div>
+  </div>
+
   <div class="app-shell" id="app">
     <header class="top-bar">
       <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">⚙</button>
@@ -228,6 +243,21 @@
       <div class="swatch-section">
         <h3>Visitor Color</h3>
         <div class="swatches" id="awaySwatches"></div>
+      </div>
+
+      <div class="splash-branding-section">
+        <h3>Splash Screen Image</h3>
+        <div class="splash-branding-card">
+          <img id="splashPreview" src="splash-logo.png" alt="Current splash screen image" />
+          <div>
+            <p>Replace the startup image with a club, tournament, or sponsor graphic.</p>
+            <label class="file-action">
+              Choose Image
+              <input id="splashImageInput" type="file" accept="image/*" />
+            </label>
+            <button id="resetSplashBtn" value="default" type="button">Reset Default</button>
+          </div>
+        </div>
       </div>
 
       <p class="hint">Club: best 2 of 3. High School: best 3 of 5. Final set races to 15. Win by 2.</p>

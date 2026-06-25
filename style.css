@@ -988,6 +988,181 @@ body.splash-done .splash-screen {
 }
 
 
+/* Milestone 1: Live start screen and splash branding controls */
+.live-start-overlay {
+  --live-home: var(--home);
+  --live-away: var(--away);
+  position: fixed;
+  inset: 0;
+  z-index: 82;
+  display: grid;
+  place-items: center;
+  padding: calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--live-home) 34%, transparent), transparent 34vh),
+    radial-gradient(circle at 86% 78%, color-mix(in srgb, var(--live-away) 34%, transparent), transparent 34vh),
+    rgba(3, 5, 10, 0.9);
+  backdrop-filter: blur(7px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.live-start-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.live-start-card {
+  width: min(92vw, 520px);
+  padding: clamp(22px, 5vw, 34px);
+  border-radius: 30px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 24px 90px rgba(0,0,0,0.6);
+  transform: scale(0.96) translateY(12px);
+  transition: transform 0.28s ease;
+}
+
+.live-start-overlay.show .live-start-card { transform: scale(1) translateY(0); }
+
+.live-chip {
+  display: inline-grid;
+  place-items: center;
+  min-height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: var(--gold);
+  background: rgba(255,209,102,0.12);
+  border: 1px solid rgba(255,209,102,0.22);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+}
+
+.live-start-card h2 {
+  margin: 18px 0 14px;
+  font-size: clamp(2.4rem, 12vw, 5rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+  letter-spacing: -0.07em;
+}
+
+.live-start-matchup {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 14px;
+}
+
+.live-start-matchup strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.15rem, 4.8vw, 1.65rem);
+  text-transform: uppercase;
+}
+.live-start-matchup strong:first-child { color: var(--live-home); }
+.live-start-matchup strong:last-child { color: var(--live-away); }
+.live-start-matchup span { color: var(--muted); font-weight: 900; text-transform: uppercase; }
+
+.live-start-card p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.live-start-card button {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 18px;
+  background: var(--gold);
+  color: #111827;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.live-start-card small {
+  display: block;
+  margin-top: 14px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.splash-branding-section { margin: 10px 0 14px; }
+.splash-branding-section h3 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.splash-branding-card {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.13);
+}
+.splash-branding-card img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.25);
+}
+.splash-branding-card p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.file-action,
+#resetSplashBtn {
+  display: inline-grid;
+  place-items: center;
+  min-height: 38px;
+  margin: 0 6px 0 0;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--text);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.file-action input { display: none; }
+#resetSplashBtn { vertical-align: top; }
+
+@media (orientation: portrait) {
+  body.setup-active .splash-branding-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+    padding: 9px;
+    gap: 9px;
+  }
+  body.setup-active .splash-branding-card img { width: 58px; height: 58px; border-radius: 12px; }
+  body.setup-active .splash-branding-card p { display: none; }
+  body.setup-active .file-action,
+  body.setup-active #resetSplashBtn { min-height: 34px; font-size: 0.64rem; padding: 0 9px; }
+}
+
 
 /* Smart rotate-state restore: after portrait setup is saved, show the rotate screen again until landscape. */
 body.needs-rotate .rotate-message {
