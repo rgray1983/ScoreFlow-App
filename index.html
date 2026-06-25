@@ -214,6 +214,32 @@
     </main>
   </div>
 
+  <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
+    <div class="floating-reactions" id="floatingReactions" aria-hidden="true"></div>
+    <div class="fan-zone-card">
+      <div class="fan-zone-head">
+        <div>
+          <strong>Fan Zone</strong>
+          <span>Cheer live with chat and reactions</span>
+        </div>
+        <div class="fan-live-pill">Live</div>
+      </div>
+      <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
+      <div class="reaction-row" id="reactionRow" aria-label="Send a reaction">
+        <button type="button" data-reaction="❤️">❤️</button>
+        <button type="button" data-reaction="🔥">🔥</button>
+        <button type="button" data-reaction="👏">👏</button>
+        <button type="button" data-reaction="🎉">🎉</button>
+        <button type="button" data-reaction="🏐">🏐</button>
+        <button type="button" data-reaction="💪">💪</button>
+      </div>
+      <form class="chat-form" id="chatForm">
+        <input id="chatInput" maxlength="60" autocomplete="off" placeholder="Cheer on your team..." />
+        <button id="sendChatBtn" type="submit">Send</button>
+      </form>
+    </div>
+  </section>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <dialog id="shareDialog">

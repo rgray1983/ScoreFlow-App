@@ -3,6 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import {
   getFirestore,
   doc,
+  addDoc,
   getDoc,
   setDoc,
   onSnapshot,
@@ -182,7 +183,14 @@ const els = {
   posterStyleNote: $("posterStyleNote"),
   cloudBackupToggle: $("cloudBackupToggle"),
   backupNowBtn: $("backupNowBtn"),
-  historyLimitText: $("historyLimitText")
+  historyLimitText: $("historyLimitText"),
+  fanZone: $("fanZone"),
+  chatFeed: $("chatFeed"),
+  chatForm: $("chatForm"),
+  chatInput: $("chatInput"),
+  sendChatBtn: $("sendChatBtn"),
+  reactionRow: $("reactionRow"),
+  floatingReactions: $("floatingReactions")
 };
 
 
@@ -198,6 +206,11 @@ let currentUser = null;
 let lastSavedWinnerKey = "";
 let liveGameId = GAME_ID_FROM_URL || "";
 let unsubscribeLive = null;
+let unsubscribeChat = null;
+let unsubscribeReactions = null;
+let chatCooldownUntil = 0;
+let reactionCooldownUntil = 0;
+const seenReactionIds = new Set();
 let applyingRemote = false;
 let liveReady = false;
 let remoteTimer = null;
@@ -225,6 +238,122 @@ function applySplashImageFromStorage() {
   if (els.splashLogoImg) els.splashLogoImg.src = src;
 }
 
+
+
+function liveChatCollectionRef() {
+  if (!db || !liveGameId) return null;
+  return collection(db, "volleyballGames", liveGameId, "chat");
+}
+
+function liveReactionCollectionRef() {
+  if (!db || !liveGameId) return null;
+  return collection(db, "volleyballGames", liveGameId, "reactions");
+}
+
+function renderChatMessages(messages = []) {
+  if (!els.chatFeed) return;
+  els.chatFeed.innerHTML = "";
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "chat-empty";
+    empty.textContent = "Be the first fan to cheer!";
+    els.chatFeed.appendChild(empty);
+    return;
+  }
+  messages.forEach((message) => {
+    const item = document.createElement("article");
+    item.className = "chat-message";
+    const name = document.createElement("strong");
+    name.textContent = message.name || "Fan";
+    const text = document.createElement("span");
+    text.textContent = message.text || "";
+    item.append(name, text);
+    els.chatFeed.appendChild(item);
+  });
+  els.chatFeed.scrollTop = els.chatFeed.scrollHeight;
+}
+
+function showFloatingReaction(emoji) {
+  if (!els.floatingReactions || !emoji) return;
+  const bubble = document.createElement("div");
+  bubble.className = "floating-reaction";
+  bubble.textContent = emoji;
+  bubble.style.left = `${18 + Math.random() * 64}%`;
+  bubble.style.setProperty("--drift", `${(Math.random() - 0.5) * 90}px`);
+  els.floatingReactions.appendChild(bubble);
+  window.setTimeout(() => bubble.remove(), 5200);
+}
+
+async function startFanZoneListeners() {
+  if (!db || !liveGameId || !els.fanZone) return;
+  unsubscribeChat?.();
+  unsubscribeReactions?.();
+
+  const chatRef = liveChatCollectionRef();
+  if (chatRef) {
+    const chatQuery = query(chatRef, orderBy("createdAtMs", "asc"), limit(40));
+    unsubscribeChat = onSnapshot(chatQuery, (snap) => {
+      renderChatMessages(snap.docs.map((d) => d.data()));
+    }, (error) => console.warn("Chat listener failed", error));
+  }
+
+  const reactionsRef = liveReactionCollectionRef();
+  if (reactionsRef) {
+    const reactionQuery = query(reactionsRef, orderBy("createdAtMs", "asc"), limit(60));
+    unsubscribeReactions = onSnapshot(reactionQuery, (snap) => {
+      snap.docChanges().forEach((change) => {
+        if (change.type !== "added" || seenReactionIds.has(change.doc.id)) return;
+        seenReactionIds.add(change.doc.id);
+        const data = change.doc.data();
+        if (Date.now() - Number(data.createdAtMs || 0) < 9000) showFloatingReaction(data.emoji);
+      });
+    }, (error) => console.warn("Reaction listener failed", error));
+  }
+}
+
+async function sendChatMessage(event) {
+  event?.preventDefault?.();
+  if (!db || !liveGameId) {
+    toast("Live chat starts after a live match is created", true);
+    return;
+  }
+  const text = (els.chatInput?.value || "").trim().slice(0, 60);
+  if (!text) return;
+  if (Date.now() < chatCooldownUntil) {
+    toast("Give chat a second", true);
+    return;
+  }
+  chatCooldownUntil = Date.now() + 1800;
+  els.chatInput.value = "";
+  try {
+    await addDoc(liveChatCollectionRef(), {
+      text,
+      name: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Fan",
+      createdAt: serverTimestamp(),
+      createdAtMs: Date.now()
+    });
+  } catch (error) {
+    console.error(error);
+    toast("Chat failed to send", true);
+  }
+}
+
+async function sendReaction(emoji) {
+  if (!emoji) return;
+  showFloatingReaction(emoji);
+  if (!db || !liveGameId) return;
+  if (Date.now() < reactionCooldownUntil) return;
+  reactionCooldownUntil = Date.now() + 650;
+  try {
+    await addDoc(liveReactionCollectionRef(), {
+      emoji,
+      createdAt: serverTimestamp(),
+      createdAtMs: Date.now()
+    });
+  } catch (error) {
+    console.warn("Reaction failed", error);
+  }
+}
 
 function updateLiveStartOverlay() {
   if (!els.liveStartOverlay) return;
@@ -923,6 +1052,7 @@ async function startLiveListener() {
   liveReady = true;
   setConnectionStatus("online", "Online");
   document.body.classList.toggle("viewer-mode", isViewer);
+  await startFanZoneListeners();
 
   unsubscribeLive = onSnapshot(ref, (documentSnap) => {
     if (!documentSnap.exists()) return;
@@ -1723,6 +1853,11 @@ function wireEvents() {
   els.googleSignInBtn?.addEventListener("click", () => providerSignIn("google"));
   els.appleSignInBtn?.addEventListener("click", () => providerSignIn("apple"));
   els.signOutBtn?.addEventListener("click", doSignOut);
+  els.chatForm?.addEventListener("submit", sendChatMessage);
+  els.reactionRow?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-reaction]");
+    if (button) sendReaction(button.dataset.reaction);
+  });
   els.savedTeamsList?.addEventListener("click", wireHomeListClicks);
   els.favoriteTeamsList?.addEventListener("click", wireHomeListClicks);
   els.homeLogoInput.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
@@ -1746,8 +1881,13 @@ function wireEvents() {
 function applyViewerMode() {
   if (!isViewer) return;
   document.body.classList.add("viewer-mode");
+  const viewerAllowedIds = new Set([
+    "liveStartWatchBtn",
+    "chatInput",
+    "sendChatBtn"
+  ]);
   document.querySelectorAll("button, input").forEach((el) => {
-    if (["liveStartWatchBtn"].includes(el.id)) return;
+    if (viewerAllowedIds.has(el.id) || el.closest("#fanZone")) return;
     el.disabled = true;
   });
   els.settingsDialog?.close?.();
