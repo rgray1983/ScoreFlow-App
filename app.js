@@ -142,6 +142,14 @@ function hideSplash() {
   document.body.classList.add("splash-done");
 }
 
+function setConnectionStatus(status, label) {
+  if (!els.liveStatus) return;
+  const cleanStatus = ["online", "offline", "error", "connecting"].includes(status) ? status : "offline";
+  els.liveStatus.classList.remove("online", "offline", "error", "connecting");
+  els.liveStatus.classList.add(cleanStatus);
+  els.liveStatus.textContent = label || (cleanStatus === "online" ? "Online" : cleanStatus === "connecting" ? "Connecting" : cleanStatus === "error" ? "Sync Error" : "Offline");
+}
+
 function applySplashImageFromStorage() {
   const savedSplash = localStorage.getItem("scoreflowSplashImage");
   const src = savedSplash || "splash-logo.png";
@@ -371,10 +379,10 @@ async function pushRemoteUpdate() {
       updatedAtMs: Date.now()
     }, { merge: true });
     liveReady = true;
-    els.liveStatus.textContent = "Live Scorer Mode · Synced";
+    setConnectionStatus("online", "Online");
   } catch (error) {
     console.error(error);
-    els.liveStatus.textContent = "Live sync failed";
+    setConnectionStatus("error", "Sync Error");
     toast("Live update failed", true);
   }
 }
@@ -386,7 +394,7 @@ async function startLiveListener() {
   const snap = await getDoc(ref);
   if (!snap.exists()) {
     if (isViewer) {
-      els.liveStatus.textContent = "Game not found";
+      setConnectionStatus("error", "Not Found");
       toast("Game link not found", true);
       return;
     }
@@ -395,7 +403,7 @@ async function startLiveListener() {
   els.viewerLink.value = buildViewerLink();
   updateShareExtras();
   liveReady = true;
-  els.liveStatus.textContent = isViewer ? "Live Viewer Mode" : "Live Scorer Mode";
+  setConnectionStatus("online", "Online");
   document.body.classList.toggle("viewer-mode", isViewer);
 
   unsubscribeLive = onSnapshot(ref, (documentSnap) => {
@@ -404,10 +412,10 @@ async function startLiveListener() {
     applyState(documentSnap.data());
     applyingRemote = false;
     liveReady = true;
-    els.liveStatus.textContent = isViewer ? "Live Viewer Mode · Updated" : "Live Scorer Mode · Connected";
+    setConnectionStatus("online", "Online");
   }, (error) => {
     console.error(error);
-    els.liveStatus.textContent = "Live connection error";
+    setConnectionStatus("error", "Sync Error");
     toast("Live connection error", true);
   });
 }
@@ -1135,7 +1143,6 @@ function wireEvents() {
   $("newMatchBtn").addEventListener("click", newMatch);
   $("shareBtn").addEventListener("click", openShare);
   $("settingsBtn").addEventListener("click", openSettings);
-  $("fullscreenBtn").addEventListener("click", toggleFullscreen);
   $("saveSettingsBtn").addEventListener("click", saveSettings);
   [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
@@ -1183,7 +1190,7 @@ function applyViewerMode() {
   if (!isViewer) return;
   document.body.classList.add("viewer-mode");
   document.querySelectorAll("button, input").forEach((el) => {
-    if (["fullscreenBtn", "liveStartWatchBtn"].includes(el.id)) return;
+    if (["liveStartWatchBtn"].includes(el.id)) return;
     el.disabled = true;
   });
   els.settingsDialog?.close?.();
@@ -1201,10 +1208,10 @@ async function boot() {
   render();
 
   if (initFirebase()) {
-    els.liveStatus.textContent = liveGameId ? "Connecting Live Game..." : "Offline Practice Mode";
+    setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
     if (liveGameId) await startLiveListener();
   } else {
-    els.liveStatus.textContent = "Offline Practice Mode";
+    setConnectionStatus("offline", "Offline");
   }
   applyViewerMode();
   updateRotateScreenState();

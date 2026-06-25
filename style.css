@@ -1611,3 +1611,202 @@ body.setup-active.needs-rotate .rotate-message {
     max-width: calc(50vw - 48px);
   }
 }
+
+
+/* ScoreFlow header status/layout update */
+.app-shell {
+  grid-template-rows: 42px minmax(0, 1fr);
+}
+
+.top-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  height: 42px;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+#settingsBtn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+#fullscreenBtn {
+  display: none !important;
+}
+
+.match-title-left {
+  position: absolute;
+  left: 48px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  max-width: calc(50vw - 76px);
+  margin: 0;
+  text-align: left;
+  font-size: clamp(1.05rem, 3.1vw, 1.55rem);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.brand-wrap {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: min(32vw, 150px);
+  min-width: 104px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.scoreflow-header-logo {
+  display: block;
+  width: min(30vw, 142px);
+  max-width: 142px;
+  max-height: 26px;
+  height: auto;
+  object-fit: contain;
+  margin: 0;
+}
+
+.live-status {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 74px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.58rem, 1.9dvh, 0.72rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: right;
+  pointer-events: none;
+}
+
+.live-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  flex: 0 0 auto;
+}
+
+.live-status.online {
+  color: #d7ffe8;
+}
+
+.live-status.online::before {
+  background: #22c55e;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.9);
+}
+
+.live-status.connecting {
+  color: var(--gold);
+}
+
+.live-status.connecting::before {
+  background: var(--gold);
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.9);
+  animation: pulseGlow 0.9s ease-in-out infinite alternate;
+}
+
+.live-status.error {
+  color: #ffd4df;
+}
+
+.live-status.error::before {
+  background: var(--danger);
+  box-shadow: 0 0 14px rgba(255, 92, 122, 0.9);
+}
+
+@media (max-width: 760px) and (orientation: landscape), (max-height: 380px) and (orientation: landscape) {
+  .app-shell {
+    grid-template-rows: 38px minmax(0,1fr);
+  }
+
+  .top-bar {
+    height: 38px;
+    min-height: 38px;
+  }
+
+  #settingsBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .match-title-left {
+    left: 42px;
+    max-width: calc(50vw - 68px);
+    font-size: clamp(0.95rem, 4.2dvh, 1.35rem);
+  }
+
+  .brand-wrap {
+    width: min(30vw, 132px);
+    min-width: 92px;
+  }
+
+  .scoreflow-header-logo {
+    width: min(28vw, 124px);
+    max-height: 22px;
+  }
+
+  .live-status {
+    right: 0;
+    min-width: 62px;
+    gap: 4px;
+    font-size: 0.58rem;
+  }
+
+  .live-status::before {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+@media (max-width: 620px) and (orientation: landscape) {
+  .match-title-left {
+    left: 40px;
+    max-width: calc(50vw - 62px);
+    font-size: 0.94rem;
+  }
+
+  .brand-wrap {
+    width: min(28vw, 116px);
+    min-width: 86px;
+  }
+
+  .scoreflow-header-logo {
+    width: min(26vw, 108px);
+    max-height: 20px;
+  }
+
+  .live-status {
+    min-width: 56px;
+    font-size: 0.52rem;
+    letter-spacing: 0.05em;
+  }
+}
+
