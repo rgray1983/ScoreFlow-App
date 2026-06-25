@@ -1370,3 +1370,72 @@ body.setup-active.needs-rotate .rotate-message {
 @media (orientation: portrait) {
   .point-pulse { font-size: clamp(2.2rem, 14vw, 5rem); padding: 0 18px; }
 }
+
+
+/* ScoreFlow logo branding update */
+.splash-brand-logo {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + clamp(24px, 7vh, 56px));
+  width: min(72vw, 430px);
+  max-height: 118px;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.42));
+  animation: splashTextIn 0.58s ease-out 0.18s both;
+  z-index: 2;
+}
+
+.scoreflow-header-logo {
+  display: block;
+  width: clamp(118px, 18vw, 185px);
+  max-height: 30px;
+  object-fit: contain;
+  margin: 0 auto 2px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.38));
+}
+
+.brand-wrap {
+  display: grid;
+  place-items: center;
+  align-content: center;
+}
+
+@media (orientation: portrait) {
+  .splash-brand-logo {
+    width: min(78vw, 390px);
+    bottom: calc(env(safe-area-inset-bottom) + clamp(34px, 8vh, 72px));
+  }
+}
+
+@media (max-height: 680px) and (orientation: portrait) {
+  .splash-brand-logo {
+    width: min(74vw, 330px);
+    bottom: calc(env(safe-area-inset-bottom) + 24px);
+  }
+}
+
+@media (max-width: 760px) and (orientation: landscape), (max-height: 380px) and (orientation: landscape) {
+  .scoreflow-header-logo {
+    width: clamp(104px, 18vw, 150px);
+    max-height: 24px;
+    margin-bottom: 0;
+  }
+
+  .brand-wrap .live-status {
+    font-size: 0.46rem;
+  }
+
+  .splash-brand-logo {
+    width: min(44vw, 330px);
+    max-height: 76px;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+  }
+}
+
+@media (max-width: 620px) and (orientation: landscape) {
+  .scoreflow-header-logo {
+    width: clamp(90px, 17vw, 128px);
+    max-height: 22px;
+  }
+}
