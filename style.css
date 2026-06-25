@@ -2079,3 +2079,89 @@ body.home-active .home-screen {
     flex: 1;
   }
 }
+
+
+/* ScoreFlow navigation update: Home + Settings on scoreboard header */
+.scoreboard-left-controls {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scoreboard-left-controls .icon-btn,
+.scoreboard-left-controls #settingsBtn,
+.scoreboard-left-controls #scoreboardHomeBtn {
+  position: static !important;
+  transform: none !important;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+}
+
+.scoreboard-home-btn {
+  font-size: 1.05rem;
+  background: rgba(255,255,255,0.1);
+}
+
+.match-title-left {
+  left: 92px;
+  max-width: calc(50vw - 120px);
+}
+
+.viewer-mode #scoreboardHomeBtn {
+  visibility: hidden;
+}
+
+body.screen-transitioning .home-screen,
+body.screen-transitioning .app-shell {
+  animation: scoreflowScreenFade 0.24s ease-out both;
+}
+
+@keyframes scoreflowScreenFade {
+  from { opacity: 0; transform: translateY(8px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 760px) and (orientation: landscape), (max-height: 380px) and (orientation: landscape) {
+  .scoreboard-left-controls {
+    gap: 5px;
+  }
+
+  .scoreboard-left-controls .icon-btn,
+  .scoreboard-left-controls #settingsBtn,
+  .scoreboard-left-controls #scoreboardHomeBtn {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .match-title-left {
+    left: 80px;
+    max-width: calc(50vw - 104px);
+  }
+}
+
+@media (max-width: 620px) and (orientation: landscape) {
+  .scoreboard-left-controls {
+    gap: 4px;
+  }
+
+  .scoreboard-left-controls .icon-btn,
+  .scoreboard-left-controls #settingsBtn,
+  .scoreboard-left-controls #scoreboardHomeBtn {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .match-title-left {
+    left: 74px;
+    max-width: calc(50vw - 94px);
+    font-size: 0.86rem;
+  }
+}

@@ -71,6 +71,7 @@ const COLORS = [
 const $ = (id) => document.getElementById(id);
 const els = {
   app: $("app"),
+  scoreboardHomeBtn: $("scoreboardHomeBtn"),
   matchTitle: $("matchTitle"),
   liveStatus: $("liveStatus"),
   titleInput: $("titleInput"),
@@ -311,16 +312,21 @@ async function doSignOut() {
 
 function showHomeScreen() {
   if (isViewer) return;
+  document.body.classList.add("screen-transitioning");
   document.body.classList.add("home-active");
-  document.body.classList.remove("scoreboard-active");
+  document.body.classList.remove("scoreboard-active", "setup-active");
+  initialSetupActive = false;
   updateRotateScreenState();
   renderHomeData();
+  window.setTimeout(() => document.body.classList.remove("screen-transitioning"), 260);
 }
 
 function openScoreboardFromHome(startFresh = false) {
   if (isViewer) return;
+  document.body.classList.add("screen-transitioning");
   document.body.classList.remove("home-active");
   document.body.classList.add("scoreboard-active");
+  window.setTimeout(() => document.body.classList.remove("screen-transitioning"), 260);
   if (startFresh) {
     resetMatchState(false);
     toast("New match ready");
@@ -1474,6 +1480,7 @@ function wireEvents() {
   $("newSetBtn").addEventListener("click", newSet);
   $("newMatchBtn").addEventListener("click", newMatch);
   $("shareBtn").addEventListener("click", openShare);
+  els.scoreboardHomeBtn?.addEventListener("click", showHomeScreen);
   $("settingsBtn").addEventListener("click", openSettings);
   $("saveSettingsBtn").addEventListener("click", saveSettings);
   [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.homeName, els.awayName].forEach((input) => {
