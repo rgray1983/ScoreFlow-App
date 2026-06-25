@@ -236,6 +236,23 @@ function hideSplash() {
   document.body.classList.add("splash-done");
 }
 
+function fitHeaderTitle() {
+  const title = els.matchTitle;
+  if (!title) return;
+  title.style.fontSize = "";
+  if (isPortraitOrientation()) return;
+  const max = 34;
+  const min = 18;
+  let size = max;
+  title.style.fontSize = `${size}px`;
+  let guard = 0;
+  while (title.scrollWidth > title.clientWidth && size > min && guard < 40) {
+    size -= 1;
+    title.style.fontSize = `${size}px`;
+    guard += 1;
+  }
+}
+
 function setConnectionStatus(status, label) {
   if (!els.liveStatus) return;
   const cleanStatus = ["online", "offline", "error", "connecting"].includes(status) ? status : "offline";
@@ -1179,6 +1196,7 @@ function renderSetDots(container, won) {
 function render() {
   const target = pointsToWinForCurrentSet();
   els.matchTitle.textContent = state.matchTitle.toUpperCase();
+  requestAnimationFrame(fitHeaderTitle);
   els.titleInput.value = state.matchTitle;
   els.homeName.value = state.homeName;
   els.awayName.value = state.awayName;
@@ -1935,10 +1953,11 @@ function wireEvents() {
   window.addEventListener("resize", () => {
     if (state.confettiRunning) startConfetti();
     updateRotateScreenState();
+    fitHeaderTitle();
   });
 
   window.addEventListener("orientationchange", () => {
-    window.setTimeout(updateRotateScreenState, 160);
+    window.setTimeout(() => { updateRotateScreenState(); fitHeaderTitle(); }, 160);
   });
 }
 
