@@ -122,9 +122,6 @@ const els = {
   saveTeamsBtn: $("saveTeamsBtn"),
   loadTeamsBtn: $("loadTeamsBtn"),
   splashLogoImg: document.querySelector(".splash-logo-img"),
-  splashPreview: $("splashPreview"),
-  splashImageInput: $("splashImageInput"),
-  resetSplashBtn: $("resetSplashBtn"),
   liveStartOverlay: $("liveStartOverlay"),
   liveStartTitle: $("liveStartTitle"),
   liveStartHome: $("liveStartHome"),
@@ -191,31 +188,8 @@ function applySplashImageFromStorage() {
   const savedSplash = localStorage.getItem("scoreflowSplashImage");
   const src = savedSplash || "splash-logo.png";
   if (els.splashLogoImg) els.splashLogoImg.src = src;
-  if (els.splashPreview) els.splashPreview.src = src;
 }
 
-function handleSplashImageUpload() {
-  if (isViewer) return;
-  const file = els.splashImageInput?.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    const imageData = String(reader.result || "");
-    localStorage.setItem("scoreflowSplashImage", imageData);
-    applySplashImageFromStorage();
-    toast("Splash image updated");
-  };
-  reader.readAsDataURL(file);
-}
-
-function resetSplashImage() {
-  if (isViewer) return;
-  localStorage.removeItem("scoreflowSplashImage");
-  if (els.splashImageInput) els.splashImageInput.value = "";
-  applySplashImageFromStorage();
-  toast("Default splash restored");
-}
 
 function updateLiveStartOverlay() {
   if (!els.liveStartOverlay) return;
@@ -1523,8 +1497,6 @@ function wireEvents() {
   els.downloadPosterBtn?.addEventListener("click", downloadPoster);
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
   els.loadTeamsBtn?.addEventListener("click", loadTeamProfiles);
-  els.splashImageInput?.addEventListener("change", handleSplashImageUpload);
-  els.resetSplashBtn?.addEventListener("click", resetSplashImage);
   els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
   els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(false));
   els.homeNewMatchBtn?.addEventListener("click", () => openScoreboardFromHome(true));

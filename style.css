@@ -1152,68 +1152,7 @@ body.splash-done .splash-screen {
   letter-spacing: 0.1em;
 }
 
-.splash-branding-section { margin: 10px 0 14px; }
-.splash-branding-section h3 {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.splash-branding-card {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  padding: 12px;
-  border-radius: 18px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.13);
-}
-.splash-branding-card img {
-  width: 82px;
-  height: 82px;
-  object-fit: contain;
-  border-radius: 16px;
-  background: rgba(0,0,0,0.25);
-}
-.splash-branding-card p {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 0.76rem;
-  line-height: 1.25;
-  font-weight: 800;
-}
-.file-action,
-#resetSplashBtn {
-  display: inline-grid;
-  place-items: center;
-  min-height: 38px;
-  margin: 0 6px 0 0;
-  padding: 0 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.14);
-  color: var(--text);
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-.file-action input { display: none; }
-#resetSplashBtn { vertical-align: top; }
 
-@media (orientation: portrait) {
-  body.setup-active .splash-branding-card {
-    grid-template-columns: 58px minmax(0, 1fr);
-    padding: 9px;
-    gap: 9px;
-  }
-  body.setup-active .splash-branding-card img { width: 58px; height: 58px; border-radius: 12px; }
-  body.setup-active .splash-branding-card p { display: none; }
-  body.setup-active .file-action,
-  body.setup-active #resetSplashBtn { min-height: 34px; font-size: 0.64rem; padding: 0 9px; }
-}
 
 
 /* Smart rotate-state restore: after portrait setup is saved, show the rotate screen again until landscape. */
