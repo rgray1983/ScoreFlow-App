@@ -66,6 +66,18 @@
     </header>
 
     <main class="home-dashboard">
+      <section class="home-card pro-home-card" id="proHomeCard">
+        <div class="home-card-head">
+          <h2>ScoreFlow Pro</h2>
+          <small id="proPlanBadge">Free</small>
+        </div>
+        <p id="proSummary" class="home-muted">Unlock premium themes, graphics, unlimited history, and cloud backups.</p>
+        <div class="pro-home-actions">
+          <button id="upgradeProBtn" type="button">Try Pro</button>
+          <button id="themesShortcutBtn" type="button">Themes</button>
+        </div>
+      </section>
+
       <section class="home-card auth-card">
         <div class="home-card-head">
           <h2>Account</h2>
@@ -111,7 +123,7 @@
           <h2>App Settings</h2>
           <small>Milestones 3 & 4 ready</small>
         </div>
-        <p class="home-muted">Future home for club branding, premium themes, tournament mode, subscriptions, and multi-sport settings.</p>
+        <p class="home-muted">Manage ScoreFlow Pro, premium themes, cloud backup, graphics, and future club/tournament settings.</p>
         <button id="homeSettingsBtn" type="button">Open App Settings</button>
       </section>
     </main>
@@ -327,25 +339,51 @@
   <dialog id="appSettingsDialog">
     <form method="dialog" class="settings-card app-settings-card">
       <div class="settings-head">
-        <h2>ScoreFlow Settings</h2>
+        <h2>ScoreFlow Pro</h2>
         <button id="closeAppSettingsBtn" value="cancel" type="submit" class="x-btn">×</button>
       </div>
-      <div class="future-settings-grid">
-        <section>
-          <h3>Club Branding</h3>
-          <p>Reserved for club logo, sponsor logo, brand colors, and custom splash layouts.</p>
+
+      <section class="pro-plan-card">
+        <div>
+          <span class="pro-kicker">Current Plan</span>
+          <strong id="settingsPlanName">Free</strong>
+          <p id="settingsPlanDescription">Free includes live scoring, sharing, QR codes, saved teams, and recent history.</p>
+        </div>
+        <button id="settingsUpgradeBtn" value="default" type="button">Try Pro</button>
+      </section>
+
+      <div class="premium-settings-grid">
+        <section class="premium-panel">
+          <h3>Themes</h3>
+          <p>Change the whole app feel: background, glow, scoreboard panels, and poster style.</p>
+          <div class="theme-grid" id="themeGrid"></div>
         </section>
-        <section>
-          <h3>Premium Features</h3>
-          <p>Reserved for paid themes, saved logo libraries, unlimited history, and advanced sharing.</p>
+
+        <section class="premium-panel">
+          <h3>Premium Graphics</h3>
+          <p>Choose a poster style for match graphics and final score shares.</p>
+          <select id="posterStyleSelect">
+            <option value="classic">Classic ScoreFlow</option>
+            <option value="championship">Championship Gold</option>
+            <option value="neon">Neon Arena</option>
+            <option value="spotlight">Arena Spotlight</option>
+          </select>
+          <small id="posterStyleNote">Premium poster styles are part of ScoreFlow Pro.</small>
         </section>
-        <section>
-          <h3>Tournament Mode</h3>
-          <p>Reserved for courts, pools, match numbers, tournament dashboards, and QR boards.</p>
+
+        <section class="premium-panel">
+          <h3>History + Cloud</h3>
+          <p id="historyLimitText">Free keeps your latest 25 matches. Pro unlocks unlimited match history.</p>
+          <label class="setting-toggle-row">
+            <span>Cloud Backup</span>
+            <input id="cloudBackupToggle" type="checkbox" checked />
+          </label>
+          <button id="backupNowBtn" value="default" type="button">Backup Now</button>
         </section>
-        <section>
-          <h3>Sports</h3>
-          <p>Reserved for future basketball, softball, baseball, soccer, and football scoring modes.</p>
+
+        <section class="premium-panel locked-roadmap">
+          <h3>Coming Next</h3>
+          <p>Club branding, shared scorer accounts, tournament dashboards, premium splash layouts, and App Store billing hooks.</p>
         </section>
       </div>
     </form>

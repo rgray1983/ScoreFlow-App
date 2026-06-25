@@ -68,6 +68,26 @@ const COLORS = [
   { name: "Black", value: "#111827" }
 ];
 
+const PREMIUM_THEMES = [
+  { id: "classic", name: "Classic", pro: false, tag: "Free" },
+  { id: "championship", name: "Championship Gold", pro: true, tag: "Pro" },
+  { id: "neon", name: "Neon Arena", pro: true, tag: "Pro" },
+  { id: "midnight", name: "Midnight Glass", pro: true, tag: "Pro" },
+  { id: "ice", name: "Ice Court", pro: true, tag: "Pro" },
+  { id: "fire", name: "Firestorm", pro: true, tag: "Pro" }
+];
+
+const POSTER_STYLES = ["classic", "championship", "neon", "spotlight"];
+const FREE_MATCH_HISTORY_LIMIT = 25;
+const PRO_MATCH_HISTORY_LIMIT = 500;
+
+const premium = {
+  isPro: false,
+  theme: "classic",
+  posterStyle: "classic",
+  cloudBackup: true
+};
+
 const $ = (id) => document.getElementById(id);
 const els = {
   app: $("app"),
@@ -148,7 +168,21 @@ const els = {
   savedTeamsList: $("savedTeamsList"),
   favoriteTeamsList: $("favoriteTeamsList"),
   matchHistoryList: $("matchHistoryList"),
-  accountChip: $("accountChip")
+  accountChip: $("accountChip"),
+  proHomeCard: $("proHomeCard"),
+  proPlanBadge: $("proPlanBadge"),
+  proSummary: $("proSummary"),
+  upgradeProBtn: $("upgradeProBtn"),
+  themesShortcutBtn: $("themesShortcutBtn"),
+  settingsPlanName: $("settingsPlanName"),
+  settingsPlanDescription: $("settingsPlanDescription"),
+  settingsUpgradeBtn: $("settingsUpgradeBtn"),
+  themeGrid: $("themeGrid"),
+  posterStyleSelect: $("posterStyleSelect"),
+  posterStyleNote: $("posterStyleNote"),
+  cloudBackupToggle: $("cloudBackupToggle"),
+  backupNowBtn: $("backupNowBtn"),
+  historyLimitText: $("historyLimitText")
 };
 
 
@@ -373,6 +407,140 @@ function setLocalJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function loadPremiumSettings() {
+  const saved = getLocalJson("scoreflowPremiumV1", null);
+  if (saved && typeof saved === "object") {
+    premium.isPro = Boolean(saved.isPro);
+    premium.theme = saved.theme || "classic";
+    premium.posterStyle = saved.posterStyle || "classic";
+    premium.cloudBackup = saved.cloudBackup !== false;
+  }
+  applyPremiumSettings(false);
+}
+
+function savePremiumSettings(sync = true) {
+  setLocalJson("scoreflowPremiumV1", premium);
+  applyPremiumSettings(sync);
+}
+
+function hasProAccess() {
+  return Boolean(premium.isPro);
+}
+
+function matchHistoryLimit() {
+  return hasProAccess() ? PRO_MATCH_HISTORY_LIMIT : FREE_MATCH_HISTORY_LIMIT;
+}
+
+function normalizeTheme(themeId) {
+  const theme = PREMIUM_THEMES.find((item) => item.id === themeId) || PREMIUM_THEMES[0];
+  return theme.pro && !hasProAccess() ? "classic" : theme.id;
+}
+
+function normalizePosterStyle(style) {
+  const next = POSTER_STYLES.includes(style) ? style : "classic";
+  return next !== "classic" && !hasProAccess() ? "classic" : next;
+}
+
+function applyPremiumSettings(sync = true) {
+  premium.theme = normalizeTheme(premium.theme);
+  premium.posterStyle = normalizePosterStyle(premium.posterStyle);
+  document.body.dataset.theme = premium.theme;
+  document.body.classList.toggle("pro-active", hasProAccess());
+  if (els.cloudBackupToggle) els.cloudBackupToggle.checked = premium.cloudBackup;
+  if (els.posterStyleSelect) els.posterStyleSelect.value = premium.posterStyle;
+  renderPremiumUI();
+  if (sync) syncPremiumSettingsToCloud();
+}
+
+function renderPremiumUI() {
+  const pro = hasProAccess();
+  if (els.proPlanBadge) els.proPlanBadge.textContent = pro ? "Pro" : "Free";
+  if (els.proSummary) els.proSummary.textContent = pro
+    ? "Pro is active: premium themes, graphics, unlimited history, and cloud backup are unlocked."
+    : "Unlock premium themes, graphics, unlimited history, and cloud backup.";
+  if (els.upgradeProBtn) els.upgradeProBtn.textContent = pro ? "Manage Pro" : "Try Pro";
+  if (els.settingsUpgradeBtn) els.settingsUpgradeBtn.textContent = pro ? "Pro Active" : "Try Pro";
+  if (els.settingsPlanName) els.settingsPlanName.textContent = pro ? "ScoreFlow Pro" : "Free";
+  if (els.settingsPlanDescription) els.settingsPlanDescription.textContent = pro
+    ? "Premium themes, poster styles, unlimited match history, and cloud backup are active."
+    : "Free includes live scoring, sharing, QR codes, saved teams, and your latest 25 matches.";
+  if (els.historyLimitText) els.historyLimitText.textContent = pro
+    ? "Pro keeps unlimited match history in this app and syncs it to your account when cloud backup is on."
+    : "Free keeps your latest 25 matches. Pro unlocks unlimited match history and account cloud backup.";
+  if (els.posterStyleNote) els.posterStyleNote.textContent = pro ? "Premium poster styles are unlocked." : "Premium poster styles are part of ScoreFlow Pro.";
+  if (els.themeGrid) {
+    els.themeGrid.innerHTML = PREMIUM_THEMES.map((theme) => {
+      const locked = theme.pro && !pro;
+      const active = theme.id === premium.theme;
+      return `<button value="default" type="button" class="theme-choice ${active ? "active" : ""} ${locked ? "locked" : ""}" data-theme-choice="${theme.id}">
+        <span class="theme-dot theme-${theme.id}"></span>
+        <strong>${theme.name}</strong>
+        <small>${locked ? "Locked" : theme.tag}</small>
+      </button>`;
+    }).join("");
+  }
+}
+
+function toggleProDemo() {
+  premium.isPro = !premium.isPro;
+  if (!premium.isPro) {
+    premium.theme = "classic";
+    premium.posterStyle = "classic";
+  }
+  savePremiumSettings(true);
+  renderHomeData();
+  toast(premium.isPro ? "ScoreFlow Pro preview unlocked" : "Returned to Free plan");
+}
+
+function setPremiumTheme(themeId) {
+  const theme = PREMIUM_THEMES.find((item) => item.id === themeId);
+  if (!theme) return;
+  if (theme.pro && !hasProAccess()) {
+    toast("That theme is a Pro feature", true);
+    return;
+  }
+  premium.theme = theme.id;
+  savePremiumSettings(true);
+  toast(`${theme.name} theme applied`);
+}
+
+function setPosterStyle(style) {
+  if (style !== "classic" && !hasProAccess()) {
+    premium.posterStyle = "classic";
+    if (els.posterStyleSelect) els.posterStyleSelect.value = "classic";
+    toast("Premium poster styles require Pro", true);
+    return;
+  }
+  premium.posterStyle = normalizePosterStyle(style);
+  savePremiumSettings(true);
+  toast("Poster style updated");
+}
+
+async function syncPremiumSettingsToCloud() {
+  if (!currentUser || !db || !premium.cloudBackup) return;
+  try {
+    await setDoc(doc(db, ...userDocPath("settings", "premium")), {
+      ...premium,
+      updatedAt: serverTimestamp(),
+      updatedAtMs: Date.now()
+    }, { merge: true });
+  } catch (error) {
+    console.warn("Premium settings backup failed", error);
+  }
+}
+
+async function backupNow() {
+  if (!currentUser || !db) {
+    toast("Sign in to use cloud backup", true);
+    return;
+  }
+  premium.cloudBackup = els.cloudBackupToggle ? els.cloudBackupToggle.checked : premium.cloudBackup;
+  savePremiumSettings(false);
+  await syncPremiumSettingsToCloud();
+  await syncLocalDataToCloud();
+  toast("Cloud backup complete");
+}
+
 function currentTeamEntries() {
   return [
     {
@@ -418,7 +586,7 @@ async function saveCloudTeam(team) {
 }
 
 async function syncLocalDataToCloud() {
-  if (!currentUser || !db) return;
+  if (!currentUser || !db || !premium.cloudBackup) return;
   const teams = localTeams();
   await Promise.allSettled(teams.map((team) => saveCloudTeam(team)));
   const matches = getLocalJson("scoreflowMatchHistoryV2", []);
@@ -477,7 +645,7 @@ async function getAllMatches() {
   const local = localMatches();
   if (!currentUser || !db) return local;
   try {
-    const snap = await getDocs(query(collection(db, ...userDocPath("matches")), orderBy("updatedAtMs", "desc"), limit(30)));
+    const snap = await getDocs(query(collection(db, ...userDocPath("matches")), orderBy("updatedAtMs", "desc"), limit(matchHistoryLimit())));
     const cloud = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     const merged = [...cloud];
     local.forEach((match) => {
@@ -510,8 +678,8 @@ async function saveMatchHistory() {
   };
   const matches = localMatches();
   matches.unshift(match);
-  setLocalJson("scoreflowMatchHistoryV2", matches.slice(0, 50));
-  if (currentUser && db) {
+  setLocalJson("scoreflowMatchHistoryV2", matches.slice(0, matchHistoryLimit()));
+  if (currentUser && db && premium.cloudBackup) {
     await setDoc(doc(db, ...userDocPath("matches", match.id)), {
       ...match,
       updatedAt: serverTimestamp()
@@ -562,8 +730,11 @@ async function renderHomeData() {
     els.favoriteTeamsList.innerHTML = favorites.length ? favorites.slice(0, 4).map(teamCard).join("") : `<p class="empty-note">Tap ☆ on a saved team to favorite it.</p>`;
   }
   if (els.matchHistoryList) {
-    els.matchHistoryList.innerHTML = matches.length ? matches.slice(0, 6).map(matchCard).join("") : `<p class="empty-note">Completed matches will show up here.</p>`;
+    const visibleMatches = hasProAccess() ? matches.slice(0, 10) : matches.slice(0, 6);
+    const limitNote = !hasProAccess() && matches.length >= FREE_MATCH_HISTORY_LIMIT ? `<p class="empty-note pro-note">Free history limit reached. Upgrade to Pro for unlimited history.</p>` : "";
+    els.matchHistoryList.innerHTML = matches.length ? visibleMatches.map(matchCard).join("") + limitNote : `<p class="empty-note">Completed matches will show up here.</p>`;
   }
+  renderPremiumUI();
   setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
 }
 
@@ -1172,22 +1343,45 @@ function drawPoster(finalMode = false) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
+  const posterStyle = normalizePosterStyle(premium.posterStyle);
   const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, "#070a12");
-  gradient.addColorStop(0.55, "#101827");
-  gradient.addColorStop(1, "#05070c");
+  if (posterStyle === "championship") {
+    gradient.addColorStop(0, "#1f1300");
+    gradient.addColorStop(0.48, "#111827");
+    gradient.addColorStop(1, "#05070c");
+  } else if (posterStyle === "neon") {
+    gradient.addColorStop(0, "#09001f");
+    gradient.addColorStop(0.5, "#101827");
+    gradient.addColorStop(1, "#001f2a");
+  } else if (posterStyle === "spotlight") {
+    gradient.addColorStop(0, "#05070c");
+    gradient.addColorStop(0.42, "#1c2434");
+    gradient.addColorStop(1, "#05070c");
+  } else {
+    gradient.addColorStop(0, "#070a12");
+    gradient.addColorStop(0.55, "#101827");
+    gradient.addColorStop(1, "#05070c");
+  }
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, w, h);
 
   ctx.fillStyle = state.homeColor;
-  ctx.globalAlpha = 0.23;
+  ctx.globalAlpha = posterStyle === "classic" ? 0.23 : 0.34;
   ctx.beginPath();
-  ctx.arc(160, 240, 340, 0, Math.PI * 2);
+  ctx.arc(160, 240, posterStyle === "spotlight" ? 430 : 340, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = state.awayColor;
   ctx.beginPath();
-  ctx.arc(900, 1580, 380, 0, Math.PI * 2);
+  ctx.arc(900, 1580, posterStyle === "spotlight" ? 460 : 380, 0, Math.PI * 2);
   ctx.fill();
+  if (posterStyle !== "classic") {
+    ctx.strokeStyle = "rgba(255,209,102,0.36)";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(58, 58, w - 116, h - 116);
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(84, 84, w - 168, h - 168);
+  }
   ctx.globalAlpha = 1;
 
   ctx.textAlign = "center";
@@ -1512,8 +1706,18 @@ function wireEvents() {
     await createLiveGame();
     openShare();
   });
-  els.homeSettingsBtn?.addEventListener("click", () => els.appSettingsDialog?.showModal());
+  els.homeSettingsBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
   els.closeAppSettingsBtn?.addEventListener("click", () => els.appSettingsDialog?.close());
+  els.upgradeProBtn?.addEventListener("click", toggleProDemo);
+  els.settingsUpgradeBtn?.addEventListener("click", toggleProDemo);
+  els.themesShortcutBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
+  els.themeGrid?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-theme-choice]");
+    if (button) setPremiumTheme(button.dataset.themeChoice);
+  });
+  els.posterStyleSelect?.addEventListener("change", () => setPosterStyle(els.posterStyleSelect.value));
+  els.cloudBackupToggle?.addEventListener("change", () => { premium.cloudBackup = els.cloudBackupToggle.checked; savePremiumSettings(true); });
+  els.backupNowBtn?.addEventListener("click", backupNow);
   els.emailSignInBtn?.addEventListener("click", () => emailSignIn(false));
   els.emailCreateBtn?.addEventListener("click", () => emailSignIn(true));
   els.googleSignInBtn?.addEventListener("click", () => providerSignIn("google"));
@@ -1551,6 +1755,7 @@ function applyViewerMode() {
 }
 
 async function boot() {
+  loadPremiumSettings();
   applySplashImageFromStorage();
   buildSwatches(els.homeSwatches, "home");
   buildSwatches(els.awaySwatches, "away");

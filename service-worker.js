@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2.2.0";
+const SCORE_FLOW_CACHE = "scoreflow-v2.4.0-pro";
 
 const CORE_ASSETS = [
   "./",
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   "./app-icon-192.png",
   "./app-icon-512.png",
   "./splash-logo.png",
+  "./scoreflow-logo.png",
   "./volleyball.png"
 ];
 
