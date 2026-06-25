@@ -1510,3 +1510,104 @@ body.setup-active.needs-rotate .rotate-message {
     padding: 12px;
   }
 }
+
+
+/* ScoreFlow header true-center fix
+   Keeps the ScoreFlow logo centered to the viewport instead of centered inside a grid column. */
+.top-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  gap: 8px;
+}
+
+#settingsBtn,
+#fullscreenBtn {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 38px;
+}
+
+.match-title-left {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: calc(50vw - 62px);
+}
+
+.brand-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  width: min(38vw, 170px);
+  min-width: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.scoreflow-header-logo {
+  display: block;
+  width: min(36vw, 150px);
+  max-width: 150px;
+  max-height: 24px;
+  height: auto;
+  object-fit: contain;
+}
+
+.brand-wrap .live-status {
+  width: 100%;
+  margin-top: 1px;
+  text-align: center;
+}
+
+@media (max-width: 760px) and (orientation: landscape), (max-height: 380px) and (orientation: landscape) {
+  .top-bar {
+    display: flex;
+    height: 40px;
+    gap: 7px;
+  }
+
+  #settingsBtn,
+  #fullscreenBtn {
+    flex-basis: 34px;
+  }
+
+  .match-title-left {
+    max-width: calc(50vw - 54px);
+  }
+
+  .brand-wrap {
+    width: min(34vw, 142px);
+    min-width: 104px;
+  }
+
+  .scoreflow-header-logo {
+    width: min(32vw, 132px);
+    max-height: 22px;
+  }
+}
+
+@media (max-width: 620px) and (orientation: landscape) {
+  .brand-wrap {
+    width: min(32vw, 124px);
+    min-width: 96px;
+  }
+
+  .scoreflow-header-logo {
+    width: min(30vw, 116px);
+    max-height: 20px;
+  }
+
+  .match-title-left {
+    max-width: calc(50vw - 48px);
+  }
+}
