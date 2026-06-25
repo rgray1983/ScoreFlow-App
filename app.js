@@ -95,6 +95,7 @@ const els = {
   scoreboardHomeBtn: $("scoreboardHomeBtn"),
   matchTitle: $("matchTitle"),
   liveStatus: $("liveStatus"),
+  viewerCount: $("viewerCount"),
   titleInput: $("titleInput"),
   homeName: $("homeName"),
   awayName: $("awayName"),
@@ -185,6 +186,7 @@ const els = {
   backupNowBtn: $("backupNowBtn"),
   historyLimitText: $("historyLimitText"),
   fanZone: $("fanZone"),
+  fanZoneToggle: $("fanZoneToggle"),
   chatFeed: $("chatFeed"),
   chatForm: $("chatForm"),
   chatInput: $("chatInput"),
@@ -208,6 +210,16 @@ let liveGameId = GAME_ID_FROM_URL || "";
 let unsubscribeLive = null;
 let unsubscribeChat = null;
 let unsubscribeReactions = null;
+let unsubscribePresence = null;
+let presenceTimer = null;
+const viewerSessionId = (() => {
+  const key = "scoreflowViewerSessionId";
+  const existing = sessionStorage.getItem(key);
+  if (existing) return existing;
+  const next = `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  sessionStorage.setItem(key, next);
+  return next;
+})();
 let chatCooldownUntil = 0;
 let reactionCooldownUntil = 0;
 const seenReactionIds = new Set();
@@ -250,6 +262,52 @@ function liveReactionCollectionRef() {
   return collection(db, "volleyballGames", liveGameId, "reactions");
 }
 
+function livePresenceCollectionRef() {
+  if (!db || !liveGameId) return null;
+  return collection(db, "volleyballGames", liveGameId, "presence");
+}
+
+function setViewerCount(count) {
+  if (!els.viewerCount) return;
+  const safeCount = Math.max(0, Number(count) || 0);
+  els.viewerCount.textContent = `👁 ${safeCount}`;
+  els.viewerCount.title = `${safeCount} live viewer${safeCount === 1 ? "" : "s"}`;
+}
+
+async function updatePresence() {
+  if (!db || !liveGameId) return;
+  try {
+    await setDoc(doc(db, "volleyballGames", liveGameId, "presence", viewerSessionId), {
+      role: isViewer ? "viewer" : "scorer",
+      updatedAt: serverTimestamp(),
+      updatedAtMs: Date.now()
+    }, { merge: true });
+  } catch (error) {
+    console.warn("Presence update failed", error);
+  }
+}
+
+async function startPresenceTracking() {
+  if (!db || !liveGameId) return;
+  window.clearInterval(presenceTimer);
+  unsubscribePresence?.();
+
+  await updatePresence();
+  presenceTimer = window.setInterval(updatePresence, 15000);
+
+  const presenceRef = livePresenceCollectionRef();
+  if (!presenceRef) return;
+  const presenceQuery = query(presenceRef, orderBy("updatedAtMs", "desc"), limit(100));
+  unsubscribePresence = onSnapshot(presenceQuery, (snap) => {
+    const cutoff = Date.now() - 45000;
+    const liveViewers = snap.docs
+      .map((d) => d.data())
+      .filter((item) => item.role === "viewer" && Number(item.updatedAtMs || 0) >= cutoff).length;
+    setViewerCount(liveViewers);
+  }, (error) => console.warn("Viewer count listener failed", error));
+}
+
+
 function renderChatMessages(messages = []) {
   if (!els.chatFeed) return;
   els.chatFeed.innerHTML = "";
@@ -262,9 +320,9 @@ function renderChatMessages(messages = []) {
   }
   messages.forEach((message) => {
     const item = document.createElement("article");
-    item.className = "chat-message";
+    item.className = `chat-message ${message.role === "scorer" ? "scorer-message" : ""}`;
     const name = document.createElement("strong");
-    name.textContent = message.name || "Fan";
+    name.textContent = message.name || (message.role === "scorer" ? "Scorer" : "Fan");
     const text = document.createElement("span");
     text.textContent = message.text || "";
     item.append(name, text);
@@ -328,7 +386,8 @@ async function sendChatMessage(event) {
   try {
     await addDoc(liveChatCollectionRef(), {
       text,
-      name: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Fan",
+      name: isViewer ? (currentUser?.displayName || currentUser?.email?.split("@")[0] || "Fan") : "Scorer",
+      role: isViewer ? "viewer" : "scorer",
       createdAt: serverTimestamp(),
       createdAtMs: Date.now()
     });
@@ -1053,6 +1112,7 @@ async function startLiveListener() {
   setConnectionStatus("online", "Online");
   document.body.classList.toggle("viewer-mode", isViewer);
   await startFanZoneListeners();
+  await startPresenceTracking();
 
   unsubscribeLive = onSnapshot(ref, (documentSnap) => {
     if (!documentSnap.exists()) return;
@@ -1424,7 +1484,7 @@ function recapText() {
     "",
     ...state.completedSets.map((set) => `Set ${set.set}: ${set.homeScore}-${set.awayScore}`),
     "",
-    "Powered by ScoreFlow"
+    "Shared from ScoreFlow"
   ];
   return lines.join("\n");
 }
@@ -1445,7 +1505,7 @@ function renderRecap() {
       <div><span>${teamName("away")}</span><strong>${state.awaySets}</strong></div>
     </div>
     <div class="recap-sets">${rows || "<p>No completed sets yet.</p>"}</div>
-    <small>Powered by ScoreFlow</small>`;
+    <small class="powered-by-logo">Powered by <img src="scoreflow-logo.png" alt="ScoreFlow" /></small>`;
 }
 
 function openRecap() {
@@ -1545,7 +1605,7 @@ function drawPoster(finalMode = false) {
 
   ctx.fillStyle = "#ffd166";
   ctx.font = "900 58px Inter, Arial";
-  ctx.fillText("Powered by ScoreFlow", w / 2, 1730);
+  ctx.fillText("Shared from ScoreFlow", w / 2, 1730);
   return canvas;
 }
 
@@ -1854,6 +1914,10 @@ function wireEvents() {
   els.appleSignInBtn?.addEventListener("click", () => providerSignIn("apple"));
   els.signOutBtn?.addEventListener("click", doSignOut);
   els.chatForm?.addEventListener("submit", sendChatMessage);
+  els.fanZoneToggle?.addEventListener("click", () => {
+    const isOpen = document.body.classList.toggle("fan-zone-open");
+    els.fanZoneToggle?.setAttribute("aria-expanded", String(isOpen));
+  });
   els.reactionRow?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-reaction]");
     if (button) sendReaction(button.dataset.reaction);

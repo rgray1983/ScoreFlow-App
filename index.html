@@ -47,7 +47,7 @@
       </div>
       <p id="liveStartMeta">Set 1 · Race to 25</p>
       <button id="liveStartWatchBtn" type="button">Tap to Watch Live</button>
-      <small>Powered by ScoreFlow</small>
+      <small class="powered-by-logo">Powered by <img src="scoreflow-logo.png" alt="ScoreFlow" /></small>
     </div>
   </div>
 
@@ -139,7 +139,7 @@
       <div class="brand-wrap">
         <img class="scoreflow-header-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
       </div>
-      <div class="live-status offline" id="liveStatus">Offline</div>
+      <div class="status-cluster"><div class="viewer-count" id="viewerCount" title="Live viewers">👁 0</div><div class="live-status offline" id="liveStatus">Offline</div></div>
     </header>
 
     <main class="scoreboard" aria-label="Volleyball scoreboard">
@@ -215,6 +215,7 @@
   </div>
 
   <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
+    <button class="fan-zone-toggle" id="fanZoneToggle" type="button" aria-expanded="false">Chat</button>
     <div class="floating-reactions" id="floatingReactions" aria-hidden="true"></div>
     <div class="fan-zone-card">
       <div class="fan-zone-head">
@@ -225,7 +226,7 @@
         <div class="fan-live-pill">Live</div>
       </div>
       <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
-      <div class="reaction-row" id="reactionRow" aria-label="Send a reaction">
+      <div class="reaction-row viewer-reactions" id="reactionRow" aria-label="Send a reaction">
         <button type="button" data-reaction="❤️">❤️</button>
         <button type="button" data-reaction="🔥">🔥</button>
         <button type="button" data-reaction="👏">👏</button>
