@@ -55,81 +55,61 @@
     <header class="home-hero">
       <div class="home-topline">
         <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
-        <div class="account-chip" id="accountChip">Guest Mode</div>
+        <div class="home-top-actions">
+          <div class="role-chip">Coach / Scorer</div>
+          <button id="homeSettingsBtn" class="home-settings-btn" type="button" aria-label="Settings">⚙</button>
+        </div>
       </div>
+
       <div class="hero-copy">
         <span class="eyebrow">Volleyball scoreboard</span>
-        <h1>Live Scores. Clean Flow.</h1>
-        <p>Create matches, save teams, share live links, and score from a fast mobile-first control room.</p>
+        <h1>Score faster. Share instantly.</h1>
+        <p>ScoreFlow is built for the coach, assistant coach, or parent running the match — with a clean live view for everyone watching from the shared link.</p>
       </div>
+
       <div class="home-primary-actions">
-        <button id="openScoreboardBtn" type="button">Open Scoreboard</button>
+        <button id="openScoreboardBtn" type="button">Score Match</button>
         <button id="homeNewMatchBtn" type="button">New Match</button>
       </div>
-      <button id="homeCreateLiveBtn" class="home-live-btn" type="button">Create Live Match & Share</button>
+      <button id="homeCreateLiveBtn" class="home-live-btn" type="button">Score & Share Live</button>
     </header>
 
     <main class="home-dashboard">
-      <section class="home-card pro-home-card" id="proHomeCard">
+      <section class="home-card home-team-card">
         <div class="home-card-head">
-          <h2>ScoreFlow Pro</h2>
+          <h2>Home Team</h2>
+          <small>Default team</small>
+        </div>
+        <p id="homeTeamSummary" class="home-muted">Set up your team once, then only enter the opponent when you start a match.</p>
+        <button id="homeTeamSetupBtn" type="button">Setup Your Home Team</button>
+      </section>
+
+      <section class="home-card">
+        <div class="home-card-head">
+          <h2>Match History</h2>
+          <small>Recent finals</small>
+        </div>
+        <div class="home-list" id="matchHistoryList"></div>
+      </section>
+
+      <section class="home-card pro-home-card" id="proHomeCard">
+        <div class="home-card-head pro-card-head">
+          <div class="pro-title-lockup">
+            <span class="pro-mark" aria-hidden="true">★</span>
+            <div>
+              <span class="pro-kicker">Premium upgrade</span>
+              <h2>ScoreFlow Pro</h2>
+            </div>
+          </div>
           <small id="proPlanBadge">Free</small>
         </div>
-        <p id="proSummary" class="home-muted">Unlock premium themes, graphics, unlimited history, and cloud backups.</p>
+        <p id="proSummary" class="home-muted">Unlock premium themes, share graphics, unlimited history, and cloud backup.</p>
         <div class="pro-home-actions">
           <button id="upgradeProBtn" type="button">Try Pro</button>
           <button id="themesShortcutBtn" type="button">Themes</button>
         </div>
       </section>
 
-      <section class="home-card auth-card">
-        <div class="home-card-head">
-          <h2>Account</h2>
-          <button id="signOutBtn" type="button" hidden>Sign Out</button>
-        </div>
-        <p id="authStatus" class="home-muted">Guest mode — sign in to sync teams and history.</p>
-        <div class="auth-grid">
-          <input id="userEmail" type="email" placeholder="Email" autocomplete="email" />
-          <input id="userPassword" type="password" placeholder="Password" autocomplete="current-password" />
-          <button id="emailSignInBtn" type="button">Sign In</button>
-          <button id="emailCreateBtn" type="button">Create Account</button>
-          <button id="googleSignInBtn" type="button">Google</button>
-          <button id="appleSignInBtn" type="button">Apple</button>
-        </div>
-      </section>
-
-      <section class="home-card">
-        <div class="home-card-head">
-          <h2>Saved Teams</h2>
-          <small>Load as T1/T2</small>
-        </div>
-        <div class="home-list" id="savedTeamsList"></div>
-      </section>
-
-      <section class="home-card">
-        <div class="home-card-head">
-          <h2>Favorite Teams</h2>
-          <small>Quick access</small>
-        </div>
-        <div class="home-list" id="favoriteTeamsList"></div>
-      </section>
-
-      <section class="home-card">
-        <div class="home-card-head">
-          <h2>Match History</h2>
-          <small>Finals saved here</small>
-        </div>
-        <div class="home-list" id="matchHistoryList"></div>
-      </section>
-
-      <section class="home-card extras-card">
-        <div class="home-card-head">
-          <h2>App Settings</h2>
-          <small>Pro tools</small>
-        </div>
-        <p class="home-muted">Manage themes, poster styles, history, cloud backup, and future club settings.</p>
-        <button id="homeSettingsBtn" type="button">Open App Settings</button>
-      </section>
     </main>
   </section>
 
@@ -297,7 +277,7 @@
 
   <dialog id="appSettingsDialog">
     <form method="dialog" class="settings-card app-settings-card">
-      <div class="settings-head"><h2>ScoreFlow Pro</h2><button id="closeAppSettingsBtn" value="cancel" type="submit" class="x-btn">×</button></div>
+      <div class="settings-head"><h2>Settings</h2><button id="closeAppSettingsBtn" value="cancel" type="submit" class="x-btn">×</button></div>
       <section class="pro-plan-card"><div><span class="pro-kicker">Current Plan</span><strong id="settingsPlanName">Free</strong><p id="settingsPlanDescription">Free includes live scoring, sharing, QR codes, saved teams, and recent history.</p></div><button id="settingsUpgradeBtn" value="default" type="button">Try Pro</button></section>
       <div class="premium-settings-grid">
         <section class="premium-panel"><h3>Themes</h3><p>Change the app feel without changing the scoring flow.</p><div class="theme-grid" id="themeGrid"></div></section>

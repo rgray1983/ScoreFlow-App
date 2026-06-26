@@ -157,6 +157,8 @@ const els = {
   homeNewMatchBtn: $("homeNewMatchBtn"),
   homeCreateLiveBtn: $("homeCreateLiveBtn"),
   homeSettingsBtn: $("homeSettingsBtn"),
+  homeTeamSetupBtn: $("homeTeamSetupBtn"),
+  homeTeamSummary: $("homeTeamSummary"),
   appSettingsDialog: $("appSettingsDialog"),
   closeAppSettingsBtn: $("closeAppSettingsBtn"),
   userEmail: $("userEmail"),
@@ -684,7 +686,7 @@ function renderPremiumUI() {
   if (els.settingsPlanName) els.settingsPlanName.textContent = pro ? "ScoreFlow Pro" : "Free";
   if (els.settingsPlanDescription) els.settingsPlanDescription.textContent = pro
     ? "Premium themes, poster styles, unlimited match history, and cloud backup are active."
-    : "Free includes live scoring, sharing, QR codes, saved teams, and your latest 25 matches.";
+    : "Free includes live scoring, sharing, QR codes, and your latest 25 matches.";
   if (els.historyLimitText) els.historyLimitText.textContent = pro
     ? "Pro keeps unlimited match history in this app and syncs it to your account when cloud backup is on."
     : "Free keeps your latest 25 matches. Pro unlocks unlimited match history and account cloud backup.";
@@ -939,8 +941,19 @@ function matchCard(match) {
     </article>`;
 }
 
+function updateHomeTeamSummary() {
+  if (!els.homeTeamSummary) return;
+  const name = teamName("home");
+  const format = matchLabel();
+  const isDefault = name === "Team 1";
+  els.homeTeamSummary.textContent = isDefault
+    ? "Set up your team once, then only enter the opponent when you start a match."
+    : `${name} is set as your home team. New matches can start with this team ready to go. ${format}.`;
+}
+
 async function renderHomeData() {
   if (!els.homeScreen) return;
+  updateHomeTeamSummary();
   const teams = await getAllTeams();
   const favorites = teams.filter((team) => team.favorite);
   const matches = await getAllMatches();
@@ -1245,7 +1258,7 @@ function updateAlertBanner() {
   } else if (awayPoint) {
     els.alertBanner.textContent = state.awaySets === state.setsToWin - 1 ? "Match Point" : "Set Point";
   } else {
-    els.alertBanner.textContent = `Race ${target}`;
+    els.alertBanner.textContent = `First to ${target}`;
   }
 }
 
@@ -1925,6 +1938,7 @@ function wireEvents() {
   els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
   els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(false));
   els.homeNewMatchBtn?.addEventListener("click", () => openScoreboardFromHome(true));
+  els.homeTeamSetupBtn?.addEventListener("click", openSettings);
   els.homeCreateLiveBtn?.addEventListener("click", async () => {
     openScoreboardFromHome(false);
     await createLiveGame();

@@ -19,6 +19,11 @@
   --muted-2: #6f7d91;
   --brand: #ff1414;
   --brand-dark: #c70d13;
+  --secondary-action: rgba(255, 255, 255, 0.1);
+  --secondary-action-border: rgba(255, 255, 255, 0.16);
+  --gold: #fbbf24;
+  --gold-soft: #ffe7a3;
+  --gold-muted: #d7c494;
   --home: #d62828;
   --away: #1565c0;
   --success: #22c55e;
@@ -65,7 +70,6 @@ img { max-width: 100%; display: block; }
 .home-primary-actions button,
 .home-live-btn,
 .pro-home-actions button,
-.auth-grid button,
 .home-card > button,
 .control-grid button,
 .point-btn,
@@ -118,6 +122,8 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 
 /* =========================================================
    04. Home Screen
+   Coach/scorer dashboard. Viewer experience lives in shared
+   live view, not on this home screen.
    ========================================================= */
 .home-screen {
   position: fixed;
@@ -129,7 +135,13 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   transform: translateY(10px);
   transition: opacity .26s ease, transform .26s ease, visibility .26s ease;
 }
-.home-active .home-screen { opacity: 1; visibility: visible; transform: none; }
+
+.home-active .home-screen {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
 .home-hero {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -137,14 +149,31 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   background: linear-gradient(180deg, rgba(18, 31, 52, .92), rgba(12, 18, 30, .96));
   box-shadow: var(--shadow);
 }
-.home-topline, .home-card-head, .top-bar, .team-head, .status-cluster, .live-start-matchup, .fan-zone-head, .setting-toggle-row {
+
+.home-topline,
+.home-top-actions,
+.home-card-head,
+.top-bar,
+.team-head,
+.status-cluster,
+.live-start-matchup,
+.fan-zone-head,
+.setting-toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
+
 .home-brand-logo { width: 158px; }
-.account-chip, .home-card-head small, .live-status, .viewer-count, .match-pill, .fan-live-pill, .pro-kicker {
+
+.role-chip,
+.home-card-head small,
+.live-status,
+.viewer-count,
+.match-pill,
+.fan-live-pill,
+.pro-kicker {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -156,35 +185,212 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   font-size: 12px;
   font-weight: 800;
 }
+
+.home-settings-btn {
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.home-settings-btn:active {
+  color: var(--text);
+}
+
 .hero-copy { padding: 28px 2px 16px; }
-.eyebrow { color: var(--brand); text-transform: uppercase; font-size: 12px; font-weight: 900; letter-spacing: .12em; }
-.hero-copy h1 { margin: 8px 0 10px; font-size: clamp(38px, 11vw, 68px); line-height: .95; letter-spacing: -0.06em; }
-.hero-copy p { margin: 0; max-width: 620px; color: var(--muted); line-height: 1.5; }
-.home-primary-actions { display: grid; grid-template-columns: 1.25fr .75fr; gap: 10px; }
-.home-primary-actions button:first-child, .home-live-btn, .pro-home-actions button:first-child { background: var(--brand); color: #fff; }
-.home-live-btn { width: 100%; margin-top: 10px; }
-.home-dashboard { display: grid; gap: 14px; padding: 14px 0 0; }
+
+.eyebrow {
+  color: var(--brand);
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.hero-copy h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(38px, 11vw, 68px);
+  line-height: .95;
+  letter-spacing: -0.06em;
+}
+
+.hero-copy p {
+  margin: 0;
+  max-width: 680px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.home-primary-actions {
+  display: grid;
+  grid-template-columns: 1.25fr .75fr;
+  gap: 10px;
+}
+
+.home-primary-actions button:first-child {
+  background: var(--brand);
+  color: #fff;
+}
+
+.home-live-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: var(--secondary-action);
+  color: var(--text);
+  border: 1px solid var(--secondary-action-border);
+}
+
+.home-dashboard {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0 0;
+}
+
 .home-card {
   border: 1px solid var(--line);
   border-radius: 24px;
   padding: 16px;
   background: rgba(16, 24, 39, .86);
 }
-.home-card h2 { margin: 0; font-size: 18px; }
-.pro-home-actions, .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.auth-grid input { grid-column: span 2; }
-.home-list { display: grid; gap: 10px; }
+
+.home-card h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.home-team-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035)),
+    rgba(16, 24, 39, .86);
+}
+
+.home-team-card > button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.pro-home-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(251, 191, 36, .48);
+  background:
+    linear-gradient(180deg, rgba(34, 27, 12, .96), rgba(16, 24, 39, .92)),
+    rgba(16, 24, 39, .92);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+
+.pro-home-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(251, 191, 36, .28), transparent 42%),
+    radial-gradient(circle at 92% 8%, rgba(251, 191, 36, .16), transparent 34%);
+}
+
+.pro-home-card > * {
+  position: relative;
+}
+
+.pro-card-head {
+  align-items: flex-start;
+}
+
+.pro-title-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pro-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  border: 1px solid rgba(251, 191, 36, .36);
+  background: rgba(251, 191, 36, .13);
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.pro-home-card .pro-kicker {
+  width: fit-content;
+  margin-bottom: 5px;
+  border-color: rgba(251, 191, 36, .32);
+  background: rgba(251, 191, 36, .1);
+  color: var(--gold-soft);
+  padding: 5px 9px;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.pro-home-card h2 {
+  color: #fff7dc;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.pro-home-card .home-card-head small {
+  border-color: rgba(251, 191, 36, .44);
+  background: rgba(251, 191, 36, .14);
+  color: var(--gold-soft);
+}
+
+.pro-home-card .home-muted {
+  color: var(--gold-muted);
+}
+
+.pro-home-card .pro-home-actions button:first-child {
+  background: var(--gold);
+  color: #1f1300;
+}
+
+.pro-home-card .pro-home-actions button:last-child {
+  background: rgba(255, 255, 255, .08);
+  color: var(--gold-soft);
+  border: 1px solid rgba(251, 191, 36, .28);
+}
+
+.pro-home-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.home-list {
+  display: grid;
+  gap: 10px;
+}
+
 .home-list-card {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 44px 1fr;
   align-items: center;
   gap: 10px;
   padding: 10px;
   border-radius: 18px;
   background: rgba(255,255,255,.05);
 }
-.home-list-card strong { display: block; font-size: 14px; }
+
+.home-list-card strong {
+  display: block;
+  font-size: 14px;
+}
+
 .home-list-card small { color: var(--muted); }
+
 .mini-logo {
   width: 44px;
   height: 44px;
@@ -195,9 +401,12 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   background: var(--mini-color, #1f2937);
   font-weight: 900;
 }
-.mini-logo img { width: 100%; height: 100%; object-fit: cover; }
-.mini-actions { display: flex; gap: 6px; }
-.mini-actions button { min-width: 34px; height: 34px; border-radius: 12px; background: rgba(255,255,255,.1); color: var(--text); }
+
+.mini-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 /* =========================================================
    05. Scoreboard Shell + Header
@@ -373,6 +582,7 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
    08. Fan Zone + Viewer Mode
    ========================================================= */
 .fan-zone { position: fixed; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 30; pointer-events: none; }
+.home-active .fan-zone { display: none; }
 .fan-zone-toggle { pointer-events: auto; padding: 0 18px; background: var(--brand); color: #fff; }
 .fan-zone-card {
   pointer-events: auto;
