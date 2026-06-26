@@ -3382,3 +3382,150 @@ body:not(.viewer-mode) .fan-zone-head span {
   body.scoreboard-active .brand-wrap,
   body.viewer-mode .brand-wrap { width: 30vw !important; min-width: 86px !important; }
 }
+
+/* === ScoreFlow viewer count spacing fix ===
+   Keeps the live viewer count as its own pill immediately to the LEFT of Online/Offline.
+   This also neutralizes older absolute .live-status rules that were causing overlap. */
+.top-bar .status-cluster,
+body.scoreboard-active .top-bar .status-cluster,
+body.viewer-mode .top-bar .status-cluster {
+  position: absolute !important;
+  right: max(10px, env(safe-area-inset-right)) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 12 !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  width: auto !important;
+  min-width: max-content !important;
+  max-width: none !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+.top-bar .viewer-count,
+body.scoreboard-active .top-bar .viewer-count,
+body.viewer-mode .top-bar .viewer-count {
+  order: 1 !important;
+  position: static !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 42px !important;
+  min-height: 24px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  line-height: 1 !important;
+  font-size: clamp(0.58rem, 1.35vw, 0.78rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.03em !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+}
+
+.top-bar .live-status,
+body.scoreboard-active .top-bar .live-status,
+body.viewer-mode .top-bar .live-status {
+  order: 2 !important;
+  position: static !important;
+  right: auto !important;
+  left: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  min-width: max-content !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+  font-size: clamp(0.62rem, 1.4vw, 0.82rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  text-align: right !important;
+  pointer-events: none !important;
+}
+
+/* Make sure the status dot stays attached to the status text, not the viewer count. */
+.top-bar .live-status::before {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
+
+/* Keep the brand from covering the status cluster on narrow landscape screens. */
+@media (orientation: landscape) and (max-width: 940px) {
+  .brand-wrap,
+  body.scoreboard-active .brand-wrap,
+  body.viewer-mode .brand-wrap {
+    width: min(21vw, 118px) !important;
+    min-width: 82px !important;
+  }
+
+  .top-bar .status-cluster,
+  body.scoreboard-active .top-bar .status-cluster,
+  body.viewer-mode .top-bar .status-cluster {
+    gap: 7px !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+  }
+
+  .top-bar .viewer-count,
+  body.scoreboard-active .top-bar .viewer-count,
+  body.viewer-mode .top-bar .viewer-count {
+    min-width: 36px !important;
+    min-height: 22px !important;
+    padding: 0 6px !important;
+    font-size: 0.58rem !important;
+  }
+
+  .top-bar .live-status,
+  body.scoreboard-active .top-bar .live-status,
+  body.viewer-mode .top-bar .live-status {
+    min-height: 22px !important;
+    gap: 5px !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.06em !important;
+  }
+}
+
+/* Portrait scorer/viewer header: keep both status items readable and separated. */
+@media (orientation: portrait) {
+  .top-bar .status-cluster,
+  body.scoreboard-active .top-bar .status-cluster,
+  body.viewer-mode .top-bar .status-cluster {
+    right: max(10px, env(safe-area-inset-right)) !important;
+    top: 50% !important;
+    gap: 7px !important;
+  }
+
+  .top-bar .viewer-count,
+  body.scoreboard-active .top-bar .viewer-count,
+  body.viewer-mode .top-bar .viewer-count {
+    min-width: 38px !important;
+    min-height: 24px !important;
+    padding: 0 7px !important;
+    font-size: 0.64rem !important;
+  }
+
+  .top-bar .live-status,
+  body.scoreboard-active .top-bar .live-status,
+  body.viewer-mode .top-bar .live-status {
+    min-height: 24px !important;
+    font-size: 0.66rem !important;
+    letter-spacing: 0.06em !important;
+  }
+}
+
