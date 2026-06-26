@@ -66,7 +66,7 @@
     </header>
 
     <main class="home-dashboard">
-      <section class="home-card sf-card pro-home-card" id="proHomeCard">
+      <section class="home-card pro-home-card" id="proHomeCard">
         <div class="home-card-head">
           <h2>ScoreFlow Pro</h2>
           <small id="proPlanBadge">Free</small>
@@ -78,7 +78,7 @@
         </div>
       </section>
 
-      <section class="home-card sf-card auth-card">
+      <section class="home-card auth-card">
         <div class="home-card-head">
           <h2>Account</h2>
           <button id="signOutBtn" type="button" hidden>Sign Out</button>
@@ -94,7 +94,7 @@
         </div>
       </section>
 
-      <section class="home-card sf-card">
+      <section class="home-card">
         <div class="home-card-head">
           <h2>Saved Teams</h2>
           <small>Load as T1/T2</small>
@@ -102,7 +102,7 @@
         <div class="home-list" id="savedTeamsList"></div>
       </section>
 
-      <section class="home-card sf-card">
+      <section class="home-card">
         <div class="home-card-head">
           <h2>Favorite Teams</h2>
           <small>Quick access</small>
@@ -110,7 +110,7 @@
         <div class="home-list" id="favoriteTeamsList"></div>
       </section>
 
-      <section class="home-card sf-card">
+      <section class="home-card">
         <div class="home-card-head">
           <h2>Match History</h2>
           <small>Finals saved here</small>
@@ -118,7 +118,7 @@
         <div class="home-list" id="matchHistoryList"></div>
       </section>
 
-      <section class="home-card sf-card extras-card">
+      <section class="home-card extras-card">
         <div class="home-card-head">
           <h2>App Settings</h2>
           <small>Milestones 3 & 4 ready</small>
@@ -129,8 +129,8 @@
     </main>
   </section>
 
-  <div class="app-shell scoreboard-v2" id="app">
-    <header class="top-bar sf-header">
+  <div class="app-shell" id="app">
+    <header class="top-bar">
       <div class="scoreboard-left-controls" aria-label="Scoreboard navigation">
         <button class="icon-btn scoreboard-home-btn" id="scoreboardHomeBtn" type="button" aria-label="Home">⌂</button>
         <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">⚙</button>
@@ -143,7 +143,7 @@
     </header>
 
     <main class="scoreboard" aria-label="Volleyball scoreboard">
-      <section class="team-panel team-card home" data-team="home">
+      <section class="team-panel home" data-team="home">
         <div class="team-head">
           <label class="logo-picker" title="Choose Team 1 logo">
             <input id="homeLogoInput" type="file" accept="image/*" />
@@ -170,11 +170,11 @@
         </div>
       </section>
 
-      <section class="center-panel match-control-card">
+      <section class="center-panel">
         <div class="match-pill" id="matchPill">Club · Best 2 of 3</div>
         <div class="alert-banner" id="alertBanner">Race to 25</div>
         <div class="set-box">
-          <span class="set-inline">Set <strong id="setNumber">1</strong></span>
+          <span>Set <bold id="setNumber">1</bold></span>
         </div>
         <div class="control-grid">
           <button id="undoBtn" type="button">Undo</button>
@@ -184,7 +184,7 @@
         </div>
       </section>
 
-      <section class="team-panel team-card away" data-team="away">
+      <section class="team-panel away" data-team="away">
         <div class="team-head">
           <label class="logo-picker" title="Choose visitor logo">
             <input id="awayLogoInput" type="file" accept="image/*" />
