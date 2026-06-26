@@ -3426,6 +3426,7 @@ body:not(.viewer-mode) .fan-zone-head span {
     line-height: 1.05 !important;
     padding: 0 6px !important;
     transform: none !important;
+    visibility: visible;
   }
 
   body.viewer-mode .control-grid {
