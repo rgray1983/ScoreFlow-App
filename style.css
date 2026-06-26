@@ -569,7 +569,6 @@ dialog::backdrop { background: rgba(0,0,0,0.62); backdrop-filter: blur(7px); }
 }
 
 .viewer-mode .point-actions,
-.viewer-mode .control-grid,
 .viewer-mode #settingsBtn,
 .viewer-mode .logo-picker input {
   visibility: hidden;
@@ -3576,4 +3575,22 @@ body:not(.viewer-mode) .fan-zone-head span {
   body.viewer-mode .chat-feed {
     max-height: 24px !important;
   }
+
+  @media (orientation: portrait) {
+  body:not(.viewer-mode) .control-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  body:not(.viewer-mode) .control-grid button {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 72px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
+
 }
