@@ -232,11 +232,17 @@ let splashClosed = false;
 
 
 function updateViewportHeight() {
-  // iOS Safari can report 100vh/100dvh differently depending on the browser chrome.
-  // This keeps all fixed portrait screens pinned to the actual visible height.
-  const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
-  if (viewportHeight) {
-    document.documentElement.style.setProperty("--scoreflow-vh", `${viewportHeight}px`);
+  // iOS Safari reports visualViewport.height as the space ABOVE the browser chrome.
+  // Using that value for fixed screens caused the white strip at the bottom.
+  // Keep the CSS variable at least as tall as the layout viewport and let 100svh
+  // handle the stable visible phone height.
+  const layoutHeight = Math.max(
+    window.innerHeight || 0,
+    document.documentElement.clientHeight || 0,
+    window.visualViewport?.height || 0
+  );
+  if (layoutHeight) {
+    document.documentElement.style.setProperty("--scoreflow-vh", `${Math.ceil(layoutHeight)}px`);
   }
 }
 

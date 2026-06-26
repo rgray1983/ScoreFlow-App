@@ -3670,3 +3670,208 @@ body {
     min-height: 48px !important;
   }
 }
+
+
+/* === Coach Test Polish Fix ===
+   1) Fill the iPhone portrait bottom area like the Parent Portal.
+   2) Keep scorer portrait controls below the score cards instead of overlapping them.
+   3) Keep scorer chat visible without pushing/covering the controls.
+   This block intentionally overrides only the portrait/safe-area issues. */
+
+/* Always paint the full viewport so iOS/Safari never shows a white strip behind the app. */
+html,
+body {
+  background-color: #070a12 !important;
+  min-height: 100vh !important;
+  min-height: 100svh !important;
+  overflow-x: hidden !important;
+}
+
+/* Fixed background layer behind every app screen. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 15%, color-mix(in srgb, var(--home) 30%, transparent), transparent 34vh),
+    radial-gradient(circle at 90% 78%, color-mix(in srgb, var(--away) 30%, transparent), transparent 34vh),
+    linear-gradient(145deg, #070a12 0%, #101827 54%, #05070c 100%);
+}
+
+/* The Parent Portal uses 100svh successfully; mirror that behavior here.
+   Do not let the JS visualViewport value shorten fixed portrait screens. */
+.splash-screen,
+.home-screen,
+.live-start-overlay {
+  inset: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100vh !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: none !important;
+  background-color: #070a12 !important;
+}
+
+.home-screen {
+  padding-bottom: max(42px, calc(env(safe-area-inset-bottom) + 42px)) !important;
+}
+
+/* Make the home screen content scroll above the very bottom edge, while the
+   background still fills all the way down. */
+body.home-active .home-screen {
+  display: block !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Portrait scorer/viewer structure. */
+@media (orientation: portrait) {
+  body.scoreboard-active .app-shell,
+  body.viewer-mode .app-shell {
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+    /* Reserve actual space for controls + chat instead of letting fixed controls
+       float over the team cards. */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 356px) !important;
+  }
+
+  body.scoreboard-active .scoreboard,
+  body.viewer-mode .scoreboard {
+    min-height: 0 !important;
+    align-content: start !important;
+    gap: 9px !important;
+  }
+
+  body.scoreboard-active .center-panel,
+  body.viewer-mode .center-panel {
+    min-height: 92px !important;
+    max-height: 122px !important;
+  }
+
+  /* Slightly shorter cards prevent the fixed control row from sitting inside
+     the bottom of the score boxes on iPhone portrait. */
+  body.scoreboard-active .team-panel {
+    min-height: 220px !important;
+    grid-template-rows: 44px minmax(118px, 1fr) 0 42px !important;
+    padding: 8px !important;
+  }
+
+  body.viewer-mode .team-panel {
+    min-height: 240px !important;
+    grid-template-rows: 46px minmax(130px, 1fr) 0 44px !important;
+  }
+
+  body.scoreboard-active .score-btn {
+    font-size: clamp(5rem, 23vw, 7.6rem) !important;
+  }
+
+  body.scoreboard-active .sets-card {
+    min-height: 42px !important;
+  }
+
+  /* Place the scorer action row cleanly between cards and Fan Zone. */
+  body.scoreboard-active .control-grid {
+    position: fixed !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: calc(env(safe-area-inset-bottom) + 236px) !important;
+    height: 58px !important;
+    z-index: 58 !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  body.scoreboard-active .control-grid button {
+    height: 58px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 16px !important;
+    line-height: 1.05 !important;
+    transform: none !important;
+  }
+
+  /* Keep the scorer chat visible, but compact enough to stay below controls. */
+  body.scoreboard-active .fan-zone {
+    display: block !important;
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 55 !important;
+    padding: 0 max(10px, env(safe-area-inset-left)) max(10px, calc(env(safe-area-inset-bottom) + 10px)) max(10px, env(safe-area-inset-right)) !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(7,10,18,0.94) 45%, #070a12 100%) !important;
+  }
+
+  body.scoreboard-active .fan-zone-card {
+    max-height: 218px !important;
+    border-radius: 22px 22px 0 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(48px, 1fr) auto !important;
+  }
+
+  body.scoreboard-active .fan-zone-head {
+    display: flex !important;
+    padding: 9px 12px 4px !important;
+  }
+
+  body.scoreboard-active .chat-feed {
+    display: block !important;
+    min-height: 46px !important;
+    max-height: 60px !important;
+    padding: 4px 12px 4px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  body.scoreboard-active .chat-form {
+    padding: 8px 12px 12px !important;
+    gap: 8px !important;
+  }
+
+  body.scoreboard-active .chat-form input,
+  body.scoreboard-active .chat-form button {
+    min-height: 48px !important;
+  }
+}
+
+/* Tighten extra-small portrait phones a bit more. */
+@media (max-width: 390px) and (orientation: portrait) {
+  body.scoreboard-active .app-shell {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 338px) !important;
+  }
+
+  body.scoreboard-active .team-panel {
+    min-height: 206px !important;
+    grid-template-rows: 42px minmax(105px, 1fr) 0 40px !important;
+  }
+
+  body.scoreboard-active .score-btn {
+    font-size: clamp(4.55rem, 21.5vw, 7rem) !important;
+  }
+
+  body.scoreboard-active .control-grid {
+    bottom: calc(env(safe-area-inset-bottom) + 222px) !important;
+    height: 54px !important;
+  }
+
+  body.scoreboard-active .control-grid button {
+    height: 54px !important;
+    font-size: 0.76rem !important;
+  }
+
+  body.scoreboard-active .fan-zone-card {
+    max-height: 204px !important;
+  }
+
+  body.scoreboard-active .chat-feed {
+    min-height: 40px !important;
+    max-height: 52px !important;
+  }
+}
