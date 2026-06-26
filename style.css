@@ -142,6 +142,92 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   transform: none;
 }
 
+.history-active .match-history-screen {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.history-active .home-screen,
+.history-active .app-shell {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* =========================================================
+   04B. Match History Page
+   Full premium history view using the Home Screen hero language.
+   ========================================================= */
+.match-history-screen {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity .26s ease, transform .26s ease, visibility .26s ease;
+}
+
+.match-history-hero {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(18, 31, 52, .92), rgba(12, 18, 30, .96));
+  box-shadow: var(--shadow);
+}
+
+.match-history-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.match-history-back-btn {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--muted);
+  background: rgba(255,255,255,.06);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.match-history-back-btn:active {
+  color: var(--text);
+  background: rgba(255,255,255,.1);
+}
+
+.match-history-page-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0 0;
+}
+
+.match-history-page-list .match-history-card {
+  min-height: 56px;
+}
+
+.pro-home-card.pro-attention {
+  animation: proPulseGlow 1.05s ease-in-out 0s 3;
+}
+
+@keyframes proPulseGlow {
+  0%, 100% {
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+    border-color: rgba(251, 191, 36, .48);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 18px 54px rgba(0, 0, 0, .32), 0 0 0 3px rgba(251, 191, 36, .22), 0 0 34px rgba(251, 191, 36, .38);
+    border-color: rgba(251, 191, 36, .82);
+    transform: translateY(-1px);
+  }
+}
+
 .home-hero {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -184,6 +270,30 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   background: rgba(255,255,255,.06);
   font-size: 12px;
   font-weight: 800;
+}
+
+.match-history-more-btn {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.match-history-more-btn:active {
+  color: var(--text);
+  background: rgba(255,255,255,.1);
+}
+
+.home-card:has(#matchHistoryList) .home-card-head {
+  margin-bottom: 14px;
+}
+
+.home-card:has(#matchHistoryList) .home-list {
+  gap: 7px;
 }
 
 .home-settings-btn {
@@ -230,7 +340,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 
 .home-primary-actions {
   display: grid;
-  grid-template-columns: 1.25fr .75fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -266,9 +376,93 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 }
 
 .home-team-card {
+  --home-team-card-color: var(--home);
+  position: relative;
+  overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035)),
     rgba(16, 24, 39, .86);
+}
+
+.home-team-card.has-home-team {
+  border-color: color-mix(in srgb, var(--home-team-card-color), #ffffff 28%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--home-team-card-color), #101827 32%), rgba(16, 24, 39, .92)),
+    rgba(16, 24, 39, .92);
+}
+
+.home-team-card.has-home-team::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--home-team-card-color), transparent 58%), transparent 48%),
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--home-team-card-color), transparent 68%), transparent 36%);
+}
+
+.home-team-card > * {
+  position: relative;
+}
+
+.home-team-display {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0 12px;
+}
+
+.home-team-logo-card {
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.home-team-logo-card img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-team-logo-card.has-logo img {
+  display: block;
+}
+
+.home-team-logo-card.has-logo span {
+  display: none;
+}
+
+.home-team-details {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.home-team-details strong {
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.home-team-details span {
+  color: rgba(255,255,255,.72);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-team-card.has-home-team .home-muted {
+  color: rgba(255,255,255,.72);
 }
 
 .home-team-card > button {
@@ -406,6 +600,253 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* =========================================================
+   04A. Match History Cards
+   Compact sports-result tiles for the Home Screen history list.
+   Full match details modal will hook into these cards later.
+   ========================================================= */
+.match-history-card {
+  width: 100%;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+  position: relative;
+}
+
+.match-history-card.is-win {
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, .28), rgba(34, 197, 94, .05) 70%, rgba(16, 24, 39, .1)),
+    rgba(16, 24, 39, .86);
+}
+
+.match-history-card.is-loss {
+  background:
+    linear-gradient(180deg, rgba(255, 20, 20, .3), rgba(255, 20, 20, .06) 70%, rgba(16, 24, 39, .1)),
+    rgba(16, 24, 39, .86);
+}
+
+.match-team {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.match-team-away {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.match-team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.match-team-logo {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.1);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.match-team-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.match-set-score {
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.match-set-score span {
+  color: rgba(255,255,255,.62);
+  font-weight: 800;
+}
+
+/* =========================================================
+   05. Mobile Color Picker Component
+   Reusable thumb-friendly color picker for team/app colors.
+   ========================================================= */
+.home-team-modal {
+  max-width: min(430px, calc(100vw - 28px));
+}
+
+.team-logo-uploader {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255,255,255,.05);
+}
+
+.team-logo-uploader input {
+  display: none;
+}
+
+.team-logo-uploader strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.team-logo-uploader small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.team-logo-preview {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.team-logo-preview img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-logo-preview.has-logo img {
+  display: block;
+}
+
+.team-logo-preview.has-logo span {
+  display: none;
+}
+
+.mobile-color-picker {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255,255,255,.05);
+}
+
+.color-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.color-picker-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.color-hex-input {
+  width: 104px;
+  min-width: 104px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.color-field,
+.hue-track {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+}
+
+.color-field {
+  --picker-hue: #d62828;
+  height: 220px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, transparent, #000),
+    linear-gradient(90deg, #fff, var(--picker-hue));
+}
+
+.hue-track {
+  height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+}
+
+.color-thumb {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: #d62828;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  transform: translate(-50%, -50%);
+}
+
+.color-field .color-thumb {
+  left: 82%;
+  top: 16%;
+}
+
+.hue-thumb {
+  top: 50%;
+}
+
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .home-team-card.has-home-team {
+    border-color: rgba(255,255,255,.22);
+    background:
+      linear-gradient(180deg, rgba(16, 24, 39, .4), rgba(16, 24, 39, .94)),
+      var(--home-team-card-color);
+  }
+
+  .home-team-card.has-home-team::before {
+    background: linear-gradient(90deg, rgba(255,255,255,.16), transparent 48%);
+  }
 }
 
 /* =========================================================
@@ -554,7 +995,6 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
 }
 .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .settings-head h2 { margin: 0; font-size: 22px; }
-.x-btn { width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--text); }
 .settings-card label { display: grid; gap: 7px; color: var(--muted); font-weight: 800; font-size: 13px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .swatch-section h3, .premium-panel h3 { margin: 0 0 10px; }
@@ -582,7 +1022,8 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
    08. Fan Zone + Viewer Mode
    ========================================================= */
 .fan-zone { position: fixed; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 30; pointer-events: none; }
-.home-active .fan-zone { display: none; }
+.home-active .fan-zone,
+.history-active .fan-zone { display: none; }
 .fan-zone-toggle { pointer-events: auto; padding: 0 18px; background: var(--brand); color: #fff; }
 .fan-zone-card {
   pointer-events: auto;
@@ -677,7 +1118,7 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   .home-dashboard { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .home-hero { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
   .home-topline, .hero-copy { grid-column: 1 / -1; }
-  .home-primary-actions { min-width: 330px; }
+  .home-primary-actions { min-width: 250px; }
   .home-live-btn { margin: 0; min-width: 250px; }
   .scoreboard { overflow: hidden; }
   .team-panel, .center-panel { max-height: calc(var(--scoreflow-vh) - 86px); }

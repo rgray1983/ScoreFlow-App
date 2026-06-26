@@ -79,8 +79,8 @@ const PREMIUM_THEMES = [
 ];
 
 const POSTER_STYLES = ["classic", "championship", "neon", "spotlight"];
-const FREE_MATCH_HISTORY_LIMIT = 25;
-const PRO_MATCH_HISTORY_LIMIT = 500;
+const FREE_MATCH_HISTORY_LIMIT = 3;
+const PRO_MATCH_HISTORY_LIMIT = 10000;
 
 const premium = {
   isPro: false,
@@ -154,11 +154,30 @@ const els = {
   firebaseNote: $("firebaseNote"),
   homeScreen: $("homeScreen"),
   openScoreboardBtn: $("openScoreboardBtn"),
-  homeNewMatchBtn: $("homeNewMatchBtn"),
   homeCreateLiveBtn: $("homeCreateLiveBtn"),
   homeSettingsBtn: $("homeSettingsBtn"),
   homeTeamSetupBtn: $("homeTeamSetupBtn"),
   homeTeamSummary: $("homeTeamSummary"),
+  homeTeamCard: $("homeTeamCard"),
+  homeTeamDisplay: $("homeTeamDisplay"),
+  homeTeamCardLogo: $("homeTeamCardLogo"),
+  homeTeamCardInitial: $("homeTeamCardInitial"),
+  homeTeamCardName: $("homeTeamCardName"),
+  homeTeamCardLocation: $("homeTeamCardLocation"),
+  homeTeamDialog: $("homeTeamDialog"),
+  closeHomeTeamDialogBtn: $("closeHomeTeamDialogBtn"),
+  homeTeamLogoInput: $("homeTeamLogoInput"),
+  homeTeamLogoPreview: $("homeTeamLogoPreview"),
+  homeTeamLogoPreviewWrap: $("homeTeamLogoPreviewWrap"),
+  homeTeamLogoInitial: $("homeTeamLogoInitial"),
+  homeTeamNameInput: $("homeTeamNameInput"),
+  homeTeamLocationInput: $("homeTeamLocationInput"),
+  homeTeamColorHex: $("homeTeamColorHex"),
+  homeTeamColorField: $("homeTeamColorField"),
+  homeTeamColorFieldThumb: $("homeTeamColorFieldThumb"),
+  homeTeamHueTrack: $("homeTeamHueTrack"),
+  homeTeamHueThumb: $("homeTeamHueThumb"),
+  saveHomeTeamBtn: $("saveHomeTeamBtn"),
   appSettingsDialog: $("appSettingsDialog"),
   closeAppSettingsBtn: $("closeAppSettingsBtn"),
   userEmail: $("userEmail"),
@@ -172,6 +191,10 @@ const els = {
   savedTeamsList: $("savedTeamsList"),
   favoriteTeamsList: $("favoriteTeamsList"),
   matchHistoryList: $("matchHistoryList"),
+  matchHistoryMoreBtn: $("matchHistoryMoreBtn"),
+  matchHistoryScreen: $("matchHistoryScreen"),
+  matchHistoryBackBtn: $("matchHistoryBackBtn"),
+  fullMatchHistoryList: $("fullMatchHistoryList"),
   accountChip: $("accountChip"),
   proHomeCard: $("proHomeCard"),
   proPlanBadge: $("proPlanBadge"),
@@ -472,6 +495,15 @@ function hideLiveStartOverlay() {
   els.liveStartOverlay.setAttribute("aria-hidden", "true");
 }
 
+
+function bindDialogBackdropClose() {
+  document.querySelectorAll("dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  });
+}
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   if (!["https:", "http:"].includes(window.location.protocol)) return;
@@ -571,7 +603,7 @@ function showHomeScreen() {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
   document.body.classList.add("home-active");
-  document.body.classList.remove("scoreboard-active", "setup-active");
+  document.body.classList.remove("scoreboard-active", "setup-active", "history-active");
   initialSetupActive = false;
   updateRotateScreenState();
   renderHomeData();
@@ -630,6 +662,262 @@ function setLocalJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+const HOME_TEAM_KEY = "scoreflowHomeTeamV2";
+const homeTeamDraft = {
+  name: "",
+  location: "",
+  color: "#d62828",
+  logo: "",
+  hue: 0,
+  saturation: 82,
+  value: 84
+};
+
+function normalizeHex(value, fallback = "#d62828") {
+  const raw = String(value || "").trim();
+  const expanded = raw.replace(/^#([a-f\d])([a-f\d])([a-f\d])$/i, "#$1$1$2$2$3$3");
+  return /^#[a-f\d]{6}$/i.test(expanded) ? expanded.toLowerCase() : fallback;
+}
+
+function hexToRgb(hex) {
+  const safe = normalizeHex(hex).slice(1);
+  return {
+    r: parseInt(safe.slice(0, 2), 16),
+    g: parseInt(safe.slice(2, 4), 16),
+    b: parseInt(safe.slice(4, 6), 16)
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return `#${[r, g, b].map((value) => {
+    const safe = Math.max(0, Math.min(255, Math.round(value)));
+    return safe.toString(16).padStart(2, "0");
+  }).join("")}`;
+}
+
+function hsvToHex(h, s, v) {
+  const hue = ((Number(h) % 360) + 360) % 360;
+  const sat = Math.max(0, Math.min(100, Number(s))) / 100;
+  const val = Math.max(0, Math.min(100, Number(v))) / 100;
+  const c = val * sat;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = val - c;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hue < 60) [r, g, b] = [c, x, 0];
+  else if (hue < 120) [r, g, b] = [x, c, 0];
+  else if (hue < 180) [r, g, b] = [0, c, x];
+  else if (hue < 240) [r, g, b] = [0, x, c];
+  else if (hue < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+
+  return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+
+function hexToHsv(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const rp = r / 255;
+  const gp = g / 255;
+  const bp = b / 255;
+  const max = Math.max(rp, gp, bp);
+  const min = Math.min(rp, gp, bp);
+  const delta = max - min;
+  let h = 0;
+
+  if (delta) {
+    if (max === rp) h = 60 * (((gp - bp) / delta) % 6);
+    else if (max === gp) h = 60 * ((bp - rp) / delta + 2);
+    else h = 60 * ((rp - gp) / delta + 4);
+  }
+
+  return {
+    hue: Math.round((h + 360) % 360),
+    saturation: max ? Math.round((delta / max) * 100) : 0,
+    value: Math.round(max * 100)
+  };
+}
+
+function savedHomeTeam() {
+  const saved = getLocalJson(HOME_TEAM_KEY, null);
+  return saved && typeof saved === "object" ? saved : null;
+}
+
+function updateColorPickerUI() {
+  const color = normalizeHex(homeTeamDraft.color);
+  const pureHue = hsvToHex(homeTeamDraft.hue, 100, 100);
+  if (els.homeTeamColorField) {
+    els.homeTeamColorField.style.setProperty("--picker-hue", pureHue);
+  }
+  if (els.homeTeamColorFieldThumb) {
+    els.homeTeamColorFieldThumb.style.left = `${homeTeamDraft.saturation}%`;
+    els.homeTeamColorFieldThumb.style.top = `${100 - homeTeamDraft.value}%`;
+    els.homeTeamColorFieldThumb.style.background = color;
+  }
+  if (els.homeTeamHueThumb) {
+    els.homeTeamHueThumb.style.left = `${(homeTeamDraft.hue / 360) * 100}%`;
+    els.homeTeamHueThumb.style.background = pureHue;
+  }
+  if (els.homeTeamColorHex) els.homeTeamColorHex.value = color;
+}
+
+function setHomeTeamDraftColor(hex) {
+  const color = normalizeHex(hex, homeTeamDraft.color);
+  const next = hexToHsv(color);
+  homeTeamDraft.color = color;
+  homeTeamDraft.hue = next.hue;
+  homeTeamDraft.saturation = next.saturation;
+  homeTeamDraft.value = next.value;
+  updateColorPickerUI();
+}
+
+function setColorFromFieldPoint(clientX, clientY) {
+  const field = els.homeTeamColorField;
+  if (!field) return;
+  const rect = field.getBoundingClientRect();
+  const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+  homeTeamDraft.saturation = Math.round(x * 100);
+  homeTeamDraft.value = Math.round((1 - y) * 100);
+  homeTeamDraft.color = hsvToHex(homeTeamDraft.hue, homeTeamDraft.saturation, homeTeamDraft.value);
+  updateColorPickerUI();
+}
+
+function setHueFromPoint(clientX) {
+  const track = els.homeTeamHueTrack;
+  if (!track) return;
+  const rect = track.getBoundingClientRect();
+  const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  homeTeamDraft.hue = Math.round(x * 360);
+  homeTeamDraft.color = hsvToHex(homeTeamDraft.hue, homeTeamDraft.saturation, homeTeamDraft.value);
+  updateColorPickerUI();
+}
+
+function bindColorDrag(target, handler) {
+  if (!target) return;
+  target.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    target.setPointerCapture?.(event.pointerId);
+    handler(event);
+    const onMove = (moveEvent) => handler(moveEvent);
+    const onUp = () => {
+      target.removeEventListener("pointermove", onMove);
+      target.removeEventListener("pointerup", onUp);
+      target.removeEventListener("pointercancel", onUp);
+    };
+    target.addEventListener("pointermove", onMove);
+    target.addEventListener("pointerup", onUp);
+    target.addEventListener("pointercancel", onUp);
+  });
+}
+
+function updateHomeTeamLogoPreview() {
+  const logo = homeTeamDraft.logo || "";
+  const initial = (homeTeamDraft.name || "T").charAt(0).toUpperCase();
+  if (els.homeTeamLogoInitial) els.homeTeamLogoInitial.textContent = initial;
+  if (els.homeTeamLogoPreview) {
+    if (logo) {
+      els.homeTeamLogoPreview.src = logo;
+      els.homeTeamLogoPreviewWrap?.classList.add("has-logo");
+    } else {
+      els.homeTeamLogoPreview.removeAttribute("src");
+      els.homeTeamLogoPreviewWrap?.classList.remove("has-logo");
+    }
+  }
+}
+
+function applyHomeTeamToScoreboard(team) {
+  if (!team) return;
+  state.homeName = team.name || state.homeName;
+  state.homeColor = normalizeHex(team.color, state.homeColor);
+  if (els.homeName) els.homeName.value = state.homeName;
+  if (els.homeNameSetting) els.homeNameSetting.value = state.homeName;
+  setTeamColor("home", state.homeColor, false);
+  if (team.logo && els.homeLogo) {
+    els.homeLogo.src = team.logo;
+    els.homeLogo.closest(".logo-picker")?.classList.add("has-logo");
+  }
+  if (els.homeInitial) els.homeInitial.textContent = (state.homeName || "T").charAt(0).toUpperCase();
+}
+
+function applySavedHomeTeam() {
+  const team = savedHomeTeam();
+  if (!team) return;
+  applyHomeTeamToScoreboard(team);
+}
+
+function updateHomeTeamCard(team = savedHomeTeam()) {
+  if (!els.homeTeamCard) return;
+  const hasTeam = Boolean(team?.name);
+  const color = normalizeHex(team?.color, state.homeColor);
+  els.homeTeamCard.classList.toggle("has-home-team", hasTeam);
+  els.homeTeamCard.style.setProperty("--home-team-card-color", color);
+  if (els.homeTeamCardName) els.homeTeamCardName.textContent = hasTeam ? team.name : "Set up your team";
+  if (els.homeTeamCardLocation) els.homeTeamCardLocation.textContent = hasTeam ? (team.location || "Home team") : "Team name, city/state, logo, and color";
+  if (els.homeTeamCardInitial) els.homeTeamCardInitial.textContent = (team?.name || "T").charAt(0).toUpperCase();
+  if (els.homeTeamCardLogo) {
+    if (team?.logo) {
+      els.homeTeamCardLogo.src = team.logo;
+      els.homeTeamCardLogo.closest(".home-team-logo-card")?.classList.add("has-logo");
+    } else {
+      els.homeTeamCardLogo.removeAttribute("src");
+      els.homeTeamCardLogo.closest(".home-team-logo-card")?.classList.remove("has-logo");
+    }
+  }
+  if (els.homeTeamSetupBtn) els.homeTeamSetupBtn.textContent = hasTeam ? "Edit Home Team" : "Setup Your Home Team";
+}
+
+function openHomeTeamDialog() {
+  const saved = savedHomeTeam();
+  homeTeamDraft.name = saved?.name || state.homeName || "";
+  homeTeamDraft.location = saved?.location || "";
+  homeTeamDraft.logo = saved?.logo || "";
+  setHomeTeamDraftColor(saved?.color || state.homeColor || "#d62828");
+
+  if (els.homeTeamNameInput) els.homeTeamNameInput.value = homeTeamDraft.name === "Team 1" ? "" : homeTeamDraft.name;
+  if (els.homeTeamLocationInput) els.homeTeamLocationInput.value = homeTeamDraft.location;
+  updateHomeTeamLogoPreview();
+  els.homeTeamDialog?.showModal();
+}
+
+function saveHomeTeam() {
+  const name = (els.homeTeamNameInput?.value || "").trim();
+  if (!name) {
+    toast("Enter your team name", true);
+    els.homeTeamNameInput?.focus();
+    return;
+  }
+
+  const team = {
+    name,
+    location: (els.homeTeamLocationInput?.value || "").trim(),
+    color: normalizeHex(homeTeamDraft.color),
+    logo: homeTeamDraft.logo,
+    updatedAtMs: Date.now()
+  };
+
+  setLocalJson(HOME_TEAM_KEY, team);
+  applyHomeTeamToScoreboard(team);
+  updateHomeTeamCard(team);
+  updateHomeTeamSummary();
+  render();
+  queueRemoteUpdate();
+  els.homeTeamDialog?.close();
+  toast("Home team saved");
+}
+
+function handleHomeTeamLogoUpload() {
+  const file = els.homeTeamLogoInput?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    homeTeamDraft.logo = String(reader.result || "");
+    updateHomeTeamLogoPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
 function loadPremiumSettings() {
   const saved = getLocalJson("scoreflowPremiumV1", null);
   if (saved && typeof saved === "object") {
@@ -686,10 +974,10 @@ function renderPremiumUI() {
   if (els.settingsPlanName) els.settingsPlanName.textContent = pro ? "ScoreFlow Pro" : "Free";
   if (els.settingsPlanDescription) els.settingsPlanDescription.textContent = pro
     ? "Premium themes, poster styles, unlimited match history, and cloud backup are active."
-    : "Free includes live scoring, sharing, QR codes, and your latest 25 matches.";
+    : "Free includes live scoring, sharing, QR codes, and your latest 3 matches.";
   if (els.historyLimitText) els.historyLimitText.textContent = pro
     ? "Pro keeps unlimited match history in this app and syncs it to your account when cloud backup is on."
-    : "Free keeps your latest 25 matches. Pro unlocks unlimited match history and account cloud backup.";
+    : "Free keeps your latest 3 matches. Pro unlocks unlimited match history and account cloud backup.";
   if (els.posterStyleNote) els.posterStyleNote.textContent = pro ? "Premium poster styles are unlocked." : "Premium poster styles are part of ScoreFlow Pro.";
   if (els.themeGrid) {
     els.themeGrid.innerHTML = PREMIUM_THEMES.map((theme) => {
@@ -874,8 +1162,9 @@ async function getAllMatches() {
     local.forEach((match) => {
       if (!merged.some((item) => item.id === match.id)) merged.push(match);
     });
-    setLocalJson("scoreflowMatchHistoryV2", merged);
-    return merged;
+    const limited = merged.slice(0, matchHistoryLimit());
+    setLocalJson("scoreflowMatchHistoryV2", limited);
+    return limited;
   } catch (error) {
     console.warn(error);
     return local;
@@ -895,6 +1184,9 @@ async function saveMatchHistory() {
     homeSets: state.homeSets,
     awaySets: state.awaySets,
     winner: teamName(state.winner),
+    winnerSide: state.winner,
+    homeLogo: els.homeLogo?.src?.startsWith("data:") ? els.homeLogo.src : (savedHomeTeam()?.logo || ""),
+    awayLogo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : "",
     completedSets: state.completedSets,
     matchFormat: state.matchFormat,
     updatedAtMs: Date.now()
@@ -929,26 +1221,47 @@ function teamCard(team) {
     </article>`;
 }
 
-function matchCard(match) {
-  const date = match.updatedAtMs ? new Date(match.updatedAtMs).toLocaleDateString() : "Saved match";
+function matchHistoryLogoMarkup(logo, name, side) {
+  const initial = (name || (side === "home" ? "H" : "A")).charAt(0).toUpperCase();
   return `
-    <article class="home-list-card match-history-card">
-      <div class="mini-logo match-mini">🏆</div>
-      <div>
-        <strong>${match.homeName || "Team 1"} ${match.homeSets ?? 0} - ${match.awaySets ?? 0} ${match.awayName || "Team 2"}</strong>
-        <small>${match.winner || "Final"} won · ${date}</small>
-      </div>
-    </article>`;
+    <span class="match-team-logo ${logo ? "has-logo" : ""}" aria-hidden="true">
+      ${logo ? `<img src="${logo}" alt="">` : `<span>${initial}</span>`}
+    </span>`;
+}
+
+function matchCard(match) {
+  const homeName = match.homeName || "Team 1";
+  const awayName = match.awayName || "Team 2";
+  const homeSets = Number(match.homeSets ?? 0);
+  const awaySets = Number(match.awaySets ?? 0);
+  const winnerSide = match.winnerSide || (match.winner === homeName ? "home" : match.winner === awayName ? "away" : homeSets > awaySets ? "home" : "away");
+  const resultClass = winnerSide === "home" ? "is-win" : "is-loss";
+  return `
+    <button class="match-history-card ${resultClass}" type="button" data-match-history-id="${match.id || ""}" aria-label="View ${homeName} versus ${awayName} match details">
+      <span class="match-team match-team-home">
+        ${matchHistoryLogoMarkup(match.homeLogo || savedHomeTeam()?.logo || "", homeName, "home")}
+        <span class="match-team-name">${homeName}</span>
+      </span>
+      <span class="match-set-score">${homeSets}<span>-</span>${awaySets}</span>
+      <span class="match-team match-team-away">
+        <span class="match-team-name">${awayName}</span>
+        ${matchHistoryLogoMarkup(match.awayLogo || "", awayName, "away")}
+      </span>
+    </button>`;
 }
 
 function updateHomeTeamSummary() {
   if (!els.homeTeamSummary) return;
-  const name = teamName("home");
-  const format = matchLabel();
-  const isDefault = name === "Team 1";
-  els.homeTeamSummary.textContent = isDefault
-    ? "Set up your team once, then only enter the opponent when you start a match."
-    : `${name} is set as your home team. New matches can start with this team ready to go. ${format}.`;
+  const saved = savedHomeTeam();
+  if (!saved?.name) {
+    els.homeTeamSummary.textContent = "Set up your team once, then only enter the opponent when you start a match.";
+    updateHomeTeamCard(null);
+    return;
+  }
+
+  const location = saved.location ? ` · ${saved.location}` : "";
+  els.homeTeamSummary.textContent = `${saved.name}${location} is ready as your default home team.`;
+  updateHomeTeamCard(saved);
 }
 
 async function renderHomeData() {
@@ -964,12 +1277,50 @@ async function renderHomeData() {
     els.favoriteTeamsList.innerHTML = favorites.length ? favorites.slice(0, 4).map(teamCard).join("") : `<p class="empty-note">Tap ☆ on a saved team to favorite it.</p>`;
   }
   if (els.matchHistoryList) {
-    const visibleMatches = hasProAccess() ? matches.slice(0, 10) : matches.slice(0, 6);
-    const limitNote = !hasProAccess() && matches.length >= FREE_MATCH_HISTORY_LIMIT ? `<p class="empty-note pro-note">Free history limit reached. Upgrade to Pro for unlimited history.</p>` : "";
-    els.matchHistoryList.innerHTML = matches.length ? visibleMatches.map(matchCard).join("") + limitNote : `<p class="empty-note">Completed matches will show up here.</p>`;
+    const visibleMatches = matches.slice(0, 3);
+    els.matchHistoryList.innerHTML = visibleMatches.length ? visibleMatches.map(matchCard).join("") : `<p class="empty-note">Completed matches will show up here.</p>`;
   }
   renderPremiumUI();
+  if (document.body.classList.contains("history-active")) await renderFullMatchHistoryPage();
   setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
+}
+
+
+function pulseProCard() {
+  if (!els.proHomeCard) return;
+  els.proHomeCard.scrollIntoView({ behavior: "smooth", block: "center" });
+  els.proHomeCard.classList.remove("pro-attention");
+  void els.proHomeCard.offsetWidth;
+  els.proHomeCard.classList.add("pro-attention");
+  window.setTimeout(() => els.proHomeCard?.classList.remove("pro-attention"), 3200);
+}
+
+async function renderFullMatchHistoryPage() {
+  if (!els.fullMatchHistoryList) return;
+  const matches = await getAllMatches();
+  els.fullMatchHistoryList.innerHTML = matches.length
+    ? matches.map(matchCard).join("")
+    : `<section class="home-card"><p class="empty-note">Completed matches will show up here.</p></section>`;
+}
+
+async function openMatchHistoryPage() {
+  if (isViewer) return;
+  document.body.classList.add("screen-transitioning");
+  document.body.classList.remove("home-active", "scoreboard-active", "setup-active", "fan-zone-open");
+  els.fanZoneToggle?.setAttribute("aria-expanded", "false");
+  document.body.classList.add("history-active");
+  await renderFullMatchHistoryPage();
+  els.matchHistoryScreen?.scrollTo?.({ top: 0, behavior: "instant" });
+  window.setTimeout(() => document.body.classList.remove("screen-transitioning"), 260);
+}
+
+function openMatchHistoryMore() {
+  if (!hasProAccess()) {
+    pulseProCard();
+    toast("ScoreFlow Pro unlocks unlimited match history", true);
+    return;
+  }
+  openMatchHistoryPage();
 }
 
 function wireHomeListClicks(event) {
@@ -1918,6 +2269,7 @@ function wireEvents() {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
   });
+  bindDialogBackdropClose();
   els.settingsDialog.addEventListener("close", () => {
     if (!initialSetupActive) {
       document.body.classList.remove("setup-active");
@@ -1936,19 +2288,28 @@ function wireEvents() {
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
   els.loadTeamsBtn?.addEventListener("click", loadTeamProfiles);
   els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
-  els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(false));
-  els.homeNewMatchBtn?.addEventListener("click", () => openScoreboardFromHome(true));
-  els.homeTeamSetupBtn?.addEventListener("click", openSettings);
+  els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(true));
+  els.homeTeamSetupBtn?.addEventListener("click", openHomeTeamDialog);
   els.homeCreateLiveBtn?.addEventListener("click", async () => {
     openScoreboardFromHome(false);
     await createLiveGame();
     openShare();
   });
+  els.saveHomeTeamBtn?.addEventListener("click", saveHomeTeam);
+  els.homeTeamLogoInput?.addEventListener("change", handleHomeTeamLogoUpload);
+  els.homeTeamNameInput?.addEventListener("input", () => {
+    homeTeamDraft.name = els.homeTeamNameInput.value.trim();
+    updateHomeTeamLogoPreview();
+  });
+  els.homeTeamColorHex?.addEventListener("change", () => setHomeTeamDraftColor(els.homeTeamColorHex.value));
+  bindColorDrag(els.homeTeamColorField, (event) => setColorFromFieldPoint(event.clientX, event.clientY));
+  bindColorDrag(els.homeTeamHueTrack, (event) => setHueFromPoint(event.clientX));
   els.homeSettingsBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
-  els.closeAppSettingsBtn?.addEventListener("click", () => els.appSettingsDialog?.close());
   els.upgradeProBtn?.addEventListener("click", toggleProDemo);
   els.settingsUpgradeBtn?.addEventListener("click", toggleProDemo);
   els.themesShortcutBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
+  els.matchHistoryMoreBtn?.addEventListener("click", openMatchHistoryMore);
+  els.matchHistoryBackBtn?.addEventListener("click", showHomeScreen);
   els.themeGrid?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-theme-choice]");
     if (button) setPremiumTheme(button.dataset.themeChoice);
@@ -2015,6 +2376,7 @@ async function boot() {
   updateViewportHeight();
   loadPremiumSettings();
   applySplashImageFromStorage();
+  applySavedHomeTeam();
   buildSwatches(els.homeSwatches, "home");
   buildSwatches(els.awaySwatches, "away");
   wireEvents();

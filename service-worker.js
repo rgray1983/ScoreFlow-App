@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2-redesign-1";
+const SCORE_FLOW_CACHE = "scoreflow-v2.5.0-fanzone";
 
 const CORE_ASSETS = [
   "./",
@@ -22,6 +22,9 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(SCORE_FLOW_CACHE).then(async (cache) => {
       await cache.addAll(CORE_ASSETS);
+
+      // Image files are cached one-by-one so a missing/replaced branding file
+      // never breaks the whole service worker install.
       await Promise.allSettled(STATIC_ASSETS.map((asset) => cache.add(asset)));
     })
   );
@@ -67,10 +70,29 @@ async function networkFirst(request) {
   }
 }
 
+async function cacheFirst(request) {
+  const cache = await caches.open(SCORE_FLOW_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response && response.ok) await cache.put(request, response.clone());
+  return response;
+}
+
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== self.location.origin || event.request.method !== "GET") return;
-  if (isAppShellFile(requestUrl) || isStaticBrandingFile(requestUrl)) {
+
+  if (requestUrl.origin !== self.location.origin || event.request.method !== "GET") {
+    return;
+  }
+
+  if (isAppShellFile(requestUrl)) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  if (isStaticBrandingFile(requestUrl)) {
     event.respondWith(networkFirst(event.request));
   }
 });
