@@ -3106,6 +3106,69 @@ body:not(.viewer-mode) .fan-zone-head span {
 }
 
 /* Clean portrait scorer/viewer layout */
+/* Header/status correction: keep viewer count directly left of Online/Offline. */
+.top-bar {
+  position: relative !important;
+}
+
+.status-cluster {
+  position: absolute !important;
+  right: 2px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 8 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  width: auto !important;
+  pointer-events: none !important;
+}
+
+.status-cluster .viewer-count,
+.status-cluster .live-status {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  pointer-events: none !important;
+}
+
+.status-cluster .live-status {
+  display: inline-flex !important;
+  min-width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  text-align: left !important;
+}
+
+.status-cluster .viewer-count {
+  display: inline-flex !important;
+  min-width: 42px !important;
+}
+
+@media (orientation: landscape) {
+  .status-cluster {
+    right: 4px !important;
+    gap: 12px !important;
+  }
+
+  .status-cluster .viewer-count {
+    min-width: 46px !important;
+  }
+}
+
+/* Hide Fan Zone on landscape scorer/viewer so it never covers the scoreboard. */
+@media (orientation: landscape) {
+  body.scoreboard-active .fan-zone,
+  body.viewer-mode .fan-zone {
+    display: none !important;
+  }
+}
+
 @media (orientation: portrait) {
   body.scoreboard-active .rotate-message,
   body.viewer-mode .rotate-message {
@@ -3119,35 +3182,37 @@ body:not(.viewer-mode) .fan-zone-head span {
     width: 100vw !important;
     height: 100vh !important;
     height: 100svh !important;
-    height: 100lvh !important;
     min-height: 100svh !important;
     overflow: hidden !important;
     display: grid !important;
     grid-template-rows: 46px minmax(0, 1fr) !important;
     gap: 8px !important;
-    padding: calc(env(safe-area-inset-top) + 8px) 12px 244px !important;
+    padding: calc(env(safe-area-inset-top) + 8px) 12px 238px !important;
     background: transparent !important;
   }
 
   body.viewer-mode .app-shell {
-    padding-bottom: 230px !important;
+    padding-bottom: 210px !important;
   }
 
   body.scoreboard-active .top-bar,
   body.viewer-mode .top-bar {
+    position: relative !important;
     height: 46px !important;
     min-height: 46px !important;
-    display: grid !important;
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
-    align-items: center !important;
-    gap: 8px !important;
+    display: block !important;
   }
 
   body.scoreboard-active .scoreboard-left-controls,
   body.viewer-mode .scoreboard-left-controls {
+    position: absolute !important;
+    left: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 9 !important;
     display: inline-flex !important;
+    align-items: center !important;
     gap: 8px !important;
-    min-width: 0 !important;
   }
 
   body.scoreboard-active .icon-btn,
@@ -3164,26 +3229,41 @@ body:not(.viewer-mode) .fan-zone-head span {
 
   body.scoreboard-active .brand-wrap,
   body.viewer-mode .brand-wrap {
-    position: static !important;
-    transform: none !important;
-    justify-self: center !important;
-    width: min(44vw, 150px) !important;
-    min-width: 104px !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 7 !important;
+    width: min(42vw, 146px) !important;
+    min-width: 108px !important;
+    display: grid !important;
+    place-items: center !important;
+    pointer-events: none !important;
   }
 
   body.scoreboard-active .scoreflow-header-logo,
   body.viewer-mode .scoreflow-header-logo {
-    width: min(42vw, 145px) !important;
+    width: min(40vw, 142px) !important;
+    max-width: 142px !important;
     max-height: 24px !important;
+    object-fit: contain !important;
   }
 
   body.scoreboard-active .status-cluster,
   body.viewer-mode .status-cluster {
-    gap: 6px !important;
+    right: 0 !important;
+    top: 50% !important;
+    gap: 8px !important;
   }
 
   body.scoreboard-active .viewer-count,
-  body.viewer-mode .viewer-count,
+  body.viewer-mode .viewer-count {
+    min-height: 24px !important;
+    min-width: 40px !important;
+    padding: 0 8px !important;
+    font-size: 0.58rem !important;
+  }
+
   body.scoreboard-active .live-status,
   body.viewer-mode .live-status {
     min-height: 24px !important;
@@ -3195,11 +3275,15 @@ body:not(.viewer-mode) .fan-zone-head span {
     height: 100% !important;
     min-height: 0 !important;
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: 112px minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 106px minmax(0, 1fr) !important;
     align-content: start !important;
     gap: 10px !important;
-    overflow: visible !important;
+    overflow: hidden !important;
+  }
+
+  body.viewer-mode .scoreboard {
+    grid-template-rows: 108px minmax(0, 1fr) !important;
   }
 
   body.scoreboard-active .center-panel,
@@ -3207,13 +3291,31 @@ body:not(.viewer-mode) .fan-zone-head span {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
     min-height: 0 !important;
-    height: 112px !important;
-    max-height: 112px !important;
+    height: 106px !important;
+    max-height: 106px !important;
     display: grid !important;
-    grid-template-rows: 24px 48px 32px 0 !important;
+    grid-template-rows: 22px 44px 28px 0 !important;
     gap: 4px !important;
     padding: 8px !important;
     border-radius: 18px !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+  }
+
+  body.scoreboard-active .match-pill,
+  body.viewer-mode .match-pill {
+    font-size: 0.7rem !important;
+  }
+
+  body.scoreboard-active .alert-banner,
+  body.viewer-mode .alert-banner {
+    font-size: clamp(1.25rem, 6.2vw, 1.8rem) !important;
+    line-height: 1 !important;
+  }
+
+  body.scoreboard-active .set-box,
+  body.viewer-mode .set-box {
+    min-height: 0 !important;
     overflow: hidden !important;
   }
 
@@ -3224,11 +3326,19 @@ body:not(.viewer-mode) .fan-zone-head span {
     height: 100% !important;
     max-height: none !important;
     display: grid !important;
-    grid-template-rows: 44px minmax(0, 1fr) 0 40px !important;
     gap: 7px !important;
     padding: 8px !important;
     border-radius: 20px !important;
     overflow: hidden !important;
+    z-index: 2 !important;
+  }
+
+  body.scoreboard-active .team-panel {
+    grid-template-rows: 44px minmax(0, 1fr) 42px 38px !important;
+  }
+
+  body.viewer-mode .team-panel {
+    grid-template-rows: 44px minmax(0, 1fr) 0 38px !important;
   }
 
   body.scoreboard-active .team-head,
@@ -3251,18 +3361,35 @@ body:not(.viewer-mode) .fan-zone-head span {
 
   body.scoreboard-active .score-btn,
   body.viewer-mode .score-btn {
-    font-size: clamp(4.4rem, 24vw, 7rem) !important;
+    font-size: clamp(3.6rem, 20vw, 6.1rem) !important;
     pointer-events: none !important;
   }
 
-  body.scoreboard-active .point-actions,
+  body.scoreboard-active .point-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+  }
+
+  body.scoreboard-active .point-btn {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 0 !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+    font-size: 1.35rem !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+  }
+
   body.viewer-mode .point-actions {
     display: none !important;
   }
 
   body.scoreboard-active .sets-card,
   body.viewer-mode .sets-card {
-    min-height: 40px !important;
+    min-height: 38px !important;
     grid-template-columns: 1fr auto !important;
     padding: 0 10px !important;
   }
@@ -3277,27 +3404,26 @@ body:not(.viewer-mode) .fan-zone-head span {
     justify-content: flex-start !important;
   }
 
-  /* Scorer action buttons sit in their own row between score cards and chat. */
   body.scoreboard-active .control-grid {
     position: fixed !important;
     left: max(12px, env(safe-area-inset-left)) !important;
     right: max(12px, env(safe-area-inset-right)) !important;
-    bottom: 172px !important;
-    height: 58px !important;
+    bottom: 164px !important;
+    height: 56px !important;
     z-index: 58 !important;
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    grid-auto-rows: 58px !important;
+    grid-auto-rows: 56px !important;
     gap: 8px !important;
   }
 
   body.scoreboard-active .control-grid button {
-    height: 58px !important;
-    min-height: 58px !important;
+    height: 56px !important;
+    min-height: 56px !important;
     display: grid !important;
     place-items: center !important;
     border-radius: 16px !important;
-    font-size: 0.82rem !important;
+    font-size: 0.8rem !important;
     line-height: 1.05 !important;
     padding: 0 6px !important;
     transform: none !important;
@@ -3315,12 +3441,17 @@ body:not(.viewer-mode) .fan-zone-head span {
     background: linear-gradient(180deg, transparent 0%, rgba(7,10,18,0.96) 48%, #070a12 100%) !important;
   }
 
+  body.scoreboard-active .fan-zone-toggle,
+  body.viewer-mode .fan-zone-toggle {
+    display: none !important;
+  }
+
   body.scoreboard-active .fan-zone-card,
   body.viewer-mode .fan-zone-card {
     border-radius: 22px 22px 0 0 !important;
     display: grid !important;
     grid-template-rows: auto minmax(0, 1fr) auto !important;
-    max-height: 154px !important;
+    max-height: 148px !important;
   }
 
   body.scoreboard-active .fan-zone-head,
@@ -3331,13 +3462,13 @@ body:not(.viewer-mode) .fan-zone-head span {
   body.scoreboard-active .chat-feed,
   body.viewer-mode .chat-feed {
     min-height: 0 !important;
-    max-height: 38px !important;
+    max-height: 28px !important;
     padding: 2px 12px 2px !important;
     overflow-y: auto !important;
   }
 
   body.viewer-mode .chat-feed {
-    max-height: 58px !important;
+    max-height: 52px !important;
   }
 
   body.scoreboard-active .chat-form,
@@ -3369,51 +3500,80 @@ body:not(.viewer-mode) .fan-zone-head span {
 
 @media (max-width: 390px) and (orientation: portrait) {
   body.scoreboard-active .app-shell {
-    padding-bottom: 226px !important;
+    padding-bottom: 224px !important;
+  }
+
+  body.viewer-mode .app-shell {
+    padding-bottom: 202px !important;
+  }
+
+  body.scoreboard-active .status-cluster,
+  body.viewer-mode .status-cluster {
+    gap: 6px !important;
+  }
+
+  body.scoreboard-active .brand-wrap,
+  body.viewer-mode .brand-wrap {
+    width: min(38vw, 130px) !important;
+    min-width: 96px !important;
+  }
+
+  body.scoreboard-active .scoreflow-header-logo,
+  body.viewer-mode .scoreflow-header-logo {
+    width: min(36vw, 126px) !important;
+    max-height: 22px !important;
   }
 
   body.scoreboard-active .scoreboard,
   body.viewer-mode .scoreboard {
-    grid-template-rows: 104px minmax(0, 1fr) !important;
+    grid-template-rows: 98px minmax(0, 1fr) !important;
     gap: 9px !important;
   }
 
   body.scoreboard-active .center-panel,
   body.viewer-mode .center-panel {
-    height: 104px !important;
-    max-height: 104px !important;
-    grid-template-rows: 22px 44px 30px 0 !important;
+    height: 98px !important;
+    max-height: 98px !important;
+    grid-template-rows: 20px 40px 28px 0 !important;
   }
 
-  body.scoreboard-active .team-panel,
+  body.scoreboard-active .team-panel {
+    grid-template-rows: 40px minmax(0, 1fr) 40px 36px !important;
+  }
+
   body.viewer-mode .team-panel {
-    grid-template-rows: 40px minmax(0, 1fr) 0 38px !important;
+    grid-template-rows: 40px minmax(0, 1fr) 0 36px !important;
   }
 
   body.scoreboard-active .score-btn,
   body.viewer-mode .score-btn {
-    font-size: clamp(4rem, 22vw, 6.4rem) !important;
+    font-size: clamp(3.2rem, 18vw, 5.4rem) !important;
+  }
+
+  body.scoreboard-active .point-btn {
+    height: 40px !important;
+    font-size: 1.2rem !important;
   }
 
   body.scoreboard-active .control-grid {
-    bottom: 166px !important;
-    height: 54px !important;
-    grid-auto-rows: 54px !important;
+    bottom: 156px !important;
+    height: 52px !important;
+    grid-auto-rows: 52px !important;
   }
 
   body.scoreboard-active .control-grid button {
-    height: 54px !important;
-    min-height: 54px !important;
-    font-size: 0.75rem !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    font-size: 0.72rem !important;
   }
 
   body.scoreboard-active .fan-zone-card,
   body.viewer-mode .fan-zone-card {
-    max-height: 148px !important;
+    max-height: 140px !important;
   }
 
   body.scoreboard-active .chat-feed,
   body.viewer-mode .chat-feed {
-    max-height: 32px !important;
+    max-height: 24px !important;
   }
 }
