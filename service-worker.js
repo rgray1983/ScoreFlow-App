@@ -1,20 +1,29 @@
-const SCORE_FLOW_CACHE = "scoreflow-v1.0.0";
+const SCORE_FLOW_CACHE = "scoreflow-v2-redesign-1";
 
-const APP_SHELL = [
+const CORE_ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./firebase-config.js",
-  "./manifest.json",
+  "./manifest.json"
+];
+
+const STATIC_ASSETS = [
   "./app-icon-180.png",
   "./app-icon-192.png",
-  "./app-icon-512.png"
+  "./app-icon-512.png",
+  "./splash-logo.png",
+  "./scoreflow-logo.png",
+  "./volleyball.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(SCORE_FLOW_CACHE).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(SCORE_FLOW_CACHE).then(async (cache) => {
+      await cache.addAll(CORE_ASSETS);
+      await Promise.allSettled(STATIC_ASSETS.map((asset) => cache.add(asset)));
+    })
   );
   self.skipWaiting();
 });
@@ -28,20 +37,40 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isAppShellFile(requestUrl) {
+  return requestUrl.pathname.endsWith("/") ||
+    requestUrl.pathname.endsWith(".html") ||
+    requestUrl.pathname.endsWith(".css") ||
+    requestUrl.pathname.endsWith(".js") ||
+    requestUrl.pathname.endsWith(".json");
+}
+
+function isStaticBrandingFile(requestUrl) {
+  return requestUrl.pathname.endsWith(".png") ||
+    requestUrl.pathname.endsWith(".jpg") ||
+    requestUrl.pathname.endsWith(".jpeg") ||
+    requestUrl.pathname.endsWith(".svg") ||
+    requestUrl.pathname.endsWith(".webp") ||
+    requestUrl.pathname.endsWith(".ico");
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(SCORE_FLOW_CACHE);
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (response && response.ok) await cache.put(request, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
-
-  if (requestUrl.origin !== self.location.origin || event.request.method !== "GET") {
-    return;
+  if (requestUrl.origin !== self.location.origin || event.request.method !== "GET") return;
+  if (isAppShellFile(requestUrl) || isStaticBrandingFile(requestUrl)) {
+    event.respondWith(networkFirst(event.request));
   }
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        const copy = response.clone();
-        caches.open(SCORE_FLOW_CACHE).then((cache) => cache.put(event.request, copy));
-        return response;
-      });
-    })
-  );
 });
