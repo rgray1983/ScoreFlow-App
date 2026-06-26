@@ -3529,3 +3529,144 @@ body.viewer-mode .top-bar .live-status {
   }
 }
 
+
+
+/* ScoreFlow targeted fix: scorer portrait chat + iPhone vertical bottom fill */
+:root {
+  --scoreflow-vh: 100dvh;
+}
+
+html,
+body {
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  min-height: 100svh !important;
+  min-height: -webkit-fill-available !important;
+  background:
+    radial-gradient(circle at 12% 15%, color-mix(in srgb, var(--home) 30%, transparent), transparent 34vh),
+    radial-gradient(circle at 90% 78%, color-mix(in srgb, var(--away) 30%, transparent), transparent 34vh),
+    linear-gradient(145deg, #070a12 0%, #101827 54%, #05070c 100%) !important;
+}
+
+.splash-screen,
+.home-screen {
+  height: 100vh !important;
+  height: 100svh !important;
+  height: 100dvh !important;
+  height: var(--scoreflow-vh, 100dvh) !important;
+  min-height: 100vh !important;
+  min-height: 100svh !important;
+  min-height: 100dvh !important;
+  min-height: var(--scoreflow-vh, 100dvh) !important;
+  bottom: auto !important;
+  background-color: #070a12 !important;
+}
+
+.home-screen {
+  padding-bottom: max(34px, calc(env(safe-area-inset-bottom) + 34px)) !important;
+}
+
+@supports (height: 100lvh) {
+  .splash-screen,
+  .home-screen {
+    min-height: 100lvh !important;
+  }
+}
+
+@media (orientation: portrait) {
+  body.scoreboard-active .app-shell,
+  body.viewer-mode .app-shell {
+    height: var(--scoreflow-vh, 100dvh) !important;
+    min-height: var(--scoreflow-vh, 100dvh) !important;
+    max-height: var(--scoreflow-vh, 100dvh) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 318px) !important;
+    background:
+      radial-gradient(circle at 15% 8%, color-mix(in srgb, var(--home) 22%, transparent), transparent 30vh),
+      radial-gradient(circle at 82% 72%, color-mix(in srgb, var(--away) 20%, transparent), transparent 34vh),
+      linear-gradient(145deg, #070a12 0%, #101827 58%, #05070c 100%) !important;
+  }
+
+  body.scoreboard-active .control-grid {
+    bottom: calc(env(safe-area-inset-bottom) + 238px) !important;
+  }
+
+  body.scoreboard-active .fan-zone,
+  body.viewer-mode .fan-zone {
+    bottom: 0 !important;
+    padding-bottom: max(10px, calc(env(safe-area-inset-bottom) + 10px)) !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(7,10,18,0.92) 42%, #070a12 100%) !important;
+  }
+
+  body.scoreboard-active .fan-zone-card {
+    max-height: 226px !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(54px, 1fr) auto !important;
+  }
+
+  body.scoreboard-active .fan-zone-head {
+    display: flex !important;
+    padding: 10px 12px 4px !important;
+  }
+
+  body.scoreboard-active .fan-zone-head span {
+    display: block !important;
+  }
+
+  body.scoreboard-active .chat-feed {
+    display: block !important;
+    max-height: 82px !important;
+    min-height: 54px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 4px 12px 6px !important;
+  }
+
+  body.scoreboard-active .chat-empty {
+    margin: 7px 0 !important;
+    font-size: 0.82rem !important;
+  }
+
+  body.scoreboard-active .chat-message {
+    margin-bottom: 6px !important;
+    padding: 8px 10px !important;
+  }
+
+  body.scoreboard-active .chat-form {
+    padding: 8px 12px 12px !important;
+    gap: 8px !important;
+  }
+
+  body.scoreboard-active .chat-form input,
+  body.scoreboard-active .chat-form button {
+    min-height: 48px !important;
+  }
+
+  body.scoreboard-active .viewer-reactions {
+    display: none !important;
+  }
+
+  body.scoreboard-active .floating-reaction,
+  body.viewer-mode .floating-reaction {
+    bottom: calc(env(safe-area-inset-bottom) + 236px) !important;
+  }
+}
+
+@media (max-width: 390px) and (orientation: portrait) {
+  body.scoreboard-active .app-shell,
+  body.viewer-mode .app-shell {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 300px) !important;
+  }
+
+  body.scoreboard-active .control-grid {
+    bottom: calc(env(safe-area-inset-bottom) + 222px) !important;
+  }
+
+  body.scoreboard-active .fan-zone-card {
+    max-height: 210px !important;
+  }
+
+  body.scoreboard-active .chat-feed {
+    max-height: 66px !important;
+    min-height: 48px !important;
+  }
+}

@@ -230,6 +230,16 @@ let initialSetupActive = false;
 let setupComplete = false;
 let splashClosed = false;
 
+
+function updateViewportHeight() {
+  // iOS Safari can report 100vh/100dvh differently depending on the browser chrome.
+  // This keeps all fixed portrait screens pinned to the actual visible height.
+  const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
+  if (viewportHeight) {
+    document.documentElement.style.setProperty("--scoreflow-vh", `${viewportHeight}px`);
+  }
+}
+
 function hideSplash() {
   if (splashClosed) return;
   splashClosed = true;
@@ -1951,13 +1961,17 @@ function wireEvents() {
     if (event.key === "Enter" || event.key === " ") closeWinner();
   });
   window.addEventListener("resize", () => {
+    updateViewportHeight();
     if (state.confettiRunning) startConfetti();
     updateRotateScreenState();
     fitHeaderTitle();
   });
 
+  window.visualViewport?.addEventListener("resize", updateViewportHeight);
+  window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+
   window.addEventListener("orientationchange", () => {
-    window.setTimeout(() => { updateRotateScreenState(); fitHeaderTitle(); }, 160);
+    window.setTimeout(() => { updateViewportHeight(); updateRotateScreenState(); fitHeaderTitle(); }, 160);
   });
 }
 
@@ -1978,6 +1992,7 @@ function applyViewerMode() {
 }
 
 async function boot() {
+  updateViewportHeight();
   loadPremiumSettings();
   applySplashImageFromStorage();
   buildSwatches(els.homeSwatches, "home");
