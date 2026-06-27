@@ -298,6 +298,7 @@ let remoteTimer = null;
 let initialSetupActive = false;
 let setupComplete = false;
 let splashClosed = false;
+let activeResultsMatch = null;
 
 
 function updateViewportHeight() {
@@ -1511,7 +1512,8 @@ function renderResultsCard(match) {
 }
 
 function openResults(match) {
-  renderResultsCard(match || currentMatchResultData());
+  activeResultsMatch = match || currentMatchResultData();
+  renderResultsCard(activeResultsMatch);
   els.recapDialog?.showModal();
 }
 
@@ -2174,7 +2176,7 @@ function openRecap() {
 }
 
 async function shareRecap() {
-  await sharePoster();
+  await sharePoster(activeResultsData());
 }
 
 
@@ -2394,22 +2396,31 @@ function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
   ctx.fillText(line, x, y);
 }
 
+function activeResultsData() {
+  return activeResultsMatch || currentMatchResultData();
+}
+
 async function openPoster(finalMode = false) {
-  await drawResultsGraphic(currentMatchResultData());
-  await sharePoster();
+  await sharePoster(activeResultsData());
 }
 
 function posterBlob() {
-  return new Promise((resolve) => els.posterCanvas.toBlob(resolve, "image/png", 0.95));
+  return new Promise((resolve) => els.posterCanvas?.toBlob(resolve, "image/png", 0.95));
 }
 
-async function sharePoster() {
-  await drawResultsGraphic(currentMatchResultData());
+async function sharePoster(match = activeResultsData()) {
+  const canvas = await drawResultsGraphic(match);
+  if (!canvas) {
+    toast("Graphic could not be created", true);
+    return;
+  }
+
   const blob = await posterBlob();
   if (!blob) {
     toast("Graphic could not be created", true);
     return;
   }
+
   const file = new File([blob], "scoreflow-results.png", { type: "image/png" });
   if (navigator.canShare?.({ files: [file] })) {
     try {
@@ -2419,15 +2430,24 @@ async function sharePoster() {
       if (error?.name === "AbortError") return;
     }
   }
-  await downloadPoster();
+
+  await downloadPoster(match);
 }
 
-async function downloadPoster() {
-  await drawResultsGraphic(currentMatchResultData());
+async function downloadPoster(match = activeResultsData()) {
+  const canvas = await drawResultsGraphic(match);
+  if (!canvas) {
+    toast("Graphic could not be created", true);
+    return;
+  }
+
   const link = document.createElement("a");
   link.download = "scoreflow-results.png";
-  link.href = els.posterCanvas.toDataURL("image/png");
+  link.href = canvas.toDataURL("image/png");
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
+  link.remove();
 }
 
 async function saveTeamProfiles() {
@@ -2657,7 +2677,7 @@ function wireEvents() {
   els.showQrBtn?.addEventListener("click", toggleQrCard);
   els.posterBtn?.addEventListener("click", () => openPoster(false));
   els.shareRecapBtn?.addEventListener("click", shareRecap);
-  els.posterRecapBtn?.addEventListener("click", () => openPoster(true));
+  els.posterRecapBtn?.addEventListener("click", () => downloadPoster(activeResultsData()));
   els.sharePosterBtn?.addEventListener("click", sharePoster);
   els.downloadPosterBtn?.addEventListener("click", downloadPoster);
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
