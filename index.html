@@ -333,18 +333,104 @@
     </form>
   </dialog>
 
-  <dialog id="appSettingsDialog">
-    <form method="dialog" class="settings-card app-settings-card">
-      <div class="settings-head"><h2>Settings</h2></div>
-      <section class="pro-plan-card"><div><span class="pro-kicker">Current Plan</span><strong id="settingsPlanName">Free</strong><p id="settingsPlanDescription">Free includes live scoring, sharing, QR codes, saved teams, and recent history.</p></div><button id="settingsUpgradeBtn" value="default" type="button">Try Pro</button></section>
-      <div class="premium-settings-grid">
-        <section class="premium-panel"><h3>Themes</h3><p>Change the app feel without changing the scoring flow.</p><div class="theme-grid" id="themeGrid"></div></section>
-        <section class="premium-panel"><h3>Premium Graphics</h3><p>Choose a poster style for match graphics and final score shares.</p><select id="posterStyleSelect"><option value="classic">Classic ScoreFlow</option><option value="championship">Championship Gold</option><option value="neon">Neon Arena</option><option value="spotlight">Arena Spotlight</option></select><small id="posterStyleNote">Premium poster styles are part of ScoreFlow Pro.</small></section>
-        <section class="premium-panel"><h3>History + Cloud</h3><p id="historyLimitText">Free keeps your latest 25 matches. Pro unlocks unlimited match history.</p><label class="setting-toggle-row"><span>Cloud Backup</span><input id="cloudBackupToggle" type="checkbox" checked /></label><button id="backupNowBtn" value="default" type="button">Backup Now</button></section>
-        <section class="premium-panel locked-roadmap"><h3>Coming Next</h3><p>Club branding, shared scorer accounts, tournament dashboards, premium splash layouts, and App Store billing hooks.</p></section>
+  <section class="settings-screen" id="settingsScreen" aria-label="ScoreFlow Settings">
+    <header class="settings-hero">
+      <div class="settings-topline">
+        <button id="settingsBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
       </div>
-    </form>
-  </dialog>
+
+      <div class="hero-copy">
+        <span class="eyebrow">Settings</span>
+        <h1>Your ScoreFlow. Your Way.</h1>
+        <p>Control the look, branding, backups, and premium features that make ScoreFlow feel like your team's app.</p>
+      </div>
+    </header>
+
+    <main class="settings-page-list">
+      <button id="settingsBrandingBtn" class="settings-nav-card" type="button">
+        <span><strong>Loading Screen</strong><small>Use your club logo on the ScoreFlow loading screen. Pro feature.</small></span><b>›</b>
+      </button>
+      <button id="settingsThemesBtn" class="settings-nav-card" type="button">
+        <span><strong>Themes</strong><small>Choose the app's visual style.</small></span><b>›</b>
+      </button>
+      <button id="settingsGraphicsBtn" class="settings-nav-card" type="button">
+        <span><strong>Background Graphics</strong><small>Match Results and social share backgrounds.</small></span><b>›</b>
+      </button>
+      <section class="settings-nav-card settings-cloud-card">
+        <span><strong>Cloud Backup</strong><small id="historyLimitText">Free keeps your latest 3 matches. Pro unlocks unlimited match history and account cloud backup.</small></span>
+        <label class="setting-toggle-row"><input id="cloudBackupToggle" type="checkbox" checked /><b>On</b></label>
+      </section>
+      <section class="home-card pro-home-card settings-pro-card">
+        <div class="home-card-head pro-card-head">
+          <div class="pro-title-lockup">
+            <span class="pro-mark" aria-hidden="true">★</span>
+            <div>
+              <span class="pro-kicker">Premium upgrade</span>
+              <h2>ScoreFlow Pro</h2>
+            </div>
+          </div>
+          <small id="settingsPlanName">Free</small>
+        </div>
+        <p id="settingsPlanDescription" class="home-muted">Free includes live scoring, sharing, QR codes, and your latest 3 matches.</p>
+        <div class="pro-home-actions">
+          <button id="settingsUpgradeBtn" type="button">Try Pro</button>
+          <button id="backupNowBtn" type="button">Backup Now</button>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <section class="settings-subscreen" id="settingsThemesScreen" aria-label="ScoreFlow Themes">
+    <header class="settings-hero">
+      <div class="settings-topline">
+        <button id="settingsThemesBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
+      </div>
+      <div class="hero-copy">
+        <span class="eyebrow">Themes</span>
+        <h1>Choose Your Look.</h1>
+        <p>Classic is free. Premium themes unlock with ScoreFlow Pro.</p>
+      </div>
+    </header>
+    <main class="settings-page-list"><div class="theme-grid settings-choice-grid" id="themeGrid"></div></main>
+  </section>
+
+  <section class="settings-subscreen" id="settingsGraphicsScreen" aria-label="Result Background Graphics">
+    <header class="settings-hero">
+      <div class="settings-topline">
+        <button id="settingsGraphicsBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
+      </div>
+      <div class="hero-copy">
+        <span class="eyebrow">Background Graphics</span>
+        <h1>Results That Pop.</h1>
+        <p>Pick the background used for Match Results and future social share graphics.</p>
+      </div>
+    </header>
+    <main class="settings-page-list"><div class="background-graphics-grid" id="backgroundGraphicsGrid"></div></main>
+  </section>
+
+  <section class="settings-subscreen" id="settingsBrandingScreen" aria-label="Club Branding">
+    <header class="settings-hero">
+      <div class="settings-topline">
+        <button id="settingsBrandingBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
+      </div>
+      <div class="hero-copy">
+        <span class="eyebrow">Club Branding</span>
+        <h1>Your Club. Your App.</h1>
+        <p>Use your club logo for the ScoreFlow loading screen. Pro feature.</p>
+      </div>
+    </header>
+    <main class="settings-page-list branding-settings-list">
+      <label class="branding-upload-card">
+        <input id="loadingLogoInput" type="file" accept="image/*" />
+        <img id="loadingLogoPreview" class="blank" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Loading screen logo preview" />
+        <span><strong>Loading Screen Logo</strong><small>Replace the loading logo with your club logo. Pro feature.</small></span>
+      </label>
+    </main>
+  </section>
 
   <script type="module" src="app.js"></script>
 </body>

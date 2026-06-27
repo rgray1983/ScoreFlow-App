@@ -80,12 +80,13 @@ const PREMIUM_THEMES = [
 
 const POSTER_STYLES = ["classic", "championship", "neon", "spotlight"];
 const RESULTS_BACKGROUNDS = [
-  { id: "default", name: "Default", pro: false },
-  { id: "court-dark", name: "Pro Placeholder 1", pro: true },
-  { id: "championship", name: "Pro Placeholder 2", pro: true },
-  { id: "spotlight", name: "Pro Placeholder 3", pro: true },
-  { id: "neon", name: "Pro Placeholder 4", pro: true },
-  { id: "custom", name: "Upload Your Own", pro: true }
+  { id: "default", name: "Default", file: "default.jpg", pro: false },
+  { id: "default-blue", name: "Default Blue", file: "default-blue.png", pro: false },
+  { id: "water-color", name: "Water Color", file: "water-color.png", pro: true },
+  { id: "blue-wave", name: "Blue Wave", file: "blue-wave.png", pro: true },
+  { id: "gold-bracket", name: "Gold Bracket", file: "gold-bracket.png", pro: true },
+  { id: "neon-lights", name: "Neon Lights", file: "neon-lights.png", pro: true },
+  { id: "power-hitter", name: "Power Hitter", file: "power-hitter.png", pro: true }
 ];
 const FREE_MATCH_HISTORY_LIMIT = 3;
 const PRO_MATCH_HISTORY_LIMIT = 10000;
@@ -94,6 +95,8 @@ const premium = {
   isPro: false,
   theme: "classic",
   posterStyle: "classic",
+  resultBackground: "default",
+  loadingLogo: "",
   cloudBackup: true
 };
 
@@ -187,6 +190,21 @@ const els = {
   homeTeamHueThumb: $("homeTeamHueThumb"),
   saveHomeTeamBtn: $("saveHomeTeamBtn"),
   appSettingsDialog: $("appSettingsDialog"),
+  settingsScreen: $("settingsScreen"),
+  settingsBackBtn: $("settingsBackBtn"),
+  settingsThemesBtn: $("settingsThemesBtn"),
+  settingsGraphicsBtn: $("settingsGraphicsBtn"),
+  settingsBrandingBtn: $("settingsBrandingBtn"),
+  settingsThemesScreen: $("settingsThemesScreen"),
+  settingsThemesBackBtn: $("settingsThemesBackBtn"),
+  settingsGraphicsScreen: $("settingsGraphicsScreen"),
+  settingsGraphicsBackBtn: $("settingsGraphicsBackBtn"),
+  settingsBrandingScreen: $("settingsBrandingScreen"),
+  settingsBrandingBackBtn: $("settingsBrandingBackBtn"),
+  backgroundGraphicsGrid: $("backgroundGraphicsGrid"),
+  settingsProCardSlot: $("settingsProCardSlot"),
+  loadingLogoInput: $("loadingLogoInput"),
+  loadingLogoPreview: $("loadingLogoPreview"),
   closeAppSettingsBtn: $("closeAppSettingsBtn"),
   userEmail: $("userEmail"),
   userPassword: $("userPassword"),
@@ -324,8 +342,7 @@ function setConnectionStatus(status, label) {
 }
 
 function applySplashImageFromStorage() {
-  const savedSplash = localStorage.getItem("scoreflowSplashImage");
-  const src = savedSplash || "splash-logo.png";
+  const src = hasProAccess() && premium.loadingLogo ? premium.loadingLogo : "splash-logo.png";
   if (els.splashLogoImg) els.splashLogoImg.src = src;
 }
 
@@ -945,6 +962,8 @@ function loadPremiumSettings() {
     premium.isPro = Boolean(saved.isPro);
     premium.theme = saved.theme || "classic";
     premium.posterStyle = saved.posterStyle || "classic";
+    premium.resultBackground = saved.resultBackground || "default";
+    premium.loadingLogo = saved.loadingLogo || "";
     premium.cloudBackup = saved.cloudBackup !== false;
   }
   applyPremiumSettings(false);
@@ -973,13 +992,27 @@ function normalizePosterStyle(style) {
   return next !== "classic" && !hasProAccess() ? "classic" : next;
 }
 
+function normalizeResultBackground(backgroundId) {
+  const bg = RESULTS_BACKGROUNDS.find((item) => item.id === backgroundId) || RESULTS_BACKGROUNDS[0];
+  return bg.pro && !hasProAccess() ? "default" : bg.id;
+}
+
 function applyPremiumSettings(sync = true) {
   premium.theme = normalizeTheme(premium.theme);
   premium.posterStyle = normalizePosterStyle(premium.posterStyle);
+  premium.resultBackground = normalizeResultBackground(premium.resultBackground);
   document.body.dataset.theme = premium.theme;
   document.body.classList.toggle("pro-active", hasProAccess());
   if (els.cloudBackupToggle) els.cloudBackupToggle.checked = premium.cloudBackup;
   if (els.posterStyleSelect) els.posterStyleSelect.value = premium.posterStyle;
+  if (els.loadingLogoPreview) {
+    const hasLoadingLogo = hasProAccess() && Boolean(premium.loadingLogo);
+    els.loadingLogoPreview.src = hasLoadingLogo
+      ? premium.loadingLogo
+      : "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    els.loadingLogoPreview.classList.toggle("blank", !hasLoadingLogo);
+  }
+  applySplashImageFromStorage();
   renderPremiumUI();
   if (sync) syncPremiumSettingsToCloud();
 }
@@ -1006,18 +1039,31 @@ function renderPremiumUI() {
       const active = theme.id === premium.theme;
       return `<button value="default" type="button" class="theme-choice ${active ? "active" : ""} ${locked ? "locked" : ""}" data-theme-choice="${theme.id}">
         <span class="theme-dot theme-${theme.id}"></span>
-        <strong>${theme.name}</strong>
-        <small>${locked ? "Locked" : theme.tag}</small>
+        <span><strong>${theme.name}</strong><small>${locked ? "Pro unlock" : theme.tag}</small></span>
+        <b>${active ? "✓" : locked ? "★" : ""}</b>
+      </button>`;
+    }).join("");
+  }
+  if (els.backgroundGraphicsGrid) {
+    els.backgroundGraphicsGrid.innerHTML = RESULTS_BACKGROUNDS.map((bg) => {
+      const locked = bg.pro && !pro;
+      const active = bg.id === premium.resultBackground;
+      return `<button value="default" type="button" class="graphic-choice ${active ? "active" : ""} ${locked ? "locked" : ""}" data-background-choice="${bg.id}">
+        <span class="graphic-thumb results-bg-${bg.id}"></span>
+        <span><strong>${bg.name}</strong><small>${locked ? "Pro graphic" : "Free graphic"}</small></span>
+        <b>${active ? "✓" : locked ? "★" : ""}</b>
       </button>`;
     }).join("");
   }
 }
+
 
 function toggleProDemo() {
   premium.isPro = !premium.isPro;
   if (!premium.isPro) {
     premium.theme = "classic";
     premium.posterStyle = "classic";
+    if (RESULTS_BACKGROUNDS.find((bg) => bg.id === premium.resultBackground)?.pro) premium.resultBackground = "default";
   }
   savePremiumSettings(true);
   renderHomeData();
@@ -1046,6 +1092,60 @@ function setPosterStyle(style) {
   premium.posterStyle = normalizePosterStyle(style);
   savePremiumSettings(true);
   toast("Poster style updated");
+}
+
+function setResultBackground(backgroundId) {
+  const bg = RESULTS_BACKGROUNDS.find((item) => item.id === backgroundId);
+  if (!bg) return;
+  if (bg.pro && !hasProAccess()) {
+    toast("That background graphic is a Pro feature", true);
+    focusProFromSettings();
+    return;
+  }
+  premium.resultBackground = bg.id;
+  savePremiumSettings(true);
+  toast(`${bg.name} background selected`);
+}
+
+function openSettingsPage(page = "main") {
+  renderPremiumUI();
+  document.body.classList.add("settings-active");
+  document.body.dataset.settingsPage = page;
+}
+
+function closeSettingsPage() {
+  document.body.classList.remove("settings-active");
+  document.body.dataset.settingsPage = "main";
+}
+
+function focusProFromSettings() {
+  document.body.dataset.settingsPage = "main";
+  window.setTimeout(() => {
+    const card = document.querySelector("#settingsScreen .settings-pro-card");
+    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    card?.classList.remove("pro-attention");
+    void card?.offsetWidth;
+    card?.classList.add("pro-attention");
+    window.setTimeout(() => card?.classList.remove("pro-attention"), 3400);
+  }, 240);
+}
+
+function handleLoadingLogoUpload(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+  if (!hasProAccess()) {
+    toast("Loading screen branding is a Pro feature", true);
+    input.value = "";
+    focusProFromSettings();
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    premium.loadingLogo = String(reader.result || "");
+    savePremiumSettings(true);
+    toast("Loading screen updated");
+  };
+  reader.readAsDataURL(file);
 }
 
 async function syncPremiumSettingsToCloud() {
@@ -1211,7 +1311,7 @@ async function saveMatchHistory() {
     completedSets: state.completedSets,
     matchFormat: state.matchFormat,
     matchSets: state.matchSets,
-    resultBackground: "default",
+    resultBackground: premium.resultBackground || "default",
     updatedAtMs: Date.now()
   };
   const matches = localMatches();
@@ -1309,7 +1409,7 @@ function currentMatchResultData() {
     completedSets: state.completedSets,
     matchFormat: state.matchFormat,
     matchSets: state.matchSets,
-    resultBackground: "default",
+    resultBackground: premium.resultBackground || "default",
     updatedAtMs: Date.now()
   };
 }
@@ -2417,10 +2517,18 @@ function wireEvents() {
   els.homeTeamColorHex?.addEventListener("change", () => setHomeTeamDraftColor(els.homeTeamColorHex.value));
   bindColorDrag(els.homeTeamColorField, (event) => setColorFromFieldPoint(event.clientX, event.clientY));
   bindColorDrag(els.homeTeamHueTrack, (event) => setHueFromPoint(event.clientX));
-  els.homeSettingsBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
+  els.homeSettingsBtn?.addEventListener("click", () => openSettingsPage("main"));
   els.upgradeProBtn?.addEventListener("click", toggleProDemo);
   els.settingsUpgradeBtn?.addEventListener("click", toggleProDemo);
-  els.themesShortcutBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
+  els.themesShortcutBtn?.addEventListener("click", () => openSettingsPage("themes"));
+  els.settingsBackBtn?.addEventListener("click", closeSettingsPage);
+  els.settingsThemesBtn?.addEventListener("click", () => openSettingsPage("themes"));
+  els.settingsGraphicsBtn?.addEventListener("click", () => openSettingsPage("graphics"));
+  els.settingsBrandingBtn?.addEventListener("click", () => openSettingsPage("branding"));
+  els.settingsThemesBackBtn?.addEventListener("click", () => openSettingsPage("main"));
+  els.settingsGraphicsBackBtn?.addEventListener("click", () => openSettingsPage("main"));
+  els.settingsBrandingBackBtn?.addEventListener("click", () => openSettingsPage("main"));
+  els.loadingLogoInput?.addEventListener("change", () => handleLoadingLogoUpload(els.loadingLogoInput));
   els.matchHistoryMoreBtn?.addEventListener("click", openMatchHistoryMore);
   els.matchHistoryBackBtn?.addEventListener("click", showHomeScreen);
   els.matchHistoryList?.addEventListener("click", handleMatchResultCardClick);
@@ -2428,6 +2536,10 @@ function wireEvents() {
   els.themeGrid?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-theme-choice]");
     if (button) setPremiumTheme(button.dataset.themeChoice);
+  });
+  els.backgroundGraphicsGrid?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-background-choice]");
+    if (button) setResultBackground(button.dataset.backgroundChoice);
   });
   els.posterStyleSelect?.addEventListener("change", () => setPosterStyle(els.posterStyleSelect.value));
   els.cloudBackupToggle?.addEventListener("change", () => { premium.cloudBackup = els.cloudBackupToggle.checked; savePremiumSettings(true); });

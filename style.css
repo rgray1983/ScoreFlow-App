@@ -156,6 +156,14 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   pointer-events: none;
 }
 
+.settings-active .home-screen,
+.settings-active .app-shell,
+.settings-active .match-history-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* =========================================================
    04B. Match History Page
    Full premium history view using the Home Screen hero language.
@@ -1142,6 +1150,253 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   .alert-banner { padding: 9px; border-radius: 14px; }
 }
 
+
+/* =========================================================
+   04C. Settings Pages
+   Slide-in settings experience with nested panels.
+   ========================================================= */
+.settings-screen,
+.settings-subscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  overflow: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1), visibility .28s ease;
+  background:
+    radial-gradient(circle at 18% -10%, rgba(22, 89, 160, .18), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(255, 20, 20, .12), transparent 30%),
+    var(--bg);
+}
+
+.settings-active[data-settings-page="main"] .settings-screen,
+.settings-active[data-settings-page="themes"] #settingsThemesScreen,
+.settings-active[data-settings-page="graphics"] #settingsGraphicsScreen,
+.settings-active[data-settings-page="branding"] #settingsBrandingScreen {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.settings-active[data-settings-page="themes"] .settings-screen,
+.settings-active[data-settings-page="graphics"] .settings-screen,
+.settings-active[data-settings-page="branding"] .settings-screen {
+  transform: translateX(-16%);
+  opacity: .45;
+}
+
+.settings-hero {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(18, 31, 52, .92), rgba(12, 18, 30, .96));
+  box-shadow: var(--shadow);
+}
+
+.settings-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-page-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 0;
+}
+
+.settings-nav-card,
+.branding-upload-card,
+.graphic-choice,
+.settings-choice-grid .theme-choice {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(16, 24, 39, .82);
+  color: var(--text);
+  text-align: left;
+}
+
+.settings-nav-card strong,
+.branding-upload-card strong,
+.graphic-choice strong,
+.settings-choice-grid .theme-choice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.settings-nav-card small,
+.branding-upload-card small,
+.graphic-choice small,
+.settings-choice-grid .theme-choice small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.settings-nav-card > b {
+  color: var(--brand);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.graphic-choice > b,
+.settings-choice-grid .theme-choice > b {
+  min-width: 24px;
+  color: var(--brand);
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1;
+}
+
+.graphic-choice.locked > b,
+.settings-choice-grid .theme-choice.locked > b {
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.settings-cloud-card {
+  grid-template-columns: 1fr auto;
+}
+
+.settings-cloud-card .setting-toggle-row {
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.settings-pro-card {
+  margin-top: 4px;
+}
+
+.settings-choice-grid,
+.background-graphics-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-choice-grid .theme-choice {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.theme-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: linear-gradient(135deg, var(--brand), var(--panel-2));
+}
+
+.theme-classic { background: linear-gradient(135deg, #ff1414, #162235); }
+.theme-championship { background: linear-gradient(135deg, #fbbf24, #221b0c); }
+.theme-neon { background: linear-gradient(135deg, #e879f9, #0ea5e9); }
+.theme-midnight { background: linear-gradient(135deg, #0f172a, #38bdf8); }
+.theme-ice { background: linear-gradient(135deg, #e0f2fe, #1d4ed8); }
+.theme-fire { background: linear-gradient(135deg, #fb923c, #991b1b); }
+
+.theme-choice.active,
+.graphic-choice.active {
+  border-color: rgba(255,255,255,.38);
+  background: rgba(255,255,255,.1);
+}
+
+.theme-choice.locked,
+.graphic-choice.locked {
+  opacity: .72;
+}
+
+.graphic-choice {
+  grid-template-columns: 70px 1fr auto;
+  min-height: 92px;
+}
+
+.graphic-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.18);
+  background-image: var(--results-background-image);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.branding-settings-list {
+  gap: 12px;
+}
+
+.branding-upload-card {
+  grid-template-columns: 74px 1fr;
+}
+
+.branding-upload-card input {
+  display: none;
+}
+
+.branding-upload-card img {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+.branding-upload-card img.blank {
+  background: rgba(255,255,255,.045);
+  border-style: dashed;
+  opacity: .72;
+}
+
+body:not(.pro-active) .branding-upload-card {
+  opacity: .82;
+}
+
+
+body[data-theme="championship"] {
+  --brand: #fbbf24;
+  --brand-dark: #b7791f;
+  --secondary-action-border: rgba(251, 191, 36, .28);
+}
+body[data-theme="neon"] {
+  --brand: #d946ef;
+  --brand-dark: #7e22ce;
+  --secondary-action-border: rgba(217, 70, 239, .32);
+}
+body[data-theme="midnight"] {
+  --brand: #38bdf8;
+  --brand-dark: #0369a1;
+  --secondary-action-border: rgba(56, 189, 248, .3);
+}
+body[data-theme="ice"] {
+  --brand: #60a5fa;
+  --brand-dark: #1d4ed8;
+  --secondary-action-border: rgba(147, 197, 253, .34);
+}
+body[data-theme="fire"] {
+  --brand: #f97316;
+  --brand-dark: #c2410c;
+  --secondary-action-border: rgba(249, 115, 22, .34);
+}
+
 /* =========================================================
    07A. Results Card Component
    Reusable match result card for completed-match popups,
@@ -1175,6 +1430,7 @@ dialog::backdrop { background: rgba(0,0,0,95); }
     linear-gradient(180deg, rgba(5, 7, 12, .24), rgba(5, 7, 12, .48)),
     var(--results-background-image, linear-gradient(180deg, rgba(95, 53, 154, .92), rgba(58, 37, 112, .94))),
     #3a2570;
+  background-image: var(--results-background-image);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -1202,14 +1458,13 @@ dialog::backdrop { background: rgba(0,0,0,95); }
 }
 
 .results-bg-default,
-.results-bg-classic {
-  --results-background-image: url("images/results/default.jpg");
-}
-
-.results-bg-court-dark { --results-background-image: linear-gradient(180deg, rgba(19, 32, 54, .94), rgba(8, 11, 18, .96)); }
-.results-bg-championship { --results-background-image: linear-gradient(180deg, rgba(95, 65, 14, .94), rgba(19, 24, 39, .96)); }
-.results-bg-spotlight { --results-background-image: linear-gradient(180deg, rgba(47, 62, 88, .94), rgba(12, 18, 30, .96)); }
-.results-bg-neon { --results-background-image: linear-gradient(180deg, rgba(44, 22, 76, .94), rgba(8, 11, 18, .96)); }
+.results-bg-classic { --results-background-image: url("images/results/default.jpg"); }
+.results-bg-default-blue { --results-background-image: url("images/results/default-blue.png"); }
+.results-bg-water-color { --results-background-image: url("images/results/water-color.png"); }
+.results-bg-blue-wave { --results-background-image: url("images/results/blue-wave.png"); }
+.results-bg-gold-bracket { --results-background-image: url("images/results/gold-bracket.png"); }
+.results-bg-neon-lights { --results-background-image: url("images/results/neon-lights.png"); }
+.results-bg-power-hitter { --results-background-image: url("images/results/power-hitter.png"); }
 
 .results-date {
   position: absolute;
