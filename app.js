@@ -299,6 +299,8 @@ let initialSetupActive = false;
 let setupComplete = false;
 let splashClosed = false;
 let activeResultsMatch = null;
+let activeResultsGraphic = null;
+let activeResultsGraphicPromise = null;
 
 
 function updateViewportHeight() {
@@ -1513,8 +1515,14 @@ function renderResultsCard(match) {
 
 function openResults(match) {
   activeResultsMatch = match || currentMatchResultData();
+  activeResultsGraphic = null;
+  activeResultsGraphicPromise = null;
   renderResultsCard(activeResultsMatch);
   els.recapDialog?.showModal();
+  activeResultsGraphicPromise = prepareResultsGraphic(activeResultsMatch).catch((error) => {
+    console.error("ScoreFlow results prebuild failed", error);
+    return null;
+  });
 }
 
 async function openMatchResultsById(matchId) {
@@ -2175,10 +2183,6 @@ function openRecap() {
   openResults(currentMatchResultData());
 }
 
-async function shareRecap() {
-  await sharePoster(activeResultsData());
-}
-
 
 function resultBackgroundMeta(backgroundId = premium.resultBackground) {
   return RESULTS_BACKGROUNDS.find((item) => item.id === normalizeResultBackground(backgroundId)) || RESULTS_BACKGROUNDS[0];
@@ -2400,54 +2404,149 @@ function activeResultsData() {
   return activeResultsMatch || currentMatchResultData();
 }
 
+function setResultsActionState(isPreparing = false) {
+  if (els.shareRecapBtn) {
+    els.shareRecapBtn.disabled = isPreparing;
+    els.shareRecapBtn.textContent = isPreparing ? "Preparing…" : "Share Results";
+  }
+  if (els.posterRecapBtn) {
+    els.posterRecapBtn.disabled = isPreparing;
+    els.posterRecapBtn.setAttribute("aria-busy", String(isPreparing));
+    els.posterRecapBtn.title = isPreparing ? "Preparing Results Graphic" : "Download Results Graphic";
+  }
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve) => {
+    if (!canvas) {
+      resolve(null);
+      return;
+    }
+    if (typeof canvas.toBlob === "function") {
+      canvas.toBlob(resolve, "image/png", 0.95);
+      return;
+    }
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const byteString = atob(dataUrl.split(",")[1] || "");
+      const bytes = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+      resolve(new Blob([bytes], { type: "image/png" }));
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function prepareResultsGraphic(match = activeResultsData()) {
+  activeResultsGraphic = null;
+  setResultsActionState(true);
+
+  try {
+    const canvas = await drawResultsGraphic(match);
+    if (!canvas) throw new Error("Results canvas could not be created.");
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const blob = await canvasToBlob(canvas);
+    if (!blob) throw new Error("Results image could not be created.");
+
+    const file = typeof File === "function"
+      ? new File([blob], "scoreflow-results.png", { type: "image/png" })
+      : blob;
+    activeResultsGraphic = { canvas, dataUrl, blob, file };
+    return activeResultsGraphic;
+  } catch (error) {
+    console.error("ScoreFlow results graphic failed", error);
+    toast("Results image could not be created", true);
+    return null;
+  } finally {
+    setResultsActionState(false);
+  }
+}
+
+async function getResultsGraphic(match = activeResultsData()) {
+  if (activeResultsGraphic?.dataUrl || activeResultsGraphic?.file) return activeResultsGraphic;
+  if (activeResultsGraphicPromise) return await activeResultsGraphicPromise;
+  activeResultsGraphicPromise = prepareResultsGraphic(match);
+  return await activeResultsGraphicPromise;
+}
+
+function getReadyResultsGraphic() {
+  if (activeResultsGraphic?.dataUrl || activeResultsGraphic?.file) return activeResultsGraphic;
+  return null;
+}
+
+function triggerResultsDownload(graphic = getReadyResultsGraphic()) {
+  if (!graphic?.dataUrl) return;
+  const link = document.createElement("a");
+  link.download = "scoreflow-results.png";
+  link.href = graphic.dataUrl;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 async function openPoster(finalMode = false) {
   await sharePoster(activeResultsData());
 }
 
-function posterBlob() {
-  return new Promise((resolve) => els.posterCanvas?.toBlob(resolve, "image/png", 0.95));
+async function shareRecap(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  const graphic = await getResultsGraphic();
+  if (!graphic) {
+    toast("Results image could not be created", true);
+    return;
+  }
+
+  if (navigator.canShare?.({ files: [graphic.file] })) {
+    try {
+      await navigator.share({ files: [graphic.file], title: "ScoreFlow Results" });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      console.warn("Native results share failed, falling back to download", error);
+    }
+  }
+
+  triggerResultsDownload(graphic);
+}
+
+async function downloadActiveResults(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  const graphic = await getResultsGraphic();
+  if (!graphic) {
+    toast("Results image could not be created", true);
+    return;
+  }
+
+  triggerResultsDownload(graphic);
 }
 
 async function sharePoster(match = activeResultsData()) {
-  const canvas = await drawResultsGraphic(match);
-  if (!canvas) {
-    toast("Graphic could not be created", true);
-    return;
-  }
+  const graphic = await getResultsGraphic(match);
+  if (!graphic) return;
 
-  const blob = await posterBlob();
-  if (!blob) {
-    toast("Graphic could not be created", true);
-    return;
-  }
-
-  const file = new File([blob], "scoreflow-results.png", { type: "image/png" });
-  if (navigator.canShare?.({ files: [file] })) {
+  if (navigator.canShare?.({ files: [graphic.file] })) {
     try {
-      await navigator.share({ files: [file], title: "ScoreFlow Results" });
+      await navigator.share({ files: [graphic.file], title: "ScoreFlow Results" });
       return;
     } catch (error) {
       if (error?.name === "AbortError") return;
     }
   }
 
-  await downloadPoster(match);
+  triggerResultsDownload(graphic);
 }
 
 async function downloadPoster(match = activeResultsData()) {
-  const canvas = await drawResultsGraphic(match);
-  if (!canvas) {
-    toast("Graphic could not be created", true);
-    return;
-  }
-
-  const link = document.createElement("a");
-  link.download = "scoreflow-results.png";
-  link.href = canvas.toDataURL("image/png");
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  const graphic = await getResultsGraphic(match);
+  if (!graphic) return;
+  triggerResultsDownload(graphic);
 }
 
 async function saveTeamProfiles() {
@@ -2520,6 +2619,7 @@ function pulseCenter() {
 }
 
 function buildSwatches(container, team) {
+  if (!container) return;
   container.innerHTML = "";
   COLORS.forEach((color) => {
     const button = document.createElement("button");
@@ -2646,38 +2746,50 @@ function updateNameFromInline(team) {
   queueRemoteUpdate();
 }
 
+function addSafeListener(target, eventName, handler, options) {
+  const element = typeof target === "string" ? $(target) : target;
+  if (!element || typeof element.addEventListener !== "function") return;
+  element.addEventListener(eventName, handler, options);
+}
+
 function wireEvents() {
-  $("homePlus").addEventListener("click", () => point("home"));
-  $("awayPlus").addEventListener("click", () => point("away"));
-  $("homeScoreBtn").addEventListener("click", () => point("home"));
-  $("awayScoreBtn").addEventListener("click", () => point("away"));
-  $("homeMinus").addEventListener("click", () => subtract("home"));
-  $("awayMinus").addEventListener("click", () => subtract("away"));
-  $("undoBtn").addEventListener("click", undo);
-  $("newSetBtn").addEventListener("click", newSet);
-  $("newMatchBtn").addEventListener("click", newMatch);
-  $("shareBtn").addEventListener("click", openShare);
+  addSafeListener("homePlus", "click", () => point("home"));
+  addSafeListener("awayPlus", "click", () => point("away"));
+  addSafeListener("homeScoreBtn", "click", () => point("home"));
+  addSafeListener("awayScoreBtn", "click", () => point("away"));
+  addSafeListener("homeMinus", "click", () => subtract("home"));
+  addSafeListener("awayMinus", "click", () => subtract("away"));
+  addSafeListener("undoBtn", "click", undo);
+  addSafeListener("newSetBtn", "click", newSet);
+  addSafeListener("newMatchBtn", "click", newMatch);
+  addSafeListener("shareBtn", "click", openShare);
   els.scoreboardHomeBtn?.addEventListener("click", showHomeScreen);
-  $("settingsBtn").addEventListener("click", openSettings);
-  $("saveSettingsBtn").addEventListener("click", saveSettings);
+  addSafeListener("settingsBtn", "click", openSettings);
+  addSafeListener("saveSettingsBtn", "click", saveSettings);
   [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
   });
   bindDialogBackdropClose();
-  els.settingsDialog.addEventListener("close", () => {
+  els.settingsDialog?.addEventListener("close", () => {
     if (!initialSetupActive) {
       document.body.classList.remove("setup-active");
       updateRotateScreenState();
     }
   });
-  $("createLiveBtn").addEventListener("click", createLiveGame);
-  $("copyLinkBtn").addEventListener("click", copyViewerLink);
+  addSafeListener("createLiveBtn", "click", createLiveGame);
+  addSafeListener("copyLinkBtn", "click", copyViewerLink);
   els.nativeShareBtn?.addEventListener("click", shareViewerLink);
   els.showQrBtn?.addEventListener("click", toggleQrCard);
   els.posterBtn?.addEventListener("click", () => openPoster(false));
   els.shareRecapBtn?.addEventListener("click", shareRecap);
-  els.posterRecapBtn?.addEventListener("click", () => downloadPoster(activeResultsData()));
+  els.posterRecapBtn?.addEventListener("click", downloadActiveResults);
+  els.recapDialog?.addEventListener("close", () => {
+    activeResultsMatch = null;
+    activeResultsGraphic = null;
+    activeResultsGraphicPromise = null;
+    setResultsActionState(false);
+  });
   els.sharePosterBtn?.addEventListener("click", sharePoster);
   els.downloadPosterBtn?.addEventListener("click", downloadPoster);
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
@@ -2754,12 +2866,12 @@ function wireEvents() {
   });
   els.savedTeamsList?.addEventListener("click", wireHomeListClicks);
   els.favoriteTeamsList?.addEventListener("click", wireHomeListClicks);
-  els.homeLogoInput.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
-  els.awayLogoInput.addEventListener("change", () => handleLogo(els.awayLogoInput, els.awayLogo, els.awayLogoInput.closest(".logo-picker")));
-  els.homeName.addEventListener("change", () => updateNameFromInline("home"));
-  els.awayName.addEventListener("change", () => updateNameFromInline("away"));
-  els.winnerOverlay.addEventListener("click", closeWinner);
-  els.winnerOverlay.addEventListener("keydown", (event) => {
+  els.homeLogoInput?.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
+  els.awayLogoInput?.addEventListener("change", () => handleLogo(els.awayLogoInput, els.awayLogo, els.awayLogoInput.closest(".logo-picker")));
+  els.homeName?.addEventListener("change", () => updateNameFromInline("home"));
+  els.awayName?.addEventListener("change", () => updateNameFromInline("away"));
+  els.winnerOverlay?.addEventListener("click", closeWinner);
+  els.winnerOverlay?.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") closeWinner();
   });
   window.addEventListener("resize", () => {
@@ -2796,34 +2908,44 @@ function applyViewerMode() {
 async function boot() {
   updateViewportHeight();
   preventMobileDoubleTapZoom();
-  loadPremiumSettings();
-  applySplashImageFromStorage();
-  applySavedHomeTeam();
-  buildSwatches(els.homeSwatches, "home");
-  buildSwatches(els.awaySwatches, "away");
-  wireEvents();
-  setTeamColor("home", state.homeColor, false);
-  setTeamColor("away", state.awayColor, false);
-  applyMatchFormat(state.matchFormat);
-  render();
-  await renderHomeData();
 
-  if (initFirebase()) {
-    setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
-    if (liveGameId) await startLiveListener();
-  } else {
-    setConnectionStatus("offline", "Offline");
+  let shouldShowViewerStart = false;
+  try {
+    loadPremiumSettings();
+    applySplashImageFromStorage();
+    applySavedHomeTeam();
+    buildSwatches(els.homeSwatches, "home");
+    buildSwatches(els.awaySwatches, "away");
+    wireEvents();
+    setTeamColor("home", state.homeColor, false);
+    setTeamColor("away", state.awayColor, false);
+    applyMatchFormat(state.matchFormat);
+    render();
+    await renderHomeData();
+
+    if (initFirebase()) {
+      setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
+      if (liveGameId) await startLiveListener();
+    } else {
+      setConnectionStatus("offline", "Offline");
+    }
+    applyViewerMode();
+    if (!isViewer && liveGameId) document.body.classList.add("scoreboard-active");
+    updateRotateScreenState();
+    registerServiceWorker();
+    shouldShowViewerStart = isViewer;
+  } catch (error) {
+    console.error("ScoreFlow boot failed", error);
+    try {
+      setConnectionStatus("offline", "Offline");
+    } catch {}
+  } finally {
+    window.setTimeout(() => {
+      hideSplash();
+      if (shouldShowViewerStart) requestAnimationFrame(showLiveStartOverlay);
+      else requestAnimationFrame(showHomeScreen);
+    }, 900);
   }
-  applyViewerMode();
-  if (!isViewer && liveGameId) document.body.classList.add("scoreboard-active");
-  updateRotateScreenState();
-  registerServiceWorker();
-
-  window.setTimeout(() => {
-    hideSplash();
-    if (isViewer) requestAnimationFrame(showLiveStartOverlay);
-    else requestAnimationFrame(showHomeScreen);
-  }, 2500);
 }
 
 boot();
