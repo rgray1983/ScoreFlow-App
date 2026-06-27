@@ -2405,12 +2405,7 @@ function setResultsActionState(isPreparing = false) {
   if (els.shareRecapBtn) {
     els.shareRecapBtn.classList.toggle("is-preparing", isPreparing);
     els.shareRecapBtn.setAttribute("aria-busy", String(isPreparing));
-    els.shareRecapBtn.textContent = isPreparing ? "Preparing…" : "Share Results";
-  }
-  if (els.posterRecapBtn) {
-    els.posterRecapBtn.classList.toggle("is-preparing", isPreparing);
-    els.posterRecapBtn.setAttribute("aria-busy", String(isPreparing));
-    els.posterRecapBtn.title = isPreparing ? "Preparing Results Graphic" : "Download Results Graphic";
+    els.shareRecapBtn.textContent = isPreparing ? "Preparing…" : "Share/Download Results";
   }
 }
 
@@ -2516,18 +2511,6 @@ async function shareRecap(event) {
   triggerResultsDownload(graphic);
 }
 
-async function downloadActiveResults(event) {
-  event?.preventDefault?.();
-  event?.stopPropagation?.();
-
-  const graphic = await getResultsGraphic();
-  if (!graphic) {
-    toast("Results image could not be created", true);
-    return;
-  }
-
-  triggerResultsDownload(graphic);
-}
 
 async function sharePoster(match = activeResultsData()) {
   const graphic = await getResultsGraphic(match);
@@ -2785,16 +2768,6 @@ function wireEvents() {
   els.showQrBtn?.addEventListener("click", toggleQrCard);
   els.posterBtn?.addEventListener("click", () => openPoster(false));
   els.shareRecapBtn?.addEventListener("click", shareRecap);
-  els.posterRecapBtn?.addEventListener("click", downloadActiveResults);
-  els.recapDialog?.addEventListener("pointerup", (event) => {
-    const shareButton = event.target.closest("#shareRecapBtn");
-    const downloadButton = event.target.closest("#posterRecapBtn");
-    if (!shareButton && !downloadButton) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (shareButton) shareRecap(event);
-    if (downloadButton) downloadActiveResults(event);
-  }, true);
   els.recapDialog?.addEventListener("close", () => {
     activeResultsMatch = null;
     activeResultsGraphic = null;

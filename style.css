@@ -1753,7 +1753,7 @@ body[data-theme="fire"] {
 .results-actions {
   position: relative;
   z-index: 5;
-  grid-template-columns: 1fr 52px;
+  grid-template-columns: 1fr;
   padding: 0 2px;
   pointer-events: auto;
 }
@@ -1763,16 +1763,6 @@ body[data-theme="fire"] {
   color: #fff;
 }
 
-.results-actions .results-download-btn {
-  width: 52px;
-  min-width: 52px;
-  padding: 0;
-  background: var(--secondary-action);
-  color: var(--text);
-  border: 1px solid var(--secondary-action-border);
-  font-size: 24px;
-  line-height: 1;
-}
 
 .results-actions button.is-preparing {
   opacity: .72;
