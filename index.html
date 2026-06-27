@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#080b12" />
   <meta name="description" content="ScoreFlow live volleyball scoreboard with real-time viewer links." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -27,15 +27,6 @@
     </div>
     <img class="splash-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
   </div>
-
-  <div class="rotate-message">
-    <div class="rotate-card">
-      <div class="rotate-icon">↻</div>
-      <h2>Rotate Phone</h2>
-      <p>This scoring view is built for landscape.</p>
-    </div>
-  </div>
-
   <div class="live-start-overlay" id="liveStartOverlay" aria-hidden="true">
     <div class="live-start-card">
       <div class="live-chip">Live Match</div>
@@ -310,11 +301,13 @@
     <div class="winner-content"><div class="winner-trophy" aria-hidden="true">🏆</div><h2 id="winnerText">Blazers Win!</h2><p>Tap anywhere to close</p></div>
   </div>
 
-  <dialog id="recapDialog">
-    <form method="dialog" class="settings-card recap-card">
-      <div class="settings-head"><h2>Match Recap</h2></div>
-      <div id="recapContent" class="recap-content"></div>
-      <div class="dialog-actions share-actions"><button id="shareRecapBtn" value="default" type="button">Share Recap</button><button id="posterRecapBtn" value="default" type="button">Create Graphic</button></div>
+  <dialog id="recapDialog" class="results-dialog">
+    <form method="dialog" class="results-dialog-shell">
+      <div id="recapContent" class="results-card-wrap"></div>
+      <div class="dialog-actions share-actions results-actions">
+        <button id="shareRecapBtn" value="default" type="button">Share Results</button>
+        <button id="posterRecapBtn" value="default" type="button">Create Graphic</button>
+      </div>
     </form>
   </dialog>
 

@@ -79,6 +79,14 @@ const PREMIUM_THEMES = [
 ];
 
 const POSTER_STYLES = ["classic", "championship", "neon", "spotlight"];
+const RESULTS_BACKGROUNDS = [
+  { id: "default", name: "Default", pro: false },
+  { id: "court-dark", name: "Pro Placeholder 1", pro: true },
+  { id: "championship", name: "Pro Placeholder 2", pro: true },
+  { id: "spotlight", name: "Pro Placeholder 3", pro: true },
+  { id: "neon", name: "Pro Placeholder 4", pro: true },
+  { id: "custom", name: "Upload Your Own", pro: true }
+];
 const FREE_MATCH_HISTORY_LIMIT = 3;
 const PRO_MATCH_HISTORY_LIMIT = 10000;
 
@@ -225,6 +233,19 @@ function selectExistingText(event) {
   const input = event.currentTarget;
   if (!input || typeof input.select !== "function") return;
   requestAnimationFrame(() => input.select());
+}
+
+function preventMobileDoubleTapZoom() {
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) event.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  document.addEventListener("gesturestart", (event) => {
+    event.preventDefault();
+  }, { passive: false });
 }
 
 let db = null;
@@ -1189,6 +1210,8 @@ async function saveMatchHistory() {
     awayLogo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : "",
     completedSets: state.completedSets,
     matchFormat: state.matchFormat,
+    matchSets: state.matchSets,
+    resultBackground: "default",
     updatedAtMs: Date.now()
   };
   const matches = localMatches();
@@ -1248,6 +1271,112 @@ function matchCard(match) {
         ${matchHistoryLogoMarkup(match.awayLogo || "", awayName, "away")}
       </span>
     </button>`;
+}
+
+
+function resultLogoMarkup(logo, name, className = "") {
+  const initial = (name || "T").charAt(0).toUpperCase();
+  return `
+    <span class="results-logo ${logo ? "has-logo" : ""} ${className}" aria-hidden="true">
+      ${logo ? `<img src="${logo}" alt="">` : `<span>${initial}</span>`}
+    </span>`;
+}
+
+function formatMatchDate(match) {
+  const raw = Number(match?.updatedAtMs || match?.createdAtMs || Date.now());
+  const date = new Date(raw);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function matchSetCount(match) {
+  const explicit = Number(match?.matchSets || 0);
+  if (explicit === 5 || explicit === 3) return explicit;
+  return match?.matchFormat === "highschool" ? 5 : 3;
+}
+
+function currentMatchResultData() {
+  return {
+    id: "current-result",
+    title: state.matchTitle || "Game Night",
+    homeName: teamName("home"),
+    awayName: teamName("away"),
+    homeSets: state.homeSets,
+    awaySets: state.awaySets,
+    winner: state.winner ? teamName(state.winner) : "",
+    winnerSide: state.winner || (state.homeSets > state.awaySets ? "home" : "away"),
+    homeLogo: els.homeLogo?.src?.startsWith("data:") ? els.homeLogo.src : (savedHomeTeam()?.logo || ""),
+    awayLogo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : "",
+    completedSets: state.completedSets,
+    matchFormat: state.matchFormat,
+    matchSets: state.matchSets,
+    resultBackground: "default",
+    updatedAtMs: Date.now()
+  };
+}
+
+function renderResultsCard(match) {
+  if (!els.recapContent || !match) return;
+  const homeName = match.homeName || "Team 1";
+  const awayName = match.awayName || "Team 2";
+  const homeSets = Number(match.homeSets ?? 0);
+  const awaySets = Number(match.awaySets ?? 0);
+  const totalRows = matchSetCount(match);
+  const completed = Array.isArray(match.completedSets) ? match.completedSets : [];
+  const rows = Array.from({ length: totalRows }, (_, index) => {
+    const set = completed[index];
+    const homeScore = set ? Number(set.homeScore ?? 0) : "–";
+    const awayScore = set ? Number(set.awayScore ?? 0) : "–";
+    return `
+      <div class="results-set-row" style="--row-delay:${index * 95}ms">
+        <strong>${homeScore}</strong>
+        <span></span>
+        <strong>${awayScore}</strong>
+      </div>`;
+  }).join("");
+
+  const homeScoreColor = normalizeHex(match.homeColor || savedHomeTeam()?.color || state.homeColor || "#d62828");
+  const awayScoreColor = normalizeHex(match.awayColor || state.awayColor || "#1565c0", "#1565c0");
+
+  els.recapContent.innerHTML = `
+    <article class="results-card results-bg-${match.resultBackground || "default"}" style="--results-home-score-color:${homeScoreColor}; --results-away-score-color:${awayScoreColor};">
+      <time class="results-date">${formatMatchDate(match)}</time>
+      <div class="results-top-logo">
+        ${resultLogoMarkup(match.homeLogo || savedHomeTeam()?.logo || "", homeName, "results-main-logo")}
+      </div>
+      <div class="results-title-block">
+        <span>Match Result</span>
+        <h3>${match.title || "Game Night"}</h3>
+      </div>
+      <div class="results-matchup">
+        ${resultLogoMarkup(match.homeLogo || savedHomeTeam()?.logo || "", homeName)}
+        <strong class="results-team-bar results-home-bar">${homeName}</strong>
+        <span class="results-vs">VS</span>
+        <strong class="results-team-bar results-away-bar">${awayName}</strong>
+        ${resultLogoMarkup(match.awayLogo || "", awayName)}
+      </div>
+      <div class="results-set-table" aria-label="Set scores">
+        ${rows}
+      </div>
+      <small class="powered-by-logo results-powered">Presented by <img src="scoreflow-logo.png" alt="ScoreFlow" /></small>
+    </article>`;
+}
+
+function openResults(match) {
+  renderResultsCard(match || currentMatchResultData());
+  els.recapDialog?.showModal();
+}
+
+async function openMatchResultsById(matchId) {
+  if (!matchId) return;
+  const matches = await getAllMatches();
+  const match = matches.find((item) => item.id === matchId);
+  if (match) openResults(match);
+}
+
+function handleMatchResultCardClick(event) {
+  const card = event.target.closest("[data-match-history-id]");
+  if (!card) return;
+  openMatchResultsById(card.dataset.matchHistoryId);
 }
 
 function updateHomeTeamSummary() {
@@ -1346,7 +1475,7 @@ function beginInitialPortraitSetup() {
 }
 
 function updateRotateScreenState() {
-  document.body.classList.toggle("needs-rotate", !isViewer && setupComplete && isPortraitOrientation() && !document.body.classList.contains("setup-active"));
+  document.body.classList.remove("needs-rotate");
 }
 
 function endInitialPortraitSetup() {
@@ -1888,27 +2017,11 @@ function recapText() {
 }
 
 function renderRecap() {
-  if (!els.recapContent) return;
-  const winnerName = state.winner ? teamName(state.winner) : "Final";
-  const rows = state.completedSets.map((set) => `
-    <div class="recap-set-row">
-      <span>Set ${set.set}</span>
-      <strong>${set.homeScore} - ${set.awayScore}</strong>
-    </div>`).join("");
-  els.recapContent.innerHTML = `
-    <div class="recap-final">Final</div>
-    <h3>${winnerName} Wins</h3>
-    <div class="recap-scoreline">
-      <div><span>${teamName("home")}</span><strong>${state.homeSets}</strong></div>
-      <div><span>${teamName("away")}</span><strong>${state.awaySets}</strong></div>
-    </div>
-    <div class="recap-sets">${rows || "<p>No completed sets yet.</p>"}</div>
-    <small class="powered-by-logo">Powered by <img src="scoreflow-logo.png" alt="ScoreFlow" /></small>`;
+  renderResultsCard(currentMatchResultData());
 }
 
 function openRecap() {
-  renderRecap();
-  els.recapDialog?.showModal();
+  openResults(currentMatchResultData());
 }
 
 async function shareRecap() {
@@ -2310,6 +2423,8 @@ function wireEvents() {
   els.themesShortcutBtn?.addEventListener("click", () => { renderPremiumUI(); els.appSettingsDialog?.showModal(); });
   els.matchHistoryMoreBtn?.addEventListener("click", openMatchHistoryMore);
   els.matchHistoryBackBtn?.addEventListener("click", showHomeScreen);
+  els.matchHistoryList?.addEventListener("click", handleMatchResultCardClick);
+  els.fullMatchHistoryList?.addEventListener("click", handleMatchResultCardClick);
   els.themeGrid?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-theme-choice]");
     if (button) setPremiumTheme(button.dataset.themeChoice);
@@ -2374,6 +2489,7 @@ function applyViewerMode() {
 
 async function boot() {
   updateViewportHeight();
+  preventMobileDoubleTapZoom();
   loadPremiumSettings();
   applySplashImageFromStorage();
   applySavedHomeTeam();
