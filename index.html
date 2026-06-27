@@ -104,9 +104,8 @@
           <small id="proPlanBadge">Free</small>
         </div>
         <p id="proSummary" class="home-muted">Unlock premium themes, share graphics, unlimited history, and cloud backup.</p>
-        <div class="pro-home-actions">
+        <div class="pro-home-actions single-pro-action">
           <button id="upgradeProBtn" type="button">Try Pro</button>
-          <button id="themesShortcutBtn" type="button">Themes</button>
         </div>
       </section>
 
@@ -304,20 +303,14 @@
   <dialog id="recapDialog" class="results-dialog">
     <form method="dialog" class="results-dialog-shell">
       <div id="recapContent" class="results-card-wrap"></div>
-      <div class="dialog-actions share-actions results-actions">
+      <div class="dialog-actions results-actions">
         <button id="shareRecapBtn" value="default" type="button">Share Results</button>
-        <button id="posterRecapBtn" value="default" type="button">Create Graphic</button>
+        <button id="posterRecapBtn" class="results-download-btn" value="default" type="button" aria-label="Download Results Graphic" title="Download Results Graphic">↓</button>
       </div>
     </form>
   </dialog>
 
-  <dialog id="posterDialog">
-    <form method="dialog" class="settings-card poster-card">
-      <div class="settings-head"><h2>Share Graphic</h2></div>
-      <canvas id="posterCanvas" width="1080" height="1920"></canvas>
-      <div class="dialog-actions share-actions"><button id="sharePosterBtn" value="default" type="button">Share Graphic</button><button id="downloadPosterBtn" value="default" type="button">Download</button></div>
-    </form>
-  </dialog>
+  <canvas id="posterCanvas" width="1080" height="1920" hidden></canvas>
 
   <dialog id="settingsDialog">
     <form method="dialog" class="settings-card">
@@ -359,7 +352,11 @@
       </button>
       <section class="settings-nav-card settings-cloud-card">
         <span><strong>Cloud Backup</strong><small id="historyLimitText">Free keeps your latest 3 matches. Pro unlocks unlimited match history and account cloud backup.</small></span>
-        <label class="setting-toggle-row"><input id="cloudBackupToggle" type="checkbox" checked /><b>On</b></label>
+        <label class="premium-toggle" aria-label="Cloud Backup">
+          <input id="cloudBackupToggle" type="checkbox" checked />
+          <span class="premium-toggle-track" aria-hidden="true"><span class="premium-toggle-knob"></span></span>
+          <b id="cloudBackupToggleText">On</b>
+        </label>
       </section>
       <section class="home-card pro-home-card settings-pro-card">
         <div class="home-card-head pro-card-head">
@@ -373,9 +370,8 @@
           <small id="settingsPlanName">Free</small>
         </div>
         <p id="settingsPlanDescription" class="home-muted">Free includes live scoring, sharing, QR codes, and your latest 3 matches.</p>
-        <div class="pro-home-actions">
+        <div class="pro-home-actions single-pro-action">
           <button id="settingsUpgradeBtn" type="button">Try Pro</button>
-          <button id="backupNowBtn" type="button">Backup Now</button>
         </div>
       </section>
     </main>

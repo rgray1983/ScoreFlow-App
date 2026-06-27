@@ -90,6 +90,10 @@ const RESULTS_BACKGROUNDS = [
 ];
 const FREE_MATCH_HISTORY_LIMIT = 3;
 const PRO_MATCH_HISTORY_LIMIT = 10000;
+const FREE_BRAND_LOGO_SRC = "scoreflow-logo.png";
+const PRO_BRAND_LOGO_SRC = "images/scoreflow-pro-logo.png";
+const FREE_SPLASH_LOGO_SRC = "splash-logo.png";
+
 
 const premium = {
   isPro: false,
@@ -97,7 +101,7 @@ const premium = {
   posterStyle: "classic",
   resultBackground: "default",
   loadingLogo: "",
-  cloudBackup: true
+  cloudBackup: false
 };
 
 const $ = (id) => document.getElementById(id);
@@ -234,6 +238,7 @@ const els = {
   posterStyleSelect: $("posterStyleSelect"),
   posterStyleNote: $("posterStyleNote"),
   cloudBackupToggle: $("cloudBackupToggle"),
+  cloudBackupToggleText: $("cloudBackupToggleText"),
   backupNowBtn: $("backupNowBtn"),
   historyLimitText: $("historyLimitText"),
   fanZone: $("fanZone"),
@@ -341,9 +346,32 @@ function setConnectionStatus(status, label) {
   els.liveStatus.textContent = label || (cleanStatus === "online" ? "Online" : cleanStatus === "connecting" ? "Connecting" : cleanStatus === "error" ? "Sync Error" : "Offline");
 }
 
+function brandLogoSrc() {
+  return hasProAccess() ? PRO_BRAND_LOGO_SRC : FREE_BRAND_LOGO_SRC;
+}
+
+function brandLogoAlt() {
+  return hasProAccess() ? "ScoreFlow Pro" : "ScoreFlow";
+}
+
+function updateBranding() {
+  const src = brandLogoSrc();
+  const alt = brandLogoAlt();
+  document.querySelectorAll(".home-brand-logo, .scoreflow-header-logo, .splash-brand-logo, .powered-by-logo img, .results-powered img").forEach((img) => {
+    img.src = src;
+    img.alt = alt;
+  });
+  document.body.classList.toggle("pro-branding-active", hasProAccess());
+}
+
 function applySplashImageFromStorage() {
-  const src = hasProAccess() && premium.loadingLogo ? premium.loadingLogo : "splash-logo.png";
-  if (els.splashLogoImg) els.splashLogoImg.src = src;
+  const src = hasProAccess()
+    ? (premium.loadingLogo || PRO_BRAND_LOGO_SRC)
+    : FREE_SPLASH_LOGO_SRC;
+  if (els.splashLogoImg) {
+    els.splashLogoImg.src = src;
+    els.splashLogoImg.alt = hasProAccess() ? "ScoreFlow Pro" : "ScoreFlow";
+  }
 }
 
 
@@ -964,7 +992,7 @@ function loadPremiumSettings() {
     premium.posterStyle = saved.posterStyle || "classic";
     premium.resultBackground = saved.resultBackground || "default";
     premium.loadingLogo = saved.loadingLogo || "";
-    premium.cloudBackup = saved.cloudBackup !== false;
+    premium.cloudBackup = Boolean(saved.cloudBackup) && Boolean(saved.isPro);
   }
   applyPremiumSettings(false);
 }
@@ -1003,7 +1031,13 @@ function applyPremiumSettings(sync = true) {
   premium.resultBackground = normalizeResultBackground(premium.resultBackground);
   document.body.dataset.theme = premium.theme;
   document.body.classList.toggle("pro-active", hasProAccess());
-  if (els.cloudBackupToggle) els.cloudBackupToggle.checked = premium.cloudBackup;
+  if (!hasProAccess()) premium.cloudBackup = false;
+  const cloudBackupOn = hasProAccess() && premium.cloudBackup;
+  if (els.cloudBackupToggle) {
+    els.cloudBackupToggle.checked = cloudBackupOn;
+    els.cloudBackupToggle.setAttribute("aria-checked", cloudBackupOn ? "true" : "false");
+  }
+  if (els.cloudBackupToggleText) els.cloudBackupToggleText.textContent = hasProAccess() ? (cloudBackupOn ? "On" : "Off") : "Pro";
   if (els.posterStyleSelect) els.posterStyleSelect.value = premium.posterStyle;
   if (els.loadingLogoPreview) {
     const hasLoadingLogo = hasProAccess() && Boolean(premium.loadingLogo);
@@ -1013,6 +1047,7 @@ function applyPremiumSettings(sync = true) {
     els.loadingLogoPreview.classList.toggle("blank", !hasLoadingLogo);
   }
   applySplashImageFromStorage();
+  updateBranding();
   renderPremiumUI();
   if (sync) syncPremiumSettingsToCloud();
 }
@@ -1063,7 +1098,11 @@ function toggleProDemo() {
   if (!premium.isPro) {
     premium.theme = "classic";
     premium.posterStyle = "classic";
+    premium.cloudBackup = false;
+    premium.loadingLogo = "";
     if (RESULTS_BACKGROUNDS.find((bg) => bg.id === premium.resultBackground)?.pro) premium.resultBackground = "default";
+  } else {
+    premium.cloudBackup = true;
   }
   savePremiumSettings(true);
   renderHomeData();
@@ -1075,6 +1114,7 @@ function setPremiumTheme(themeId) {
   if (!theme) return;
   if (theme.pro && !hasProAccess()) {
     toast("That theme is a Pro feature", true);
+    focusProFromSettings();
     return;
   }
   premium.theme = theme.id;
@@ -1162,8 +1202,17 @@ async function syncPremiumSettingsToCloud() {
 }
 
 async function backupNow() {
+  if (!hasProAccess()) {
+    toast("Cloud backup is a Pro feature", true);
+    focusProFromSettings();
+    return;
+  }
   if (!currentUser || !db) {
     toast("Sign in to use cloud backup", true);
+    return;
+  }
+  if (!premium.cloudBackup) {
+    toast("Turn Cloud Backup on first", true);
     return;
   }
   premium.cloudBackup = els.cloudBackupToggle ? els.cloudBackupToggle.checked : premium.cloudBackup;
@@ -1438,7 +1487,7 @@ function renderResultsCard(match) {
   const awayScoreColor = normalizeHex(match.awayColor || state.awayColor || "#1565c0", "#1565c0");
 
   els.recapContent.innerHTML = `
-    <article class="results-card results-bg-${match.resultBackground || "default"}" style="--results-home-score-color:${homeScoreColor}; --results-away-score-color:${awayScoreColor};">
+    <article class="results-card results-bg-${normalizeResultBackground(premium.resultBackground || match.resultBackground || "default")}" style="--results-home-score-color:${homeScoreColor}; --results-away-score-color:${awayScoreColor};">
       <time class="results-date">${formatMatchDate(match)}</time>
       <div class="results-top-logo">
         ${resultLogoMarkup(match.homeLogo || savedHomeTeam()?.logo || "", homeName, "results-main-logo")}
@@ -1457,7 +1506,7 @@ function renderResultsCard(match) {
       <div class="results-set-table" aria-label="Set scores">
         ${rows}
       </div>
-      <small class="powered-by-logo results-powered">Presented by <img src="scoreflow-logo.png" alt="ScoreFlow" /></small>
+      <small class="powered-by-logo results-powered">Presented by <img src="${brandLogoSrc()}" alt="${brandLogoAlt()}" /></small>
     </article>`;
 }
 
@@ -2125,98 +2174,207 @@ function openRecap() {
 }
 
 async function shareRecap() {
-  const text = recapText();
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "ScoreFlow Final", text });
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-  }
-  await navigator.clipboard.writeText(text);
-  toast("Recap copied");
+  await sharePoster();
 }
 
-function drawPoster(finalMode = false) {
+
+function resultBackgroundMeta(backgroundId = premium.resultBackground) {
+  return RESULTS_BACKGROUNDS.find((item) => item.id === normalizeResultBackground(backgroundId)) || RESULTS_BACKGROUNDS[0];
+}
+
+function resultBackgroundUrl(backgroundId = premium.resultBackground) {
+  const bg = resultBackgroundMeta(backgroundId);
+  return `images/results/${bg.file || "default.jpg"}`;
+}
+
+function loadCanvasImage(src) {
+  return new Promise((resolve) => {
+    if (!src) {
+      resolve(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function canvasRoundRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawCanvasLogo(ctx, img, fallback, x, y, size, options = {}) {
+  const radius = options.square ? 0 : size / 2;
+  ctx.save();
+  if (!options.noBadge) {
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,.32)";
+    ctx.shadowBlur = size * 0.16;
+    ctx.shadowOffsetY = size * 0.12;
+    if (options.square) {
+      canvasRoundRect(ctx, x - size / 2, y - size / 2, size, size, 18);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowColor = "transparent";
+  }
+  if (img) {
+    const inset = options.noBadge ? 0 : size * 0.1;
+    const drawSize = size - inset * 2;
+    ctx.drawImage(img, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
+  } else {
+    ctx.fillStyle = options.noBadge ? "#ffffff" : "#07101e";
+    ctx.font = `900 ${Math.round(size * 0.34)}px Inter, Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initials(fallback), x, y + 2);
+  }
+  ctx.restore();
+}
+
+async function drawResultsGraphic(match = currentMatchResultData()) {
   const canvas = els.posterCanvas;
   if (!canvas) return null;
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
-  const posterStyle = normalizePosterStyle(premium.posterStyle);
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  if (posterStyle === "championship") {
-    gradient.addColorStop(0, "#1f1300");
-    gradient.addColorStop(0.48, "#111827");
-    gradient.addColorStop(1, "#05070c");
-  } else if (posterStyle === "neon") {
-    gradient.addColorStop(0, "#09001f");
-    gradient.addColorStop(0.5, "#101827");
-    gradient.addColorStop(1, "#001f2a");
-  } else if (posterStyle === "spotlight") {
-    gradient.addColorStop(0, "#05070c");
-    gradient.addColorStop(0.42, "#1c2434");
-    gradient.addColorStop(1, "#05070c");
+  const bg = resultBackgroundMeta(premium.resultBackground || match.resultBackground || "default");
+  const bgImg = await loadCanvasImage(resultBackgroundUrl(bg.id));
+  const homeName = match.homeName || "Team 1";
+  const awayName = match.awayName || "Team 2";
+  const homeColor = normalizeHex(match.homeColor || savedHomeTeam()?.color || state.homeColor || "#d62828");
+  const awayColor = normalizeHex(match.awayColor || state.awayColor || "#1565c0", "#1565c0");
+  const homeLogo = await loadCanvasImage(match.homeLogo || savedHomeTeam()?.logo || "");
+  const awayLogo = await loadCanvasImage(match.awayLogo || "");
+  const brandLogo = await loadCanvasImage(brandLogoSrc());
+
+  ctx.clearRect(0, 0, w, h);
+  if (bgImg) {
+    const scale = Math.max(w / bgImg.width, h / bgImg.height);
+    const iw = bgImg.width * scale;
+    const ih = bgImg.height * scale;
+    ctx.drawImage(bgImg, (w - iw) / 2, (h - ih) / 2, iw, ih);
   } else {
-    gradient.addColorStop(0, "#070a12");
-    gradient.addColorStop(0.55, "#101827");
-    gradient.addColorStop(1, "#05070c");
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, "#3a2570");
+    gradient.addColorStop(1, "#080b12");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
   }
-  ctx.fillStyle = gradient;
+
+  ctx.fillStyle = "rgba(5,7,12,.30)";
+  ctx.fillRect(0, 0, w, h);
+  const glow = ctx.createRadialGradient(w / 2, 160, 0, w / 2, 160, 540);
+  glow.addColorStop(0, "rgba(255,255,255,.16)");
+  glow.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = glow;
   ctx.fillRect(0, 0, w, h);
 
-  ctx.fillStyle = state.homeColor;
-  ctx.globalAlpha = posterStyle === "classic" ? 0.23 : 0.34;
-  ctx.beginPath();
-  ctx.arc(160, 240, posterStyle === "spotlight" ? 430 : 340, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = state.awayColor;
-  ctx.beginPath();
-  ctx.arc(900, 1580, posterStyle === "spotlight" ? 460 : 380, 0, Math.PI * 2);
-  ctx.fill();
-  if (posterStyle !== "classic") {
-    ctx.strokeStyle = "rgba(255,209,102,0.36)";
-    ctx.lineWidth = 10;
-    ctx.strokeRect(58, 58, w - 116, h - 116);
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(84, 84, w - 168, h - 168);
-  }
-  ctx.globalAlpha = 1;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "rgba(255,255,255,.76)";
+  ctx.font = "900 28px Inter, Arial";
+  ctx.fillText(formatMatchDate(match), w - 70, 72);
+
+  drawCanvasLogo(ctx, homeLogo, homeName, w / 2, 270, 270, { noBadge: true });
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#ffd166";
-  ctx.font = "900 54px Inter, Arial";
-  ctx.letterSpacing = "8px";
-  ctx.fillText(finalMode || state.winner ? "FINAL SCORE" : "LIVE MATCH", w / 2, 190);
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#fff1a6";
+  ctx.font = "950 96px Inter, Arial";
+  ctx.shadowColor = "rgba(0,0,0,.34)";
+  ctx.shadowBlur = 18;
+  ctx.fillText("MATCH RESULT", w / 2, 520);
+  ctx.shadowColor = "transparent";
 
+  ctx.fillStyle = "rgba(255,255,255,.84)";
+  ctx.font = "900 32px Inter, Arial";
+  ctx.fillText(String(match.title || "Game Night").toUpperCase(), w / 2, 575);
+
+  const barY = 720;
+  const barH = 76;
+  const leftLogoX = 156;
+  const rightLogoX = w - 156;
+  ctx.fillStyle = "rgba(255,255,255,.94)";
+  ctx.shadowColor = "rgba(0,0,0,.20)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 8;
+  canvasRoundRect(ctx, 150, barY, 350, barH, 8);
+  ctx.fill();
+  canvasRoundRect(ctx, w - 500, barY, 350, barH, 8);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+
+  ctx.fillStyle = "#07101e";
+  ctx.font = "900 32px Inter, Arial";
+  wrapCanvasText(ctx, homeName.toUpperCase(), 330, barY + 48, 260, 34);
+  wrapCanvasText(ctx, awayName.toUpperCase(), w - 330, barY + 48, 260, 34);
+
+  drawCanvasLogo(ctx, homeLogo, homeName, leftLogoX, barY + barH / 2, 138);
+  drawCanvasLogo(ctx, awayLogo, awayName, rightLogoX, barY + barH / 2, 138);
+
+  ctx.fillStyle = "#2258af";
+  ctx.shadowColor = "rgba(0,0,0,.24)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  canvasRoundRect(ctx, w / 2 - 62, barY - 12, 124, 100, 28);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
   ctx.fillStyle = "#ffffff";
-  ctx.font = "900 86px Inter, Arial";
-  wrapCanvasText(ctx, state.matchTitle.toUpperCase(), w / 2, 310, 900, 92);
+  ctx.font = "950 40px Inter, Arial";
+  ctx.fillText("VS", w / 2, barY + 40);
 
-  ctx.font = "900 96px Inter, Arial";
-  ctx.fillStyle = state.homeColor;
-  ctx.fillText(teamName("home").toUpperCase(), w / 2, 600);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 56px Inter, Arial";
-  ctx.fillText("VS", w / 2, 720);
-  ctx.fillStyle = state.awayColor;
-  ctx.font = "900 96px Inter, Arial";
-  ctx.fillText(teamName("away").toUpperCase(), w / 2, 860);
+  const completed = Array.isArray(match.completedSets) ? match.completedSets : [];
+  const rowCount = matchSetCount(match);
+  const tableTop = 910;
+  const rowGap = rowCount > 3 ? 118 : 140;
+  ctx.strokeStyle = "rgba(255,255,255,.34)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(w / 2, barY + 88);
+  ctx.lineTo(w / 2, tableTop + rowGap * (rowCount - 1) + 54);
+  ctx.stroke();
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 190px Anton, Impact, Arial";
-  ctx.fillText(`${state.homeSets} - ${state.awaySets}`, w / 2, 1160);
+  ctx.font = "950 82px Inter, Arial";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i < rowCount; i++) {
+    const set = completed[i];
+    const y = tableTop + i * rowGap;
+    ctx.fillStyle = homeColor;
+    ctx.textAlign = "right";
+    ctx.fillText(set ? Number(set.homeScore ?? 0) : "–", w / 2 - 72, y);
+    ctx.fillStyle = awayColor;
+    ctx.textAlign = "left";
+    ctx.fillText(set ? Number(set.awayScore ?? 0) : "–", w / 2 + 72, y);
+  }
 
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.font = "800 44px Inter, Arial";
-  const setLine = state.completedSets.length ? state.completedSets.map((s) => `${s.homeScore}-${s.awayScore}`).join("  •  ") : matchLabel();
-  wrapCanvasText(ctx, setLine, w / 2, 1260, 900, 56);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,.76)";
+  ctx.font = "800 28px Inter, Arial";
+  ctx.fillText("Presented by", w / 2, h - 205);
+  if (brandLogo) {
+    ctx.drawImage(brandLogo, w / 2 - 132, h - 170, 264, 72);
+  } else {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "950 48px Inter, Arial";
+    ctx.fillText("ScoreFlow", w / 2, h - 132);
+  }
 
-  ctx.fillStyle = "#ffd166";
-  ctx.font = "900 58px Inter, Arial";
-  ctx.fillText("Shared from ScoreFlow", w / 2, 1730);
   return canvas;
 }
 
@@ -2236,9 +2394,9 @@ function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
   ctx.fillText(line, x, y);
 }
 
-function openPoster(finalMode = false) {
-  drawPoster(finalMode);
-  els.posterDialog?.showModal();
+async function openPoster(finalMode = false) {
+  await drawResultsGraphic(currentMatchResultData());
+  await sharePoster();
 }
 
 function posterBlob() {
@@ -2246,24 +2404,28 @@ function posterBlob() {
 }
 
 async function sharePoster() {
-  drawPoster(Boolean(state.winner));
+  await drawResultsGraphic(currentMatchResultData());
   const blob = await posterBlob();
-  const file = new File([blob], "scoreflow-match.png", { type: "image/png" });
+  if (!blob) {
+    toast("Graphic could not be created", true);
+    return;
+  }
+  const file = new File([blob], "scoreflow-results.png", { type: "image/png" });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "ScoreFlow Match" });
+      await navigator.share({ files: [file], title: "ScoreFlow Results" });
       return;
     } catch (error) {
       if (error?.name === "AbortError") return;
     }
   }
-  downloadPoster();
+  await downloadPoster();
 }
 
-function downloadPoster() {
-  drawPoster(Boolean(state.winner));
+async function downloadPoster() {
+  await drawResultsGraphic(currentMatchResultData());
   const link = document.createElement("a");
-  link.download = "scoreflow-match.png";
+  link.download = "scoreflow-results.png";
   link.href = els.posterCanvas.toDataURL("image/png");
   link.click();
 }
@@ -2542,7 +2704,19 @@ function wireEvents() {
     if (button) setResultBackground(button.dataset.backgroundChoice);
   });
   els.posterStyleSelect?.addEventListener("change", () => setPosterStyle(els.posterStyleSelect.value));
-  els.cloudBackupToggle?.addEventListener("change", () => { premium.cloudBackup = els.cloudBackupToggle.checked; savePremiumSettings(true); });
+  els.cloudBackupToggle?.addEventListener("change", () => {
+    if (!hasProAccess()) {
+      els.cloudBackupToggle.checked = false;
+      premium.cloudBackup = false;
+      savePremiumSettings(false);
+      toast("Cloud backup is a Pro feature", true);
+      focusProFromSettings();
+      return;
+    }
+    premium.cloudBackup = els.cloudBackupToggle.checked;
+    savePremiumSettings(true);
+    toast(premium.cloudBackup ? "Cloud backup enabled" : "Cloud backup paused");
+  });
   els.backupNowBtn?.addEventListener("click", backupNow);
   els.emailSignInBtn?.addEventListener("click", () => emailSignIn(false));
   els.emailCreateBtn?.addEventListener("click", () => emailSignIn(true));

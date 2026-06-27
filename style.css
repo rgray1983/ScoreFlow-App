@@ -171,12 +171,17 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 .match-history-screen {
   position: fixed;
   inset: 0;
+  z-index: 25;
   overflow: auto;
   padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
   opacity: 0;
   visibility: hidden;
-  transform: translateY(10px);
-  transition: opacity .26s ease, transform .26s ease, visibility .26s ease;
+  transform: translateX(100%);
+  transition: opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1), visibility .28s ease;
+  background:
+    radial-gradient(circle at 18% -10%, rgba(22, 89, 160, .18), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(255, 20, 20, .12), transparent 30%),
+    var(--bg);
 }
 
 .match-history-hero {
@@ -570,6 +575,10 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.pro-home-actions.single-pro-action {
+  grid-template-columns: 1fr;
 }
 
 .home-list {
@@ -1275,11 +1284,77 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   grid-template-columns: 1fr auto;
 }
 
-.settings-cloud-card .setting-toggle-row {
-  gap: 8px;
-  color: var(--muted);
+.premium-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.premium-toggle input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.premium-toggle-track {
+  position: relative;
+  width: 62px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, .28);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.025)),
+    rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.34);
+  transition: background .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+
+.premium-toggle-knob {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #ffffff, #d9e1ee);
+  box-shadow: 0 5px 14px rgba(0,0,0,.36);
+  transform: translateY(-50%);
+  transition: transform .22s ease;
+}
+
+.premium-toggle input:checked + .premium-toggle-track {
+  border-color: rgba(251, 191, 36, .66);
+  background:
+    linear-gradient(180deg, rgba(251,191,36,.82), rgba(217,119,6,.86)),
+    rgba(251, 191, 36, .7);
+  box-shadow: 0 0 18px rgba(251,191,36,.28), inset 0 1px 1px rgba(255,255,255,.24);
+}
+
+.premium-toggle input:checked + .premium-toggle-track .premium-toggle-knob {
+  transform: translate(28px, -50%);
+}
+
+.premium-toggle > b {
+  min-width: 28px;
+  color: var(--gold-soft);
   font-size: 12px;
   font-weight: 900;
+  text-align: right;
+}
+
+body:not(.pro-active) .premium-toggle-track {
+  border-color: rgba(255,255,255,.13);
+  background: rgba(255,255,255,.05);
+}
+
+body:not(.pro-active) .premium-toggle > b {
+  color: var(--gold);
 }
 
 .settings-pro-card {
@@ -1430,7 +1505,6 @@ body[data-theme="fire"] {
     linear-gradient(180deg, rgba(5, 7, 12, .24), rgba(5, 7, 12, .48)),
     var(--results-background-image, linear-gradient(180deg, rgba(95, 53, 154, .92), rgba(58, 37, 112, .94))),
     #3a2570;
-  background-image: var(--results-background-image);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -1673,17 +1747,25 @@ body[data-theme="fire"] {
 
 .results-powered img { width: 98px; }
 
-.results-actions { padding: 0 2px; }
+.results-actions {
+  grid-template-columns: 1fr 52px;
+  padding: 0 2px;
+}
 
 .results-actions button:first-child {
   background: var(--brand);
   color: #fff;
 }
 
-.results-actions button:last-child {
-  background: rgba(255,255,255,.1);
+.results-actions .results-download-btn {
+  width: 52px;
+  min-width: 52px;
+  padding: 0;
+  background: var(--secondary-action);
   color: var(--text);
-  border: 1px solid var(--line);
+  border: 1px solid var(--secondary-action-border);
+  font-size: 24px;
+  line-height: 1;
 }
 
 @keyframes resultsLogoDrop {
