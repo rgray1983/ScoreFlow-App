@@ -1518,11 +1518,8 @@ function openResults(match) {
   activeResultsGraphic = null;
   activeResultsGraphicPromise = null;
   renderResultsCard(activeResultsMatch);
+  setResultsActionState(false);
   els.recapDialog?.showModal();
-  activeResultsGraphicPromise = prepareResultsGraphic(activeResultsMatch).catch((error) => {
-    console.error("ScoreFlow results prebuild failed", error);
-    return null;
-  });
 }
 
 async function openMatchResultsById(matchId) {
@@ -2406,11 +2403,12 @@ function activeResultsData() {
 
 function setResultsActionState(isPreparing = false) {
   if (els.shareRecapBtn) {
-    els.shareRecapBtn.disabled = isPreparing;
+    els.shareRecapBtn.classList.toggle("is-preparing", isPreparing);
+    els.shareRecapBtn.setAttribute("aria-busy", String(isPreparing));
     els.shareRecapBtn.textContent = isPreparing ? "Preparing…" : "Share Results";
   }
   if (els.posterRecapBtn) {
-    els.posterRecapBtn.disabled = isPreparing;
+    els.posterRecapBtn.classList.toggle("is-preparing", isPreparing);
     els.posterRecapBtn.setAttribute("aria-busy", String(isPreparing));
     els.posterRecapBtn.title = isPreparing ? "Preparing Results Graphic" : "Download Results Graphic";
   }
@@ -2466,9 +2464,13 @@ async function prepareResultsGraphic(match = activeResultsData()) {
 
 async function getResultsGraphic(match = activeResultsData()) {
   if (activeResultsGraphic?.dataUrl || activeResultsGraphic?.file) return activeResultsGraphic;
-  if (activeResultsGraphicPromise) return await activeResultsGraphicPromise;
-  activeResultsGraphicPromise = prepareResultsGraphic(match);
-  return await activeResultsGraphicPromise;
+  if (!activeResultsGraphicPromise) {
+    activeResultsGraphicPromise = prepareResultsGraphic(match);
+  }
+
+  const graphic = await activeResultsGraphicPromise;
+  if (!graphic) activeResultsGraphicPromise = null;
+  return graphic;
 }
 
 function getReadyResultsGraphic() {
@@ -2784,6 +2786,15 @@ function wireEvents() {
   els.posterBtn?.addEventListener("click", () => openPoster(false));
   els.shareRecapBtn?.addEventListener("click", shareRecap);
   els.posterRecapBtn?.addEventListener("click", downloadActiveResults);
+  els.recapDialog?.addEventListener("pointerup", (event) => {
+    const shareButton = event.target.closest("#shareRecapBtn");
+    const downloadButton = event.target.closest("#posterRecapBtn");
+    if (!shareButton && !downloadButton) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (shareButton) shareRecap(event);
+    if (downloadButton) downloadActiveResults(event);
+  }, true);
   els.recapDialog?.addEventListener("close", () => {
     activeResultsMatch = null;
     activeResultsGraphic = null;

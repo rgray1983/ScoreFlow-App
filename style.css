@@ -1484,10 +1484,13 @@ body[data-theme="fire"] {
 
 .results-dialog-shell {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
 .results-card-wrap {
+  position: relative;
+  z-index: 1;
   width: 100%;
 }
 
@@ -1748,8 +1751,11 @@ body[data-theme="fire"] {
 .results-powered img { width: 98px; }
 
 .results-actions {
+  position: relative;
+  z-index: 5;
   grid-template-columns: 1fr 52px;
   padding: 0 2px;
+  pointer-events: auto;
 }
 
 .results-actions button:first-child {
@@ -1766,6 +1772,10 @@ body[data-theme="fire"] {
   border: 1px solid var(--secondary-action-border);
   font-size: 24px;
   line-height: 1;
+}
+
+.results-actions button.is-preparing {
+  opacity: .72;
 }
 
 @keyframes resultsLogoDrop {
