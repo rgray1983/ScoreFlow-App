@@ -3838,3 +3838,18 @@ body {
 .live-start-overlay.show:has(+ .results-dialog[open]) {
   pointer-events: none;
 }
+
+/* =========================================================
+   18. Viewer Scoreboard Visual Reset
+   Viewer mode disables controls for safety, but the read-only
+   visual scoreboard should not inherit disabled opacity.
+   ========================================================= */
+.viewer-mode .team-name:disabled,
+.viewer-mode .score-btn:disabled,
+.viewer-mode .portrait-score-number:disabled {
+  opacity: 1;
+}
+
+.viewer-mode .team-name:disabled {
+  -webkit-text-fill-color: currentColor;
+}
