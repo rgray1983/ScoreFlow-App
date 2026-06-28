@@ -151,6 +151,7 @@ const els = {
   recapDialog: $("recapDialog"),
   recapContent: $("recapContent"),
   shareRecapBtn: $("shareRecapBtn"),
+  resultsCloseBtn: $("resultsCloseBtn"),
   posterRecapBtn: $("posterRecapBtn"),
   posterDialog: $("posterDialog"),
   posterCanvas: $("posterCanvas"),
@@ -1809,6 +1810,7 @@ async function startLiveListener() {
   liveReady = true;
   setConnectionStatus("online", "Online");
   document.body.classList.toggle("viewer-mode", isViewer);
+  if (isViewer) document.body.classList.add("scoreboard-active");
   await startFanZoneListeners();
   await startPresenceTracking();
 
@@ -2992,6 +2994,7 @@ function wireEvents() {
   els.showQrBtn?.addEventListener("click", toggleQrCard);
   els.posterBtn?.addEventListener("click", () => openPoster(false));
   els.shareRecapBtn?.addEventListener("click", shareRecap);
+  els.resultsCloseBtn?.addEventListener("click", () => els.recapDialog?.close?.());
   els.recapDialog?.addEventListener("close", () => {
     activeResultsMatch = null;
     activeResultsGraphic = null;
@@ -3098,7 +3101,7 @@ function wireEvents() {
 
 function applyViewerMode() {
   if (!isViewer) return;
-  document.body.classList.add("viewer-mode");
+  document.body.classList.add("viewer-mode", "scoreboard-active");
   const viewerAllowedIds = new Set([
     "liveStartWatchBtn",
     "chatInput",

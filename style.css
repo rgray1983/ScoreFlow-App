@@ -3343,11 +3343,15 @@ body[data-theme="fire"] {
 .results-date {
   position: absolute;
   top: 14px;
-  right: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 92px);
   color: rgba(255,255,255,.76);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: .03em;
+  text-align: center;
 }
 
 .results-top-logo {
@@ -3725,5 +3729,49 @@ body {
     height: var(--scoreflow-vh);
     min-height: var(--scoreflow-vh);
     max-height: var(--scoreflow-vh);
+  }
+}
+
+
+/* =========================================================
+   17. Stage 5 Fixes - Results Close + Portrait Viewer Fan Zone
+   ========================================================= */
+.results-dialog-shell {
+  position: relative;
+}
+
+.results-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255,255,255,.88);
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 12px 26px rgba(0,0,0,.42);
+}
+
+.results-close-btn:active {
+  transform: scale(.96);
+}
+
+@media (orientation: portrait) {
+  .viewer-mode.scoreboard-active .fan-zone,
+  .scoreboard-active .fan-zone {
+    display: block;
+  }
+
+  .viewer-mode.scoreboard-active .fan-zone-card,
+  .scoreboard-active .fan-zone-card {
+    display: grid;
   }
 }
