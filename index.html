@@ -388,6 +388,19 @@
   </section>
 
 
+
+  <dialog id="chatNameDialog" class="chat-name-dialog">
+    <form method="dialog" class="chat-name-card">
+      <span class="eyebrow">Fan Zone</span>
+      <h2>What name should show in chat?</h2>
+      <p>Pick a name for this device only. Other viewers can choose their own.</p>
+      <label>Chat name<input id="chatNameInput" maxlength="24" autocomplete="name" placeholder="Your name" /></label>
+      <div class="dialog-actions">
+        <button id="chatNameSaveBtn" value="default" type="button">Start Chatting</button>
+      </div>
+    </form>
+  </dialog>
+
   <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
     <button class="fan-zone-toggle" id="fanZoneToggle" type="button" aria-expanded="false">Chat</button>
     <div class="floating-reactions" id="floatingReactions" aria-hidden="true"></div>

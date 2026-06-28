@@ -4134,3 +4134,188 @@ body {
     height: clamp(56px, min(18vw, 10.75svh), 88px);
   }
 }
+
+
+/* =========================================================
+   Polish: Point Animation System
+   Replaces full-screen point text with score glow + independent
+   team-panel banner layers that sit above the logo without clipping.
+   ========================================================= */
+.point-pulse {
+  display: none !important;
+}
+
+.broadcast-team,
+.portrait-team {
+  overflow: visible;
+}
+
+.broadcast-score-btn.point-glow,
+.portrait-score-number.point-glow,
+.portrait-score-btn.point-glow,
+#portraitHomeScoreBtn.point-glow,
+#portraitAwayScoreBtn.point-glow {
+  animation: scorePointGlow .78s ease-out;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--point-glow-color, currentColor), transparent 35%));
+}
+
+.point-team-banner {
+  position: absolute;
+  left: 50%;
+  top: clamp(92px, 34%, 210px);
+  z-index: 18;
+  max-width: min(92%, 360px);
+  padding: .46em .84em;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.86)),
+    var(--point-banner-color, var(--brand));
+  color: #05070c;
+  font-family: var(--font-ui);
+  font-size: clamp(12px, 1.7vw, 22px);
+  font-weight: 950;
+  letter-spacing: .045em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 12px 30px color-mix(in srgb, var(--point-banner-color, var(--brand)), transparent 44%),
+    0 4px 14px rgba(0,0,0,.2),
+    inset 0 0 0 2px color-mix(in srgb, var(--point-banner-color, var(--brand)), transparent 55%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.88);
+}
+
+.point-team-banner.show {
+  animation: pointTeamBannerFlash 1.15s cubic-bezier(.2,.85,.25,1) both;
+}
+
+.portrait-team .point-team-banner {
+  top: 44%;
+  max-width: 154%;
+  font-size: clamp(9px, 2.75vw, 13px);
+  padding: .42em .68em;
+}
+
+@keyframes scorePointGlow {
+  0% {
+    transform: scale(.96);
+    text-shadow:
+      0 0 0 color-mix(in srgb, var(--point-glow-color, currentColor), transparent 100%),
+      0 12px 28px rgba(0,0,0,.16);
+  }
+  35% {
+    transform: scale(1.055);
+    text-shadow:
+      0 0 30px color-mix(in srgb, var(--point-glow-color, currentColor), transparent 12%),
+      0 0 58px color-mix(in srgb, var(--point-glow-color, currentColor), transparent 42%),
+      0 12px 28px rgba(0,0,0,.16);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow:
+      0 2px 0 rgba(255,255,255,.24),
+      0 12px 28px rgba(0,0,0,.16);
+  }
+}
+
+@keyframes pointTeamBannerFlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.88);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(.96);
+  }
+}
+
+
+/* =========================================================
+   Viewer Chat Name Prompt
+   Viewer-only identity modal for Fan Zone messages.
+   ========================================================= */
+.chat-name-dialog {
+  width: min(420px, calc(100vw - 28px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.chat-name-dialog::backdrop {
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(12px);
+}
+
+.chat-name-card {
+  display: grid;
+  gap: 13px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,20,20,.22), transparent 38%),
+    linear-gradient(180deg, rgba(16,24,39,.98), rgba(8,11,18,.98));
+  box-shadow: 0 24px 70px rgba(0,0,0,.48);
+}
+
+.chat-name-card h2 {
+  margin: -4px 0 0;
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: .95;
+  letter-spacing: -.06em;
+}
+
+.chat-name-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.chat-name-card label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.chat-name-card input {
+  min-height: 50px;
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.chat-name-card .dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.chat-name-card .dialog-actions button {
+  background: var(--brand);
+  color: #fff;
+}
+
+.chat-message.scorer-message strong {
+  color: var(--brand);
+  text-shadow: 0 0 14px rgba(255, 20, 20, .35);
+}
+
+.chat-message.own-message {
+  border-color: rgba(255,255,255,.16);
+}
+

@@ -247,6 +247,9 @@ const els = {
   chatForm: $("chatForm"),
   chatInput: $("chatInput"),
   sendChatBtn: $("sendChatBtn"),
+  chatNameDialog: $("chatNameDialog"),
+  chatNameInput: $("chatNameInput"),
+  chatNameSaveBtn: $("chatNameSaveBtn"),
   reactionRow: $("reactionRow"),
   floatingReactions: $("floatingReactions"),
   inMatchSettingsDrawer: $("inMatchSettingsDrawer"),
@@ -326,6 +329,7 @@ const viewerSessionId = (() => {
 })();
 let chatCooldownUntil = 0;
 let reactionCooldownUntil = 0;
+let viewerChatName = "";
 const seenReactionIds = new Set();
 let applyingRemote = false;
 let liveReady = false;
@@ -487,6 +491,65 @@ async function startPresenceTracking() {
 }
 
 
+
+/* =========================================================
+   Viewer Chat Identity
+   Viewer-only name prompt. Uses the unique viewer session id so
+   one spectator's chat name never becomes the default for everyone.
+   ========================================================= */
+function viewerChatNameStorageKey() {
+  return `scoreflowViewerChatName:${liveGameId || "local"}:${viewerSessionId}`;
+}
+
+function cleanChatName(value) {
+  return (value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 24);
+}
+
+function loadViewerChatName() {
+  if (!isViewer) return "";
+  viewerChatName = cleanChatName(sessionStorage.getItem(viewerChatNameStorageKey()) || "");
+  return viewerChatName;
+}
+
+function saveViewerChatName(value) {
+  if (!isViewer) return "";
+  viewerChatName = cleanChatName(value);
+  if (viewerChatName) sessionStorage.setItem(viewerChatNameStorageKey(), viewerChatName);
+  return viewerChatName;
+}
+
+function openChatNamePrompt(force = false) {
+  if (!isViewer || !els.chatNameDialog) return;
+  const existing = loadViewerChatName();
+  if (existing && !force) return;
+  if (els.chatNameInput) els.chatNameInput.value = existing;
+  if (typeof els.chatNameDialog.showModal === "function") {
+    els.chatNameDialog.showModal();
+  } else {
+    els.chatNameDialog.setAttribute("open", "");
+  }
+  window.setTimeout(() => els.chatNameInput?.focus?.(), 80);
+}
+
+function closeChatNamePrompt() {
+  els.chatNameDialog?.close?.();
+}
+
+function saveChatNameFromPrompt() {
+  const name = saveViewerChatName(els.chatNameInput?.value || "");
+  if (!name) {
+    toast("Enter a chat name first", true);
+    els.chatNameInput?.focus?.();
+    return false;
+  }
+  closeChatNamePrompt();
+  return true;
+}
+
+
 function renderChatMessages(messages = []) {
   if (!els.chatFeed) return;
   els.chatFeed.innerHTML = "";
@@ -500,6 +563,7 @@ function renderChatMessages(messages = []) {
   messages.forEach((message) => {
     const item = document.createElement("article");
     item.className = `chat-message ${message.role === "scorer" ? "scorer-message" : ""}`;
+    if (message.sessionId && message.sessionId === viewerSessionId) item.classList.add("own-message");
     const name = document.createElement("strong");
     name.textContent = message.name || (message.role === "scorer" ? "Scorer" : "Fan");
     const text = document.createElement("span");
@@ -556,6 +620,10 @@ async function sendChatMessage(event) {
   }
   const text = (els.chatInput?.value || "").trim().slice(0, 60);
   if (!text) return;
+  if (isViewer && !loadViewerChatName()) {
+    openChatNamePrompt(true);
+    return;
+  }
   if (Date.now() < chatCooldownUntil) {
     toast("Give chat a second", true);
     return;
@@ -565,8 +633,9 @@ async function sendChatMessage(event) {
   try {
     await addDoc(liveChatCollectionRef(), {
       text,
-      name: isViewer ? (currentUser?.displayName || currentUser?.email?.split("@")[0] || "Fan") : "Scorer",
+      name: isViewer ? viewerChatName : "Scorer",
       role: isViewer ? "viewer" : "scorer",
+      sessionId: isViewer ? viewerSessionId : "scorer",
       createdAt: serverTimestamp(),
       createdAtMs: Date.now()
     });
@@ -615,6 +684,13 @@ function hideLiveStartOverlay() {
   els.liveStartOverlay.classList.remove("show");
   els.liveStartOverlay.setAttribute("aria-hidden", "true");
 }
+
+
+function startViewerWatch() {
+  hideLiveStartOverlay();
+  openChatNamePrompt(false);
+}
+
 
 
 function bindDialogBackdropClose() {
@@ -2399,17 +2475,66 @@ function toggleQrCard() {
   els.qrCard.hidden = !els.qrCard.hidden;
 }
 
+/* =========================================================
+   Polish: Point Animation System
+   - Replaces the old full-screen point text.
+   - Keeps the score pop/glow tight to the score area.
+   - Shows a premium "Point Team!" tag over the scoring team's logo.
+   ========================================================= */
+function pointAnimationTargets(team) {
+  const isHome = team === "home";
+  return {
+    color: isHome ? state.homeColor : state.awayColor,
+    name: teamName(team).toUpperCase(),
+    side: isHome ? "home" : "away",
+    scoreButtons: [
+      isHome ? els.homeScoreBtn : els.awayScoreBtn,
+      isHome ? els.portraitHomeScoreBtn : els.portraitAwayScoreBtn
+    ].filter(Boolean),
+    pointPanels: [
+      isHome ? els.homeLogo?.closest(".broadcast-team") : els.awayLogo?.closest(".broadcast-team"),
+      isHome ? els.portraitHomeLogoWrap?.closest(".portrait-team") : els.portraitAwayLogoWrap?.closest(".portrait-team")
+    ].filter(Boolean)
+  };
+}
+
+function ensurePointBanner(panel, side) {
+  let banner = panel.querySelector(":scope > .point-team-banner");
+  if (!banner) {
+    banner = document.createElement("span");
+    banner.className = "point-team-banner";
+    banner.setAttribute("aria-hidden", "true");
+    panel.appendChild(banner);
+  }
+  banner.classList.toggle("home-point-banner", side === "home");
+  banner.classList.toggle("away-point-banner", side === "away");
+  return banner;
+}
+
 function showPointPulse(team) {
-  if (!els.pointPulse) return;
-  const name = teamName(team).toUpperCase();
-  const color = team === "home" ? state.homeColor : state.awayColor;
-  els.pointPulse.textContent = `POINT ${name}!`;
-  els.pointPulse.style.setProperty("--pulse-color", color);
-  els.pointPulse.classList.remove("show");
-  void els.pointPulse.offsetWidth;
-  els.pointPulse.classList.add("show");
-  clearTimeout(showPointPulse.timer);
-  showPointPulse.timer = setTimeout(() => els.pointPulse.classList.remove("show"), 1250);
+  const { color, name, side, scoreButtons, pointPanels } = pointAnimationTargets(team);
+
+  scoreButtons.forEach((button) => {
+    button.style.setProperty("--point-glow-color", color);
+    button.classList.remove("point-glow");
+    void button.offsetWidth;
+    button.classList.add("point-glow");
+    window.clearTimeout(button.pointGlowTimer);
+    button.pointGlowTimer = window.setTimeout(() => button.classList.remove("point-glow"), 780);
+  });
+
+  pointPanels.forEach((panel) => {
+    const banner = ensurePointBanner(panel, side);
+    banner.textContent = `POINT ${name}!`;
+    banner.style.setProperty("--point-banner-color", color);
+    banner.classList.remove("show");
+    void banner.offsetWidth;
+    banner.classList.add("show");
+    window.clearTimeout(banner.pointBannerTimer);
+    banner.pointBannerTimer = window.setTimeout(() => banner.classList.remove("show"), 1150);
+  });
+
+  if (els.pointPulse) els.pointPulse.classList.remove("show");
 }
 
 function recapText() {
@@ -3056,7 +3181,14 @@ function wireEvents() {
   els.downloadPosterBtn?.addEventListener("click", downloadPoster);
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
   els.loadTeamsBtn?.addEventListener("click", loadTeamProfiles);
-  els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
+  els.liveStartWatchBtn?.addEventListener("click", startViewerWatch);
+  els.chatNameSaveBtn?.addEventListener("click", saveChatNameFromPrompt);
+  els.chatNameInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveChatNameFromPrompt();
+    }
+  });
   els.openScoreboardBtn?.addEventListener("click", openMatchSetupPage);
   els.homeTeamSetupBtn?.addEventListener("click", openHomeTeamDialog);
   els.saveHomeTeamBtn?.addEventListener("click", saveHomeTeam);
@@ -3157,6 +3289,8 @@ function applyViewerMode() {
     "liveStartWatchBtn",
     "chatInput",
     "sendChatBtn",
+    "chatNameInput",
+    "chatNameSaveBtn",
     "resultsCloseBtn",
     "shareRecapBtn"
   ]);
@@ -3193,6 +3327,7 @@ async function boot() {
     if (initFirebase()) {
       setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
       if (liveGameId) await startLiveListener();
+      if (isViewer) loadViewerChatName();
     } else {
       setConnectionStatus("offline", "Offline");
     }
