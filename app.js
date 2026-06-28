@@ -100,7 +100,6 @@ const premium = {
   theme: "classic",
   posterStyle: "classic",
   resultBackground: "default",
-  loadingLogo: "",
   cloudBackup: false
 };
 
@@ -170,6 +169,9 @@ const els = {
   homeScreen: $("homeScreen"),
   openScoreboardBtn: $("openScoreboardBtn"),
   homeCreateLiveBtn: $("homeCreateLiveBtn"),
+  matchSetupScreen: $("matchSetupScreen"),
+  matchSetupBackBtn: $("matchSetupBackBtn"),
+  startLiveFromSetupBtn: $("startLiveFromSetupBtn"),
   homeSettingsBtn: $("homeSettingsBtn"),
   homeTeamSetupBtn: $("homeTeamSetupBtn"),
   homeTeamSummary: $("homeTeamSummary"),
@@ -198,17 +200,12 @@ const els = {
   settingsBackBtn: $("settingsBackBtn"),
   settingsThemesBtn: $("settingsThemesBtn"),
   settingsGraphicsBtn: $("settingsGraphicsBtn"),
-  settingsBrandingBtn: $("settingsBrandingBtn"),
   settingsThemesScreen: $("settingsThemesScreen"),
   settingsThemesBackBtn: $("settingsThemesBackBtn"),
   settingsGraphicsScreen: $("settingsGraphicsScreen"),
   settingsGraphicsBackBtn: $("settingsGraphicsBackBtn"),
-  settingsBrandingScreen: $("settingsBrandingScreen"),
-  settingsBrandingBackBtn: $("settingsBrandingBackBtn"),
   backgroundGraphicsGrid: $("backgroundGraphicsGrid"),
   settingsProCardSlot: $("settingsProCardSlot"),
-  loadingLogoInput: $("loadingLogoInput"),
-  loadingLogoPreview: $("loadingLogoPreview"),
   closeAppSettingsBtn: $("closeAppSettingsBtn"),
   userEmail: $("userEmail"),
   userPassword: $("userPassword"),
@@ -368,12 +365,9 @@ function updateBranding() {
 }
 
 function applySplashImageFromStorage() {
-  const src = hasProAccess()
-    ? (premium.loadingLogo || PRO_BRAND_LOGO_SRC)
-    : FREE_SPLASH_LOGO_SRC;
   if (els.splashLogoImg) {
-    els.splashLogoImg.src = src;
-    els.splashLogoImg.alt = hasProAccess() ? "ScoreFlow Pro" : "ScoreFlow";
+    els.splashLogoImg.src = FREE_SPLASH_LOGO_SRC;
+    els.splashLogoImg.alt = "ScoreFlow";
   }
 }
 
@@ -672,7 +666,7 @@ function showHomeScreen() {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
   document.body.classList.add("home-active");
-  document.body.classList.remove("scoreboard-active", "setup-active", "history-active");
+  document.body.classList.remove("scoreboard-active", "setup-active", "history-active", "match-setup-active", "settings-active");
   initialSetupActive = false;
   updateRotateScreenState();
   renderHomeData();
@@ -682,21 +676,15 @@ function showHomeScreen() {
 function openScoreboardFromHome(startFresh = false) {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
-  document.body.classList.remove("home-active");
+  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active");
   document.body.classList.add("scoreboard-active");
   window.setTimeout(() => document.body.classList.remove("screen-transitioning"), 260);
   if (startFresh) {
     resetMatchState(false);
     toast("New match ready");
   }
-  if (!setupComplete && isPortraitOrientation()) {
-    initialSetupActive = true;
-    document.body.classList.add("setup-active");
-    openSettings();
-  } else {
-    setupComplete = true;
-    updateRotateScreenState();
-  }
+  setupComplete = true;
+  updateRotateScreenState();
 }
 
 function resetMatchState(keepHistory = true) {
@@ -994,7 +982,6 @@ function loadPremiumSettings() {
     premium.theme = saved.theme || "classic";
     premium.posterStyle = saved.posterStyle || "classic";
     premium.resultBackground = saved.resultBackground || "default";
-    premium.loadingLogo = saved.loadingLogo || "";
     premium.cloudBackup = Boolean(saved.cloudBackup) && Boolean(saved.isPro);
   }
   applyPremiumSettings(false);
@@ -1042,13 +1029,6 @@ function applyPremiumSettings(sync = true) {
   }
   if (els.cloudBackupToggleText) els.cloudBackupToggleText.textContent = hasProAccess() ? (cloudBackupOn ? "On" : "Off") : "Pro";
   if (els.posterStyleSelect) els.posterStyleSelect.value = premium.posterStyle;
-  if (els.loadingLogoPreview) {
-    const hasLoadingLogo = hasProAccess() && Boolean(premium.loadingLogo);
-    els.loadingLogoPreview.src = hasLoadingLogo
-      ? premium.loadingLogo
-      : "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-    els.loadingLogoPreview.classList.toggle("blank", !hasLoadingLogo);
-  }
   applySplashImageFromStorage();
   updateBranding();
   renderPremiumUI();
@@ -1102,7 +1082,6 @@ function toggleProDemo() {
     premium.theme = "classic";
     premium.posterStyle = "classic";
     premium.cloudBackup = false;
-    premium.loadingLogo = "";
     if (RESULTS_BACKGROUNDS.find((bg) => bg.id === premium.resultBackground)?.pro) premium.resultBackground = "default";
   } else {
     premium.cloudBackup = true;
@@ -1152,6 +1131,7 @@ function setResultBackground(backgroundId) {
 
 function openSettingsPage(page = "main") {
   renderPremiumUI();
+  document.body.classList.remove("match-setup-active");
   document.body.classList.add("settings-active");
   document.body.dataset.settingsPage = page;
 }
@@ -1173,23 +1153,6 @@ function focusProFromSettings() {
   }, 240);
 }
 
-function handleLoadingLogoUpload(input) {
-  const file = input?.files?.[0];
-  if (!file) return;
-  if (!hasProAccess()) {
-    toast("Loading screen branding is a Pro feature", true);
-    input.value = "";
-    focusProFromSettings();
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = () => {
-    premium.loadingLogo = String(reader.result || "");
-    savePremiumSettings(true);
-    toast("Loading screen updated");
-  };
-  reader.readAsDataURL(file);
-}
 
 async function syncPremiumSettingsToCloud() {
   if (!currentUser || !db || !premium.cloudBackup) return;
@@ -1591,7 +1554,7 @@ async function renderFullMatchHistoryPage() {
 async function openMatchHistoryPage() {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
-  document.body.classList.remove("home-active", "scoreboard-active", "setup-active", "fan-zone-open");
+  document.body.classList.remove("home-active", "scoreboard-active", "setup-active", "match-setup-active", "fan-zone-open");
   els.fanZoneToggle?.setAttribute("aria-expanded", "false");
   document.body.classList.add("history-active");
   await renderFullMatchHistoryPage();
@@ -1626,8 +1589,7 @@ function isPortraitOrientation() {
 function beginInitialPortraitSetup() {
   if (isViewer || liveGameId || !isPortraitOrientation()) return;
   initialSetupActive = true;
-  document.body.classList.add("setup-active");
-  openSettings();
+  openMatchSetupPage();
 }
 
 function updateRotateScreenState() {
@@ -1858,6 +1820,20 @@ function renderSetDots(container, won) {
   }
 }
 
+function updateScoreButton(button, value) {
+  if (!button) return;
+  const next = String(value);
+  if (button.textContent !== next) {
+    button.textContent = next;
+    button.classList.remove("score-pop");
+    void button.offsetWidth;
+    button.classList.add("score-pop");
+    window.setTimeout(() => button.classList.remove("score-pop"), 260);
+    return;
+  }
+  button.textContent = next;
+}
+
 function render() {
   const target = pointsToWinForCurrentSet();
   els.matchTitle.textContent = state.matchTitle.toUpperCase();
@@ -1869,8 +1845,8 @@ function render() {
   els.awayNameSetting.value = state.awayName;
   els.matchFormatSetting.value = state.matchFormat;
   els.matchPill.textContent = matchLabel();
-  els.homeScoreBtn.textContent = state.homeScore;
-  els.awayScoreBtn.textContent = state.awayScore;
+  updateScoreButton(els.homeScoreBtn, state.homeScore);
+  updateScoreButton(els.awayScoreBtn, state.awayScore);
   els.homeSets.textContent = state.homeSets;
   els.awaySets.textContent = state.awaySets;
   els.setNumber.textContent = state.setNumber;
@@ -2033,8 +2009,8 @@ function undo() {
   toast("Undone");
 }
 
-function saveSettings() {
-  if (isViewer) return;
+function saveSettings(options = {}) {
+  if (isViewer) return false;
   const nextFormat = els.matchFormatSetting.value;
   const formatChanged = nextFormat !== state.matchFormat;
 
@@ -2044,7 +2020,7 @@ function saveSettings() {
 
   if (formatChanged && (state.homeScore || state.awayScore || state.homeSets || state.awaySets)) {
     const ok = confirm("Changing match format will reset the current match. Continue?");
-    if (!ok) return;
+    if (!ok) return false;
     state.homeScore = 0;
     state.awayScore = 0;
     state.homeSets = 0;
@@ -2064,21 +2040,50 @@ function saveSettings() {
   render();
   endInitialPortraitSetup();
   queueRemoteUpdate();
-  toast("Setup saved");
+  if (!options.silent) toast("Setup saved");
+  return true;
+}
+
+function populateMatchSetupFields() {
+  if (els.titleInput) els.titleInput.value = state.matchTitle;
+  if (els.homeNameSetting) els.homeNameSetting.value = state.homeName;
+  if (els.awayNameSetting) els.awayNameSetting.value = state.awayName;
+  if (els.matchFormatSetting) els.matchFormatSetting.value = state.matchFormat;
+  if (els.matchPill) els.matchPill.textContent = matchLabel();
+  setTeamColor("home", state.homeColor, false);
+  setTeamColor("away", state.awayColor, false);
+}
+
+function openMatchSetupPage() {
+  if (isViewer) return;
+  populateMatchSetupFields();
+  document.body.classList.add("match-setup-active");
+  document.body.classList.remove("settings-active", "history-active", "needs-rotate");
+  els.matchSetupScreen?.scrollTo?.({ top: 0, behavior: "instant" });
+}
+
+function closeMatchSetupPage() {
+  document.body.classList.remove("match-setup-active");
+  if (!document.body.classList.contains("scoreboard-active")) {
+    document.body.classList.add("home-active");
+  }
+}
+
+async function startMatchFromSetup(startLive = false) {
+  if (isViewer) return;
+  const saved = saveSettings({ silent: true });
+  if (!saved) return;
+  resetMatchState(false);
+  openScoreboardFromHome(false);
+  toast(startLive ? "Live match ready" : "Match ready");
+  if (startLive) {
+    await createLiveGame();
+    openShare();
+  }
 }
 
 function openSettings() {
-  if (isViewer) return;
-  if (isPortraitOrientation()) {
-    document.body.classList.add("setup-active");
-    document.body.classList.remove("needs-rotate");
-  }
-  els.titleInput.value = state.matchTitle;
-  els.homeNameSetting.value = state.homeName;
-  els.awayNameSetting.value = state.awayName;
-  els.matchFormatSetting.value = state.matchFormat;
-  els.matchPill.textContent = matchLabel();
-  els.settingsDialog.showModal();
+  openMatchSetupPage();
 }
 
 function openShare() {
@@ -2218,6 +2223,21 @@ function canvasRoundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
+
+function canvasInitials(value, fallback = "T") {
+  const clean = String(value || fallback)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!clean.length) return fallback;
+
+  return clean
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 function drawCanvasLogo(ctx, img, fallback, x, y, size, options = {}) {
   const radius = options.square ? 0 : size / 2;
   ctx.save();
@@ -2245,7 +2265,7 @@ function drawCanvasLogo(ctx, img, fallback, x, y, size, options = {}) {
     ctx.font = `900 ${Math.round(size * 0.34)}px Inter, Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(initials(fallback), x, y + 2);
+    ctx.fillText(canvasInitials(fallback), x, y + 2);
   }
   ctx.restore();
 }
@@ -2750,18 +2770,14 @@ function wireEvents() {
   addSafeListener("shareBtn", "click", openShare);
   els.scoreboardHomeBtn?.addEventListener("click", showHomeScreen);
   addSafeListener("settingsBtn", "click", openSettings);
-  addSafeListener("saveSettingsBtn", "click", saveSettings);
+  addSafeListener("saveSettingsBtn", "click", () => startMatchFromSetup(false));
+  els.startLiveFromSetupBtn?.addEventListener("click", () => startMatchFromSetup(true));
+  els.matchSetupBackBtn?.addEventListener("click", closeMatchSetupPage);
   [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
   });
   bindDialogBackdropClose();
-  els.settingsDialog?.addEventListener("close", () => {
-    if (!initialSetupActive) {
-      document.body.classList.remove("setup-active");
-      updateRotateScreenState();
-    }
-  });
   addSafeListener("createLiveBtn", "click", createLiveGame);
   addSafeListener("copyLinkBtn", "click", copyViewerLink);
   els.nativeShareBtn?.addEventListener("click", shareViewerLink);
@@ -2779,13 +2795,8 @@ function wireEvents() {
   els.saveTeamsBtn?.addEventListener("click", saveTeamProfiles);
   els.loadTeamsBtn?.addEventListener("click", loadTeamProfiles);
   els.liveStartWatchBtn?.addEventListener("click", hideLiveStartOverlay);
-  els.openScoreboardBtn?.addEventListener("click", () => openScoreboardFromHome(true));
+  els.openScoreboardBtn?.addEventListener("click", openMatchSetupPage);
   els.homeTeamSetupBtn?.addEventListener("click", openHomeTeamDialog);
-  els.homeCreateLiveBtn?.addEventListener("click", async () => {
-    openScoreboardFromHome(false);
-    await createLiveGame();
-    openShare();
-  });
   els.saveHomeTeamBtn?.addEventListener("click", saveHomeTeam);
   els.homeTeamLogoInput?.addEventListener("change", handleHomeTeamLogoUpload);
   els.homeTeamNameInput?.addEventListener("input", () => {
@@ -2802,11 +2813,8 @@ function wireEvents() {
   els.settingsBackBtn?.addEventListener("click", closeSettingsPage);
   els.settingsThemesBtn?.addEventListener("click", () => openSettingsPage("themes"));
   els.settingsGraphicsBtn?.addEventListener("click", () => openSettingsPage("graphics"));
-  els.settingsBrandingBtn?.addEventListener("click", () => openSettingsPage("branding"));
   els.settingsThemesBackBtn?.addEventListener("click", () => openSettingsPage("main"));
   els.settingsGraphicsBackBtn?.addEventListener("click", () => openSettingsPage("main"));
-  els.settingsBrandingBackBtn?.addEventListener("click", () => openSettingsPage("main"));
-  els.loadingLogoInput?.addEventListener("change", () => handleLoadingLogoUpload(els.loadingLogoInput));
   els.matchHistoryMoreBtn?.addEventListener("click", openMatchHistoryMore);
   els.matchHistoryBackBtn?.addEventListener("click", showHomeScreen);
   els.matchHistoryList?.addEventListener("click", handleMatchResultCardClick);
@@ -2885,7 +2893,7 @@ function applyViewerMode() {
     if (viewerAllowedIds.has(el.id) || el.closest("#fanZone")) return;
     el.disabled = true;
   });
-  els.settingsDialog?.close?.();
+  closeMatchSetupPage();
   els.shareDialog?.close?.();
 }
 

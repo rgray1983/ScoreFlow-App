@@ -55,13 +55,12 @@
       <div class="hero-copy">
         <span class="eyebrow">Volleyball scoreboard</span>
         <h1>Score faster. Share instantly.</h1>
-        <p>ScoreFlow is built for the coach, assistant coach, or parent running the match — with a clean live view for everyone watching from the shared link.</p>
+        <p>ScoreFlow is built for the coach, assistant coach, or parent running the match — Save your Home Team below to make setup a breeze.</p>
       </div>
 
       <div class="home-primary-actions single-action">
-        <button id="openScoreboardBtn" type="button">Score Match</button>
+        <button id="openScoreboardBtn" type="button">Start A Match</button>
       </div>
-      <button id="homeCreateLiveBtn" class="home-live-btn" type="button">Score & Share Live</button>
     </header>
 
     <main class="home-dashboard">
@@ -169,109 +168,91 @@
   </dialog>
 
   <div class="app-shell" id="app">
-    <header class="top-bar">
+    <header class="top-bar scoreboard-top-bar">
       <div class="scoreboard-left-controls" aria-label="Scoreboard navigation">
         <button class="icon-btn scoreboard-home-btn" id="scoreboardHomeBtn" type="button" aria-label="Home">⌂</button>
         <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">⚙</button>
       </div>
-      <div class="match-title-block">
-        <span id="matchPill" class="match-pill">Club · Best 2 of 3</span>
-        <h1 id="matchTitle" class="match-title-left">Game Night</h1>
-      </div>
+
       <div class="brand-wrap">
         <img class="scoreflow-header-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
       </div>
+
       <div class="status-cluster">
         <div class="viewer-count" id="viewerCount" title="Live viewers">👁 0</div>
         <div class="live-status offline" id="liveStatus">Offline</div>
       </div>
     </header>
 
-    <main class="scoreboard" aria-label="Volleyball scoreboard">
-      <section class="team-panel home" data-team="home">
-        <div class="team-head">
-          <label class="logo-picker" title="Choose Team 1 logo">
-            <input id="homeLogoInput" type="file" accept="image/*" />
-            <img id="homeLogo" alt="" />
-            <span id="homeInitial">T</span>
-          </label>
-          <input id="homeName" class="team-name" value="Team 1" aria-label="Team 1 name" />
-        </div>
-        <div class="score-wrap">
-          <button id="homeScoreBtn" class="score-btn" type="button" aria-label="Add point to Team 1">0</button>
-          <div class="set-win-badge" id="homeSetWinBadge">Winner!</div>
-        </div>
-        <div class="point-actions">
+    <main class="scoreboard broadcast-scoreboard" aria-label="Volleyball scoreboard">
+      <section class="team-panel home broadcast-team" data-team="home">
+        <input id="homeName" class="team-name" value="Team 1" aria-label="Team 1 name" />
+
+        <label class="logo-picker broadcast-logo-picker" title="Choose Team 1 logo">
+          <input id="homeLogoInput" type="file" accept="image/*" />
+          <img id="homeLogo" alt="" />
+          <span id="homeInitial">T</span>
+        </label>
+
+        <div class="point-actions broadcast-point-actions">
           <button id="homePlus" class="point-btn plus" type="button">+1</button>
           <button id="homeMinus" class="point-btn minus" type="button">−1</button>
         </div>
-        <div class="sets-card">
+
+        <div class="sets-card broadcast-sets-card">
           <span>Sets Won</span>
           <strong id="homeSets">0</strong>
           <div class="set-dots" id="homeSetDots"></div>
         </div>
+
+        <div class="set-win-badge" id="homeSetWinBadge">Winner!</div>
       </section>
 
-      <section class="center-panel">
+      <section class="center-panel broadcast-center">
+        <div class="match-title-block broadcast-title-block">
+          <span id="matchPill" class="match-pill">Club · Best 2 of 3</span>
+          <h1 id="matchTitle" class="match-title-left">Game Night</h1>
+        </div>
+
+        <div class="set-box broadcast-set-box"><span>Set <strong id="setNumber">1</strong></span></div>
         <div class="alert-banner" id="alertBanner">Race to 25</div>
-        <div class="set-box"><span>Set <strong id="setNumber">1</strong></span></div>
-        <div class="control-grid">
-          <button id="undoBtn" type="button">Undo</button>
-          <button id="newSetBtn" type="button">New Set</button>
+
+        <div class="broadcast-score-row" aria-label="Current score">
+          <button id="homeScoreBtn" class="score-btn broadcast-score-btn home-score" type="button" aria-label="Add point to Team 1">0</button>
+          <span class="score-divider" aria-hidden="true">:</span>
+          <button id="awayScoreBtn" class="score-btn broadcast-score-btn away-score" type="button" aria-label="Add point to Visitor">0</button>
+        </div>
+
+        <div class="control-grid broadcast-control-grid">
           <button id="newMatchBtn" type="button">New Match</button>
-          <button id="shareBtn" type="button">Share</button>
+          <button id="shareBtn" type="button">Share Live</button>
         </div>
       </section>
 
-      <section class="team-panel away" data-team="away">
-        <div class="team-head">
-          <label class="logo-picker" title="Choose visitor logo">
-            <input id="awayLogoInput" type="file" accept="image/*" />
-            <img id="awayLogo" alt="" />
-            <span id="awayInitial">V</span>
-          </label>
-          <input id="awayName" class="team-name" value="Team 2" aria-label="Team 2 name" />
-        </div>
-        <div class="score-wrap">
-          <button id="awayScoreBtn" class="score-btn" type="button" aria-label="Add point to Visitor">0</button>
-          <div class="set-win-badge" id="awaySetWinBadge">Winner!</div>
-        </div>
-        <div class="point-actions">
+      <section class="team-panel away broadcast-team" data-team="away">
+        <input id="awayName" class="team-name" value="Team 2" aria-label="Team 2 name" />
+
+        <label class="logo-picker broadcast-logo-picker" title="Choose visitor logo">
+          <input id="awayLogoInput" type="file" accept="image/*" />
+          <img id="awayLogo" alt="" />
+          <span id="awayInitial">V</span>
+        </label>
+
+        <div class="point-actions broadcast-point-actions">
           <button id="awayPlus" class="point-btn plus" type="button">+1</button>
           <button id="awayMinus" class="point-btn minus" type="button">−1</button>
         </div>
-        <div class="sets-card">
+
+        <div class="sets-card broadcast-sets-card">
           <span>Sets Won</span>
           <strong id="awaySets">0</strong>
           <div class="set-dots" id="awaySetDots"></div>
         </div>
+
+        <div class="set-win-badge" id="awaySetWinBadge">Winner!</div>
       </section>
     </main>
   </div>
-
-  <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
-    <button class="fan-zone-toggle" id="fanZoneToggle" type="button" aria-expanded="false">Chat</button>
-    <div class="floating-reactions" id="floatingReactions" aria-hidden="true"></div>
-    <div class="fan-zone-card">
-      <div class="fan-zone-head">
-        <div><strong>Fan Zone</strong><span>Cheer live with chat and reactions</span></div>
-        <div class="fan-live-pill">Live</div>
-      </div>
-      <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
-      <div class="reaction-row viewer-reactions" id="reactionRow" aria-label="Send a reaction">
-        <button type="button" data-reaction="❤️">❤️</button>
-        <button type="button" data-reaction="🔥">🔥</button>
-        <button type="button" data-reaction="👏">👏</button>
-        <button type="button" data-reaction="🎉">🎉</button>
-        <button type="button" data-reaction="🏐">🏐</button>
-        <button type="button" data-reaction="💪">💪</button>
-      </div>
-      <form class="chat-form" id="chatForm">
-        <input id="chatInput" maxlength="60" autocomplete="off" placeholder="Cheer on your team..." />
-        <button id="sendChatBtn" type="submit">Send</button>
-      </form>
-    </div>
-  </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -311,19 +292,50 @@
 
   <canvas id="posterCanvas" width="1080" height="1920" hidden></canvas>
 
-  <dialog id="settingsDialog">
-    <form method="dialog" class="settings-card">
-      <div class="settings-head"><h2>Game Setup</h2></div>
-      <label>Match title<input id="titleInput" value="Game Night" /></label>
-      <label>Match format<select id="matchFormatSetting"><option value="club">Club — Best 2 of 3</option><option value="highschool">High School — Best 3 of 5</option></select></label>
-      <div class="two-col"><label>Home team<input id="homeNameSetting" value="Team 1" /></label><label>Visitor team<input id="awayNameSetting" value="Team 2" /></label></div>
-      <div class="swatch-section"><h3>Team 1 Color</h3><div class="swatches" id="homeSwatches"></div></div>
-      <div class="swatch-section"><h3>Visitor Color</h3><div class="swatches" id="awaySwatches"></div></div>
-      <p class="hint">Final set races to 15. Win by 2.</p>
-      <div class="team-save-row"><button id="saveTeamsBtn" value="default" type="button">Save Teams</button><button id="loadTeamsBtn" value="default" type="button">Load Teams</button></div>
-      <div class="dialog-actions"><button id="saveSettingsBtn" value="default" type="submit">Save Setup</button></div>
-    </form>
-  </dialog>
+  <section class="match-setup-screen" id="matchSetupScreen" aria-label="Match Setup">
+    <header class="settings-hero match-setup-hero">
+      <div class="settings-topline">
+        <button id="matchSetupBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
+      </div>
+
+      <div class="hero-copy">
+        <span class="eyebrow">Match Setup</span>
+        <h1>Your Match. Your Way.</h1>
+        <p>Set your match details before the first serve so the scoreboard, live view, history, and results graphic all stay in flow.</p>
+      </div>
+    </header>
+
+    <main class="match-setup-page-list">
+      <section class="match-setup-card">
+        <label>Match title<input id="titleInput" value="Game Night" /></label>
+        <label>Match format<select id="matchFormatSetting"><option value="club">Club — Best 2 of 3</option><option value="highschool">High School — Best 3 of 5</option></select></label>
+      </section>
+
+      <section class="match-setup-card team-setup-card">
+        <div class="match-setup-section-head"><h2>Teams</h2><small>Names and colors</small></div>
+        <div class="two-col setup-team-inputs"><label>Home team<input id="homeNameSetting" value="Team 1" /></label>
+        <div class="setup-color-grid">
+          <div class="swatch-section compact-swatch-section"><h3>Home Color</h3><div class="swatches compact-swatches" id="homeSwatches"></div></div>
+        </div>
+        <label>Visitor team<input id="awayNameSetting" value="Team 2" /></label></div>
+        <div class="setup-color-grid">
+          <div class="swatch-section compact-swatch-section"><h3>Visitor Color</h3><div class="swatches compact-swatches" id="awaySwatches"></div></div>
+        </div>
+      </section>
+
+      <p class="hint match-setup-hint">Save/Load Team Matchups.</p>
+
+      <div class="team-save-row match-setup-save-row"><button id="saveTeamsBtn" value="default" type="button">Save Teams</button><button id="loadTeamsBtn" value="default" type="button">Load Teams</button></div>
+
+      <p class="hint match-setup-hint">Start Scoreboard opens Scoreboard.<br>Start Live Scoreboard opens Link Sharing then Scoreboard.</p>
+
+      <div class="match-setup-actions">
+        <button id="saveSettingsBtn" value="default" type="button">Start Scoreboard</button>
+        <button id="startLiveFromSetupBtn" value="default" type="button">Start Live Scoreboard</button>
+      </div>
+    </main>
+  </section>
 
   <section class="settings-screen" id="settingsScreen" aria-label="ScoreFlow Settings">
     <header class="settings-hero">
@@ -335,14 +347,11 @@
       <div class="hero-copy">
         <span class="eyebrow">Settings</span>
         <h1>Your ScoreFlow. Your Way.</h1>
-        <p>Control the look, branding, backups, and premium features that make ScoreFlow feel like your team's app.</p>
+        <p>Control the look, backups, and premium features that make ScoreFlow feel like your team's app.</p>
       </div>
     </header>
 
     <main class="settings-page-list">
-      <button id="settingsBrandingBtn" class="settings-nav-card" type="button">
-        <span><strong>Loading Screen</strong><small>Use your club logo on the ScoreFlow loading screen. Pro feature.</small></span><b>›</b>
-      </button>
       <button id="settingsThemesBtn" class="settings-nav-card" type="button">
         <span><strong>Themes</strong><small>Choose the app's visual style.</small></span><b>›</b>
       </button>
@@ -404,27 +413,6 @@
       </div>
     </header>
     <main class="settings-page-list"><div class="background-graphics-grid" id="backgroundGraphicsGrid"></div></main>
-  </section>
-
-  <section class="settings-subscreen" id="settingsBrandingScreen" aria-label="Club Branding">
-    <header class="settings-hero">
-      <div class="settings-topline">
-        <button id="settingsBrandingBackBtn" class="match-history-back-btn" type="button">← Back</button>
-        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
-      </div>
-      <div class="hero-copy">
-        <span class="eyebrow">Club Branding</span>
-        <h1>Your Club. Your App.</h1>
-        <p>Use your club logo for the ScoreFlow loading screen. Pro feature.</p>
-      </div>
-    </header>
-    <main class="settings-page-list branding-settings-list">
-      <label class="branding-upload-card">
-        <input id="loadingLogoInput" type="file" accept="image/*" />
-        <img id="loadingLogoPreview" class="blank" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Loading screen logo preview" />
-        <span><strong>Loading Screen Logo</strong><small>Replace the loading logo with your club logo. Pro feature.</small></span>
-      </label>
-    </main>
   </section>
 
   <script type="module" src="app.js"></script>
