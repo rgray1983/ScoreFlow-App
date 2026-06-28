@@ -2431,7 +2431,7 @@ dialog {
   background: transparent;
   color: var(--text);
 }
-dialog::backdrop { background: rgba(0,0,0,95); }
+dialog::backdrop { background: rgba(0,0,0,.95); }
 .settings-card {
   display: grid;
   gap: 14px;
@@ -3744,7 +3744,7 @@ body {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 5;
+  z-index: 20;
   width: 36px;
   height: 36px;
   min-height: 36px;
@@ -3774,4 +3774,67 @@ body {
   .scoreboard-active .fan-zone-card {
     display: grid;
   }
+}
+
+
+
+/* Viewer color polish: names and scores inherit chosen team colors. */
+.broadcast-team.home .team-name,
+.viewer-mode .broadcast-team.home .team-name {
+  color: var(--home);
+}
+
+.broadcast-team.away .team-name,
+.viewer-mode .broadcast-team.away .team-name {
+  color: var(--away);
+}
+
+.broadcast-score-btn.home-score,
+.viewer-mode .broadcast-score-btn.home-score {
+  color: var(--home);
+}
+
+.broadcast-score-btn.away-score,
+.viewer-mode .broadcast-score-btn.away-score {
+  color: var(--away);
+}
+
+.portrait-home-team strong {
+  color: var(--portrait-home-color, var(--home));
+}
+
+.portrait-away-team strong {
+  color: var(--portrait-away-color, var(--away));
+}
+
+.portrait-score-btn.home-score,
+#portraitHomeScoreBtn {
+  color: var(--portrait-home-color, var(--home));
+}
+
+.portrait-score-btn.away-score,
+#portraitAwayScoreBtn {
+  color: var(--portrait-away-color, var(--away));
+}
+
+/* Results modal buttons must stay above cards/overlays and remain tappable. */
+.results-dialog[open] {
+  pointer-events: auto;
+}
+
+.results-dialog-shell,
+.results-card-wrap,
+.results-actions,
+.results-close-btn {
+  pointer-events: auto;
+}
+
+.winner-overlay:not(.show),
+.live-start-overlay:not(.show) {
+  pointer-events: none;
+}
+
+.winner-overlay.show:has(+ .results-dialog[open]),
+.live-start-overlay.show:has(+ .results-dialog[open]) {
+  pointer-events: none;
 }

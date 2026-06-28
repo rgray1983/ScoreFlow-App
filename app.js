@@ -52,6 +52,8 @@ const state = {
   setFlashId: 0,
   completedSets: [],
   lastPointFlashId: 0,
+  homeLogo: "",
+  awayLogo: "",
   confettiRunning: false,
   confettiAnimation: null
 };
@@ -945,11 +947,9 @@ function applyHomeTeamToScoreboard(team) {
   state.homeColor = normalizeHex(team.color, state.homeColor);
   if (els.homeName) els.homeName.value = state.homeName;
   if (els.homeNameSetting) els.homeNameSetting.value = state.homeName;
+  state.homeLogo = team.logo || state.homeLogo || "";
   setTeamColor("home", state.homeColor, false);
-  if (team.logo && els.homeLogo) {
-    els.homeLogo.src = team.logo;
-    els.homeLogo.closest(".logo-picker")?.classList.add("has-logo");
-  }
+  updateBroadcastLogo("home");
   if (els.homeInitial) els.homeInitial.textContent = (state.homeName || "T").charAt(0).toUpperCase();
 }
 
@@ -1472,10 +1472,12 @@ function currentMatchResultData() {
     awayName: teamName("away"),
     homeSets: state.homeSets,
     awaySets: state.awaySets,
+    homeColor: state.homeColor,
+    awayColor: state.awayColor,
     winner: state.winner ? teamName(state.winner) : "",
     winnerSide: state.winner || (state.homeSets > state.awaySets ? "home" : "away"),
-    homeLogo: els.homeLogo?.src?.startsWith("data:") ? els.homeLogo.src : (savedHomeTeam()?.logo || ""),
-    awayLogo: els.awayLogo?.src?.startsWith("data:") ? els.awayLogo.src : "",
+    homeLogo: currentTeamLogo("home"),
+    awayLogo: currentTeamLogo("away"),
     completedSets: state.completedSets,
     matchFormat: state.matchFormat,
     matchSets: state.matchSets,
@@ -1532,6 +1534,8 @@ function renderResultsCard(match) {
 }
 
 function openResults(match) {
+  hideWinner();
+  stopConfetti();
   activeResultsMatch = match || currentMatchResultData();
   activeResultsGraphic = null;
   activeResultsGraphicPromise = null;
@@ -1679,7 +1683,9 @@ function publicState() {
     setFlashTeam: state.setFlashTeam,
     setFlashId: state.setFlashId,
     completedSets: state.completedSets,
-    lastPointFlashId: state.lastPointFlashId
+    lastPointFlashId: state.lastPointFlashId,
+    homeLogo: state.homeLogo || "",
+    awayLogo: state.awayLogo || ""
   };
 }
 
@@ -1711,7 +1717,9 @@ function applyState(next) {
     setFlashTeam: incomingFlashTeam,
     setFlashId: incomingFlashId,
     completedSets: Array.isArray(next.completedSets) ? next.completedSets : [],
-    lastPointFlashId: incomingPointFlashId
+    lastPointFlashId: incomingPointFlashId,
+    homeLogo: typeof next.homeLogo === "string" ? next.homeLogo : state.homeLogo,
+    awayLogo: typeof next.awayLogo === "string" ? next.awayLogo : state.awayLogo
   });
   setTeamColor("home", state.homeColor, false);
   setTeamColor("away", state.awayColor, false);
@@ -1895,21 +1903,34 @@ function updateScoreButton(button, value) {
 /* =========================================================
    Stage 5: Portrait Scoreboard Rendering
    ========================================================= */
+function currentTeamLogo(team) {
+  const stateLogo = state[`${team}Logo`] || "";
+  const img = team === "home" ? els.homeLogo : els.awayLogo;
+  const savedLogo = team === "home" ? (savedHomeTeam()?.logo || "") : "";
+  return stateLogo || (img?.src?.startsWith("data:") ? img.src : "") || savedLogo;
+}
+
+function setLogoElement(img, wrap, logo) {
+  if (!img || !wrap) return;
+  if (logo) {
+    img.src = logo;
+    wrap.classList.add("has-logo");
+  } else {
+    img.removeAttribute("src");
+    wrap.classList.remove("has-logo");
+  }
+}
+
+function updateBroadcastLogo(team) {
+  const img = team === "home" ? els.homeLogo : els.awayLogo;
+  const wrap = img?.closest(".logo-picker");
+  setLogoElement(img, wrap, currentTeamLogo(team));
+}
+
 function updatePortraitLogo(team) {
-  const sourceImg = team === "home" ? els.homeLogo : els.awayLogo;
   const portraitImg = team === "home" ? els.portraitHomeLogo : els.portraitAwayLogo;
   const portraitWrap = team === "home" ? els.portraitHomeLogoWrap : els.portraitAwayLogoWrap;
-  if (!portraitImg || !portraitWrap) return;
-
-  const savedLogo = team === "home" ? (savedHomeTeam()?.logo || "") : "";
-  const src = sourceImg?.src?.startsWith("data:") ? sourceImg.src : savedLogo;
-  if (src) {
-    portraitImg.src = src;
-    portraitWrap.classList.add("has-logo");
-  } else {
-    portraitImg.removeAttribute("src");
-    portraitWrap.classList.remove("has-logo");
-  }
+  setLogoElement(portraitImg, portraitWrap, currentTeamLogo(team));
 }
 
 function updatePortraitScoreboard() {
@@ -1966,6 +1987,8 @@ function render() {
   renderSetDots(els.homeSetDots, state.homeSets);
   renderSetDots(els.awaySetDots, state.awaySets);
   updateAlertBanner();
+  updateBroadcastLogo("home");
+  updateBroadcastLogo("away");
   updatePortraitScoreboard();
   updateLiveStartOverlay();
 }
@@ -2761,8 +2784,8 @@ async function saveTeamProfiles() {
     awayName: entries[1].name,
     homeColor: entries[0].color,
     awayColor: entries[1].color,
-    homeLogo: entries[0].logo,
-    awayLogo: entries[1].logo
+    homeLogo: state.homeLogo || entries[0].logo || "",
+    awayLogo: state.awayLogo || entries[1].logo || ""
   };
   localStorage.setItem("scoreflowSavedTeams", JSON.stringify(saved));
   await renderHomeData();
@@ -2780,14 +2803,10 @@ function loadTeamProfiles() {
   state.awayName = saved.awayName || "Team 2";
   setTeamColor("home", saved.homeColor || state.homeColor, false);
   setTeamColor("away", saved.awayColor || state.awayColor, false);
-  if (saved.homeLogo) {
-    els.homeLogo.src = saved.homeLogo;
-    els.homeLogo.closest(".logo-picker")?.classList.add("has-logo");
-  }
-  if (saved.awayLogo) {
-    els.awayLogo.src = saved.awayLogo;
-    els.awayLogo.closest(".logo-picker")?.classList.add("has-logo");
-  }
+  state.homeLogo = saved.homeLogo || "";
+  state.awayLogo = saved.awayLogo || "";
+  updateBroadcastLogo("home");
+  updateBroadcastLogo("away");
   render();
   toast("Teams loaded");
 }
@@ -2796,11 +2815,14 @@ function handleLogo(input, img, picker) {
   if (isViewer) return;
   const file = input.files?.[0];
   if (!file) return;
+  const team = input === els.homeLogoInput ? "home" : "away";
   const reader = new FileReader();
   reader.onload = () => {
-    img.src = reader.result;
-    picker.classList.add("has-logo");
+    const logo = String(reader.result || "");
+    state[`${team}Logo`] = logo;
+    setLogoElement(img, picker, logo);
     updatePortraitScoreboard();
+    queueRemoteUpdate();
   };
   reader.readAsDataURL(file);
 }
