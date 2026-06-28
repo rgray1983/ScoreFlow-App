@@ -1655,6 +1655,769 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 }
 
 
+
+
+/* =========================================================
+   14. Stage 5 Portrait Coach Scoreboard
+   Phone-first scoring view. Landscape broadcast scoreboard stays
+   isolated above and is not altered by these rules.
+   ========================================================= */
+.portrait-scoreboard {
+  display: none;
+}
+
+.portrait-in-match-settings-screen {
+  display: none;
+}
+
+
+@media (orientation: portrait) {
+  .portrait-in-match-settings-screen {
+    display: block;
+  }
+}
+
+@media (orientation: portrait) {
+  .scoreboard-active .app-shell,
+  .viewer-mode .app-shell {
+    inset: 0 0 auto 0;
+    height: 67svh;
+    min-height: 67svh;
+    padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+    grid-template-rows: 48px minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .scoreboard-active .broadcast-scoreboard,
+  .viewer-mode .broadcast-scoreboard {
+    display: none;
+  }
+
+  .scoreboard-active .portrait-scoreboard,
+  .viewer-mode .portrait-scoreboard {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    display: grid;
+  }
+
+  .scoreboard-top-bar {
+    min-height: 48px;
+    padding: 5px 8px;
+    border-radius: 0;
+  }
+
+  .scoreboard-left-controls,
+  .status-cluster {
+    min-width: 86px;
+  }
+
+  .scoreboard-top-bar .icon-btn {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    font-size: 20px;
+  }
+
+  .scoreflow-header-logo {
+    width: clamp(118px, 38vw, 160px);
+    max-height: 34px;
+  }
+
+  .scoreboard-top-bar .viewer-count,
+  .scoreboard-top-bar .live-status {
+    min-height: 26px;
+    padding: 5px 7px;
+    font-size: 10px;
+  }
+
+  .portrait-scoreboard-card {
+    --portrait-home-color: var(--home);
+    --portrait-away-color: var(--away);
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+    gap: clamp(4px, .75svh, 8px);
+    padding: clamp(9px, 1.6svh, 14px);
+    border: 2px solid rgba(0,0,0,.82);
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--portrait-home-color), transparent 78%), transparent 28%),
+      radial-gradient(circle at 82% 8%, color-mix(in srgb, var(--portrait-away-color), transparent 80%), transparent 28%),
+      linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,.34)),
+      rgba(255,255,255,.42);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 18px 38px rgba(0,0,0,.34);
+  }
+
+  .portrait-match-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 24px;
+  }
+
+  .portrait-live-pill,
+  .portrait-viewers,
+  .portrait-set-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(5,7,12,.72);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .portrait-live-pill,
+  .portrait-viewers {
+    padding: 7px 9px;
+  }
+
+  .portrait-live-pill.online,
+  .portrait-viewers {
+    color: var(--success);
+  }
+
+  .portrait-title-block {
+    min-width: 0;
+    text-align: center;
+  }
+
+  .portrait-title-block .eyebrow {
+    font-size: 9px;
+  }
+
+  .portrait-title-block h1 {
+    margin: 2px 0 5px;
+    color: rgba(5,7,12,.66);
+    font-size: clamp(20px, 7.8vw, 34px);
+    line-height: .9;
+    letter-spacing: -.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .portrait-set-pill {
+    padding: 7px 12px;
+    background: rgba(255,255,255,.18);
+    color: rgba(5,7,12,.7);
+    box-shadow: inset 0 0 0 2px rgba(5,7,12,.24);
+  }
+
+  .portrait-teams-row {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .portrait-team {
+    min-width: 0;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 4px;
+    padding: 7px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.12);
+    color: #05070c;
+  }
+
+  .portrait-logo-wrap {
+    width: clamp(54px, 14svh, 86px);
+    height: clamp(54px, 14svh, 86px);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 0;
+    background: transparent;
+    filter: drop-shadow(0 9px 13px rgba(0,0,0,.26));
+  }
+
+  .portrait-logo-wrap img {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .portrait-logo-wrap.has-logo img {
+    display: block;
+  }
+
+  .portrait-logo-wrap.has-logo span {
+    display: none;
+  }
+
+  .portrait-logo-wrap span {
+    width: 76%;
+    height: 76%;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #fff;
+    color: #05070c;
+    font-size: clamp(28px, 8vw, 42px);
+    font-weight: 950;
+  }
+
+  .portrait-team strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(13px, 4.2vw, 18px);
+    line-height: .95;
+    letter-spacing: -.04em;
+    text-transform: uppercase;
+  }
+
+  .portrait-team small {
+    color: rgba(5,7,12,.55);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .portrait-score-row {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: center;
+    gap: clamp(8px, 3vw, 16px);
+  }
+
+  .portrait-score-number {
+    width: auto;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    color: #020305;
+    font-family: var(--font-score);
+    font-size: clamp(86px, 25svh, 172px);
+    line-height: .75;
+    letter-spacing: -.045em;
+    text-shadow: 0 2px 0 rgba(255,255,255,.24), 0 10px 24px rgba(0,0,0,.18);
+  }
+
+  .portrait-score-number.score-pop {
+    animation: scorePop .24s cubic-bezier(.2,.9,.3,1.2);
+  }
+
+  .portrait-score-divider {
+    display: inline-grid;
+    place-items: center;
+    gap: 8px;
+    width: 24px;
+    color: rgba(5,7,12,.58);
+    font-size: 0;
+    animation: colonBreathe 2.4s ease-in-out infinite;
+  }
+
+  .portrait-score-divider::before,
+  .portrait-score-divider::after {
+    content: "";
+    width: clamp(10px, 3vw, 14px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 5px 10px rgba(0,0,0,.12);
+  }
+
+  .portrait-alert {
+    min-height: 14px;
+    color: rgba(5,7,12,.48);
+    font-size: clamp(10px, 2.6vw, 12px);
+    font-weight: 950;
+    letter-spacing: .1em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .portrait-alert.hot {
+    color: var(--brand);
+    animation: alertPulse .9s ease-in-out infinite alternate;
+  }
+
+  .portrait-coach-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .portrait-point-group {
+    display: grid;
+    grid-template-columns: 1fr .9fr;
+    gap: 4px;
+  }
+
+  .portrait-away-controls {
+    direction: rtl;
+  }
+
+  .portrait-away-controls .portrait-point-btn {
+    direction: ltr;
+  }
+
+  .portrait-point-btn {
+    min-height: clamp(38px, 6.2svh, 50px);
+    border: 2px solid rgba(0,0,0,.72);
+    border-radius: 14px;
+    color: #fff;
+    font-size: clamp(17px, 5vw, 24px);
+    font-weight: 950;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 6px 12px rgba(0,0,0,.18);
+  }
+
+  .portrait-home-controls .plus { background: var(--home); }
+  .portrait-away-controls .plus { background: var(--away); }
+  .portrait-point-btn.minus { background: #040507; }
+
+  .portrait-match-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .portrait-match-actions button {
+    min-height: clamp(36px, 6svh, 46px);
+    border-radius: 999px;
+    background: rgba(5,7,12,.72);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .portrait-match-actions #portraitShareBtn {
+    background: linear-gradient(180deg, #d9b637, #c99f24);
+  }
+
+  .viewer-mode .portrait-coach-controls,
+  .viewer-mode .portrait-match-actions,
+  .viewer-mode .portrait-score-number {
+    pointer-events: none;
+  }
+
+  .viewer-mode .portrait-coach-controls,
+  .viewer-mode .portrait-match-actions {
+    display: none;
+  }
+
+  .viewer-mode .portrait-scoreboard-card {
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    align-content: center;
+  }
+
+  .viewer-mode .portrait-title-block .eyebrow::before {
+    content: "Live Viewer";
+  }
+
+  .viewer-mode .portrait-title-block .eyebrow {
+    font-size: 0;
+  }
+
+  .viewer-mode .portrait-title-block .eyebrow::before {
+    font-size: 9px;
+  }
+}
+
+@media (orientation: portrait) and (max-height: 740px) {
+  .scoreboard-active .app-shell,
+  .viewer-mode .app-shell {
+    height: 66svh;
+    min-height: 66svh;
+  }
+
+  .portrait-scoreboard-card {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .portrait-match-meta {
+    display: none;
+  }
+
+  .portrait-team {
+    padding: 5px;
+  }
+
+  .portrait-logo-wrap {
+    width: clamp(48px, 12svh, 70px);
+    height: clamp(48px, 12svh, 70px);
+  }
+
+  .portrait-score-number {
+    font-size: clamp(74px, 22svh, 138px);
+  }
+
+  .portrait-point-btn,
+  .portrait-match-actions button {
+    min-height: 34px;
+    font-size: 12px;
+  }
+}
+
+
+
+/* =========================================================
+   14A. Stage 5 Portrait Scoreboard Polish
+   Removes Coach Mode label/duplicate status pills and tightens
+   portrait scoreboard spacing without changing landscape styles.
+   ========================================================= */
+@media (orientation: portrait) {
+  .scoreboard-active .app-shell,
+  .viewer-mode .app-shell {
+    height: 67svh;
+    min-height: 67svh;
+  }
+
+  .scoreboard-top-bar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .scoreboard-top-bar .status-cluster {
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .scoreboard-top-bar .viewer-count,
+  .scoreboard-top-bar .live-status {
+    min-height: 24px;
+    padding: 5px 7px;
+    white-space: nowrap;
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  .portrait-scoreboard-card {
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    gap: clamp(3px, .6svh, 6px);
+    padding: clamp(8px, 1.25svh, 12px);
+  }
+
+  .portrait-match-meta {
+    display: none !important;
+  }
+
+  .portrait-title-block {
+    align-self: start;
+    padding-top: 0;
+  }
+
+  .portrait-title-block .eyebrow {
+    display: none !important;
+  }
+
+  .portrait-title-block h1 {
+    margin: 0 0 3px;
+    font-size: clamp(23px, 7.8vw, 36px);
+  }
+
+  .portrait-set-pill {
+    display: none !important;
+  }
+
+  .portrait-set-number {
+    width: fit-content;
+    margin: 0 auto 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .25em;
+    padding: 4px 14px;
+    border: 3px solid rgba(5,7,12,.34);
+    border-radius: 16px;
+    background: rgba(255,255,255,.18);
+    color: rgba(5,7,12,.68);
+    font-size: clamp(20px, 5.8vw, 30px);
+    font-weight: 950;
+    line-height: .9;
+    letter-spacing: -.06em;
+  }
+
+  .portrait-set-number strong {
+    font: inherit;
+  }
+
+  .portrait-race-label {
+    color: rgba(5,7,12,.5);
+    font-size: clamp(9px, 2.45vw, 12px);
+    font-weight: 950;
+    line-height: 1;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .portrait-teams-row {
+    align-items: start;
+    gap: 8px;
+  }
+
+  .portrait-team {
+    min-height: 0;
+    align-content: start;
+    padding: 6px;
+  }
+
+  .portrait-logo-wrap {
+    width: clamp(64px, 13.5svh, 92px);
+    height: clamp(64px, 13.5svh, 92px);
+  }
+
+  .portrait-team small {
+    display: none;
+  }
+
+  .portrait-alert {
+    display: none;
+  }
+
+  .portrait-point-btn {
+    min-height: clamp(32px, 5.2svh, 42px);
+    font-size: clamp(15px, 4.4vw, 21px);
+  }
+
+  .portrait-match-actions button {
+    min-height: clamp(32px, 5.2svh, 40px);
+    font-size: 11px;
+  }
+}
+
+@media (orientation: portrait) and (max-height: 740px) {
+  .portrait-scoreboard-card {
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    gap: 3px;
+    padding: 7px;
+  }
+
+  .portrait-title-block h1 {
+    font-size: clamp(21px, 7.4vw, 32px);
+  }
+
+  .portrait-set-number {
+    padding: 3px 12px;
+    border-width: 3px;
+    font-size: clamp(18px, 5.4vw, 26px);
+  }
+
+  .portrait-logo-wrap {
+    width: clamp(56px, 12svh, 76px);
+    height: clamp(56px, 12svh, 76px);
+  }
+
+  .portrait-point-btn,
+  .portrait-match-actions button {
+    min-height: 30px;
+  }
+}
+
+/* =========================================================
+   15. Stage 5 Portrait Viewer Fan Zone
+   Built into the bottom third of portrait match mode. The old
+   chat bubble behavior remains unavailable in landscape.
+   ========================================================= */
+@media (orientation: portrait) {
+  .scoreboard-active .fan-zone,
+  .viewer-mode .fan-zone {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 32;
+    height: 33svh;
+    display: block;
+    padding: 0 10px max(8px, env(safe-area-inset-bottom));
+    pointer-events: auto;
+  }
+
+  .scoreboard-active .fan-zone-toggle,
+  .viewer-mode .fan-zone-toggle {
+    display: none;
+  }
+
+  .scoreboard-active .fan-zone-card,
+  .viewer-mode .fan-zone-card {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: 7px;
+    padding: 10px;
+    border-radius: 22px 22px 0 0;
+    background: linear-gradient(180deg, rgba(13,20,34,.98), rgba(6,10,17,.98));
+    box-shadow: 0 -16px 38px rgba(0,0,0,.34);
+  }
+
+  .scoreboard-active .fan-zone-head,
+  .viewer-mode .fan-zone-head {
+    min-height: 0;
+  }
+
+  .scoreboard-active .fan-zone-head strong,
+  .viewer-mode .fan-zone-head strong {
+    font-size: 14px;
+  }
+
+  .scoreboard-active .fan-zone-head span,
+  .viewer-mode .fan-zone-head span {
+    font-size: 10px;
+  }
+
+  .scoreboard-active .chat-feed,
+  .viewer-mode .chat-feed {
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+    gap: 6px;
+  }
+
+  .scoreboard-active .chat-message,
+  .viewer-mode .chat-message {
+    padding: 7px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .scoreboard-active .reaction-row,
+  .viewer-mode .reaction-row {
+    gap: 5px;
+  }
+
+  .scoreboard-active .reaction-row button,
+  .viewer-mode .reaction-row button {
+    height: clamp(28px, 4.8svh, 36px);
+    min-height: 0;
+    border-radius: 11px;
+  }
+
+  .scoreboard-active .chat-form,
+  .viewer-mode .chat-form {
+    gap: 6px;
+  }
+
+  .scoreboard-active .chat-form input,
+  .viewer-mode .chat-form input {
+    height: clamp(34px, 5.2svh, 42px);
+    padding: 8px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+
+  .scoreboard-active .chat-form button,
+  .viewer-mode .chat-form button {
+    min-height: 0;
+    height: clamp(34px, 5.2svh, 42px);
+    padding: 0 13px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+
+  .floating-reaction {
+    bottom: 30svh;
+  }
+}
+
+/* =========================================================
+   16. Stage 5 Portrait In-Match Settings
+   Right-slide settings page for editing a running portrait match.
+   ========================================================= */
+.portrait-in-match-settings-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  overflow: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1), visibility .28s ease;
+  background:
+    radial-gradient(circle at 18% -10%, rgba(22, 89, 160, .18), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(255, 20, 20, .12), transparent 30%),
+    var(--bg);
+}
+
+.portrait-in-match-settings-active .portrait-in-match-settings-screen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+.portrait-in-match-settings-active .app-shell,
+.portrait-in-match-settings-active .fan-zone,
+.portrait-in-match-settings-active .home-screen,
+.portrait-in-match-settings-active .match-history-screen,
+.portrait-in-match-settings-active .settings-screen,
+.portrait-in-match-settings-active .settings-subscreen,
+.portrait-in-match-settings-active .match-setup-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.portrait-in-match-settings-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 0;
+}
+
+.portrait-in-match-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.portrait-in-match-actions button {
+  min-height: 54px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 950;
+  letter-spacing: -.03em;
+}
+
+@media (orientation: portrait) {
+  .portrait-in-match-team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portrait-in-match-settings-screen .setup-team-away,
+  .portrait-in-match-settings-screen .setup-team-away label {
+    text-align: left;
+  }
+}
+
+@media (orientation: landscape) {
+  .portrait-scoreboard,
+  .portrait-in-match-settings-screen {
+    display: none !important;
+  }
+}
+
+
 /* =========================================================
    07. Dialogs + Forms
    ========================================================= */
@@ -2082,7 +2845,8 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   body { overflow: hidden; }
   .home-screen { display: block; }
   .app-shell { padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom)); }
-  .scoreboard-active:not(.setup-active):not(.viewer-mode) .app-shell { visibility: hidden; }
+  /* Stage 5: portrait scoreboard now lives inside .app-shell, so keep it visible in portrait match mode. */
+  .scoreboard-active:not(.setup-active):not(.viewer-mode) .app-shell { visibility: visible; }
   .scoreboard-top-bar { border-radius: 20px; }
   .brand-wrap { display: none; }
   .status-cluster { flex-direction: column; gap: 4px; }

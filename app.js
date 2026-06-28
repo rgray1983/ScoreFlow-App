@@ -253,7 +253,34 @@ const els = {
   inMatchHomeNameInput: $("inMatchHomeNameInput"),
   inMatchAwayNameInput: $("inMatchAwayNameInput"),
   inMatchHomeSwatches: $("inMatchHomeSwatches"),
-  inMatchAwaySwatches: $("inMatchAwaySwatches")
+  inMatchAwaySwatches: $("inMatchAwaySwatches"),
+  portraitScoreboard: $("portraitScoreboard"),
+  portraitMatchTitle: $("portraitMatchTitle"),
+  portraitLiveStatus: $("portraitLiveStatus"),
+  portraitViewerCount: $("portraitViewerCount"),
+  portraitSetNumber: $("portraitSetNumber"),
+  portraitRaceTo: $("portraitRaceTo"),
+  portraitHomeName: $("portraitHomeName"),
+  portraitAwayName: $("portraitAwayName"),
+  portraitHomeSets: $("portraitHomeSets"),
+  portraitAwaySets: $("portraitAwaySets"),
+  portraitHomeInitial: $("portraitHomeInitial"),
+  portraitAwayInitial: $("portraitAwayInitial"),
+  portraitHomeLogo: $("portraitHomeLogo"),
+  portraitAwayLogo: $("portraitAwayLogo"),
+  portraitHomeLogoWrap: $("portraitHomeLogoWrap"),
+  portraitAwayLogoWrap: $("portraitAwayLogoWrap"),
+  portraitHomeScoreBtn: $("portraitHomeScoreBtn"),
+  portraitAwayScoreBtn: $("portraitAwayScoreBtn"),
+  portraitAlertBanner: $("portraitAlertBanner"),
+  portraitInMatchSettingsScreen: $("portraitInMatchSettingsScreen"),
+  portraitInMatchSettingsBackBtn: $("portraitInMatchSettingsBackBtn"),
+  portraitInMatchSaveSettingsBtn: $("portraitInMatchSaveSettingsBtn"),
+  portraitInMatchTitleInput: $("portraitInMatchTitleInput"),
+  portraitInMatchHomeNameInput: $("portraitInMatchHomeNameInput"),
+  portraitInMatchAwayNameInput: $("portraitInMatchAwayNameInput"),
+  portraitInMatchHomeSwatches: $("portraitInMatchHomeSwatches"),
+  portraitInMatchAwaySwatches: $("portraitInMatchAwaySwatches")
 };
 
 
@@ -352,6 +379,10 @@ function setConnectionStatus(status, label) {
   els.liveStatus.classList.remove("online", "offline", "error", "connecting");
   els.liveStatus.classList.add(cleanStatus);
   els.liveStatus.textContent = label || (cleanStatus === "online" ? "Online" : cleanStatus === "connecting" ? "Connecting" : cleanStatus === "error" ? "Sync Error" : "Offline");
+  if (els.portraitLiveStatus) {
+    els.portraitLiveStatus.textContent = els.liveStatus.textContent;
+    els.portraitLiveStatus.className = `portrait-live-pill ${cleanStatus}`;
+  }
 }
 
 function brandLogoSrc() {
@@ -401,6 +432,7 @@ function setViewerCount(count) {
   const safeCount = Math.max(0, Number(count) || 0);
   els.viewerCount.textContent = `👁 ${safeCount}`;
   els.viewerCount.title = `${safeCount} live viewer${safeCount === 1 ? "" : "s"}`;
+  if (els.portraitViewerCount) els.portraitViewerCount.textContent = `Viewers ${safeCount}`;
 }
 
 async function updatePresence() {
@@ -1842,6 +1874,54 @@ function updateScoreButton(button, value) {
   button.textContent = next;
 }
 
+
+
+/* =========================================================
+   Stage 5: Portrait Scoreboard Rendering
+   ========================================================= */
+function updatePortraitLogo(team) {
+  const sourceImg = team === "home" ? els.homeLogo : els.awayLogo;
+  const portraitImg = team === "home" ? els.portraitHomeLogo : els.portraitAwayLogo;
+  const portraitWrap = team === "home" ? els.portraitHomeLogoWrap : els.portraitAwayLogoWrap;
+  if (!portraitImg || !portraitWrap) return;
+
+  const savedLogo = team === "home" ? (savedHomeTeam()?.logo || "") : "";
+  const src = sourceImg?.src?.startsWith("data:") ? sourceImg.src : savedLogo;
+  if (src) {
+    portraitImg.src = src;
+    portraitWrap.classList.add("has-logo");
+  } else {
+    portraitImg.removeAttribute("src");
+    portraitWrap.classList.remove("has-logo");
+  }
+}
+
+function updatePortraitScoreboard() {
+  const target = pointsToWinForCurrentSet();
+  if (els.portraitMatchTitle) els.portraitMatchTitle.textContent = (state.matchTitle || "Game Night").toUpperCase();
+  if (els.portraitSetNumber) els.portraitSetNumber.textContent = state.setNumber;
+  if (els.portraitRaceTo) els.portraitRaceTo.textContent = `First to ${target}`;
+  if (els.portraitHomeName) els.portraitHomeName.textContent = teamName("home");
+  if (els.portraitAwayName) els.portraitAwayName.textContent = teamName("away");
+  if (els.portraitHomeSets) els.portraitHomeSets.textContent = state.homeSets;
+  if (els.portraitAwaySets) els.portraitAwaySets.textContent = state.awaySets;
+  if (els.portraitHomeInitial) els.portraitHomeInitial.textContent = teamName("home").charAt(0).toUpperCase();
+  if (els.portraitAwayInitial) els.portraitAwayInitial.textContent = teamName("away").charAt(0).toUpperCase();
+  updateScoreButton(els.portraitHomeScoreBtn, state.homeScore);
+  updateScoreButton(els.portraitAwayScoreBtn, state.awayScore);
+  updatePortraitLogo("home");
+  updatePortraitLogo("away");
+  if (els.portraitScoreboard) {
+    els.portraitScoreboard.style.setProperty("--portrait-home-color", state.homeColor);
+    els.portraitScoreboard.style.setProperty("--portrait-away-color", state.awayColor);
+  }
+  if (els.portraitLiveStatus && els.liveStatus) {
+    els.portraitLiveStatus.textContent = els.liveStatus.textContent || "Offline";
+    els.portraitLiveStatus.className = `portrait-live-pill ${els.liveStatus.classList.contains("online") ? "online" : els.liveStatus.classList.contains("connecting") ? "connecting" : els.liveStatus.classList.contains("error") ? "error" : "offline"}`;
+  }
+  if (els.portraitViewerCount && els.viewerCount) els.portraitViewerCount.textContent = els.viewerCount.textContent.replace("👁", "Viewers").trim();
+}
+
 function render() {
   const target = pointsToWinForCurrentSet();
   els.matchTitle.textContent = state.matchTitle.toUpperCase();
@@ -1854,6 +1934,9 @@ function render() {
   if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
   if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
   if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
+  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
+  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
+  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
   els.matchFormatSetting.value = state.matchFormat;
   els.matchPill.textContent = matchLabel();
   updateScoreButton(els.homeScoreBtn, state.homeScore);
@@ -1867,6 +1950,7 @@ function render() {
   renderSetDots(els.homeSetDots, state.homeSets);
   renderSetDots(els.awaySetDots, state.awaySets);
   updateAlertBanner();
+  updatePortraitScoreboard();
   updateLiveStartOverlay();
 }
 
@@ -1876,12 +1960,16 @@ function updateAlertBanner() {
   const awayPoint = isPointOpportunity("away");
   els.alertBanner.classList.toggle("hot", homePoint || awayPoint);
 
+  let message = `First to ${target}`;
   if (homePoint) {
-    els.alertBanner.textContent = state.homeSets === state.setsToWin - 1 ? "Match Point" : "Set Point";
+    message = state.homeSets === state.setsToWin - 1 ? "Match Point" : "Set Point";
   } else if (awayPoint) {
-    els.alertBanner.textContent = state.awaySets === state.setsToWin - 1 ? "Match Point" : "Set Point";
-  } else {
-    els.alertBanner.textContent = `First to ${target}`;
+    message = state.awaySets === state.setsToWin - 1 ? "Match Point" : "Set Point";
+  }
+  els.alertBanner.textContent = message;
+  if (els.portraitAlertBanner) {
+    els.portraitAlertBanner.textContent = message;
+    els.portraitAlertBanner.classList.toggle("hot", homePoint || awayPoint);
   }
 }
 
@@ -2063,6 +2151,9 @@ function populateMatchSetupFields() {
   if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
   if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
   if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
+  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
+  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
+  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
   if (els.matchPill) els.matchPill.textContent = matchLabel();
   setTeamColor("home", state.homeColor, false);
   setTeamColor("away", state.awayColor, false);
@@ -2100,6 +2191,9 @@ function populateInMatchSettingsFields() {
   if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
   if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
   if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
+  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
+  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
+  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
   setTeamColor("home", state.homeColor, false);
   setTeamColor("away", state.awayColor, false);
 }
@@ -2128,9 +2222,46 @@ function saveInMatchSettings() {
   toast("Setup saved");
 }
 
+
+
+/* =========================================================
+   Stage 5: Portrait In-Match Settings
+   ========================================================= */
+function populatePortraitInMatchSettingsFields() {
+  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
+  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
+  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
+  setTeamColor("home", state.homeColor, false);
+  setTeamColor("away", state.awayColor, false);
+}
+
+function openPortraitInMatchSettings() {
+  if (isViewer) return;
+  populatePortraitInMatchSettingsFields();
+  document.body.classList.add("portrait-in-match-settings-active");
+  els.portraitInMatchSettingsScreen?.scrollTo?.({ top: 0, behavior: "instant" });
+}
+
+function closePortraitInMatchSettings() {
+  document.body.classList.remove("portrait-in-match-settings-active");
+}
+
+function savePortraitInMatchSettings() {
+  if (isViewer) return;
+  state.matchTitle = els.portraitInMatchTitleInput?.value?.trim() || "Game Night";
+  state.homeName = els.portraitInMatchHomeNameInput?.value?.trim() || "Team 1";
+  state.awayName = els.portraitInMatchAwayNameInput?.value?.trim() || "Team 2";
+  state.lastAlert = "";
+  render();
+  queueRemoteUpdate();
+  closePortraitInMatchSettings();
+  toast("Setup saved");
+}
+
 function openSettings() {
   if (document.body.classList.contains("scoreboard-active")) {
-    openInMatchSettings();
+    if (isPortraitOrientation()) openPortraitInMatchSettings();
+    else openInMatchSettings();
     return;
   }
   openMatchSetupPage();
@@ -2653,6 +2784,7 @@ function handleLogo(input, img, picker) {
   reader.onload = () => {
     img.src = reader.result;
     picker.classList.add("has-logo");
+    updatePortraitScoreboard();
   };
   reader.readAsDataURL(file);
 }
@@ -2810,6 +2942,14 @@ function addSafeListener(target, eventName, handler, options) {
 function wireEvents() {
   addSafeListener("homePlus", "click", () => point("home"));
   addSafeListener("awayPlus", "click", () => point("away"));
+  addSafeListener("portraitHomePlus", "click", () => point("home"));
+  addSafeListener("portraitAwayPlus", "click", () => point("away"));
+  addSafeListener("portraitHomeScoreBtn", "click", () => point("home"));
+  addSafeListener("portraitAwayScoreBtn", "click", () => point("away"));
+  addSafeListener("portraitHomeMinus", "click", () => subtract("home"));
+  addSafeListener("portraitAwayMinus", "click", () => subtract("away"));
+  addSafeListener("portraitNewMatchBtn", "click", newMatch);
+  addSafeListener("portraitShareBtn", "click", openShare);
   addSafeListener("homeScoreBtn", "click", () => point("home"));
   addSafeListener("awayScoreBtn", "click", () => point("away"));
   addSafeListener("homeMinus", "click", () => subtract("home"));
@@ -2822,10 +2962,12 @@ function wireEvents() {
   addSafeListener("settingsBtn", "click", openSettings);
   els.inMatchSettingsCloseBtn?.addEventListener("click", closeInMatchSettings);
   els.inMatchSaveSettingsBtn?.addEventListener("click", saveInMatchSettings);
+  els.portraitInMatchSettingsBackBtn?.addEventListener("click", closePortraitInMatchSettings);
+  els.portraitInMatchSaveSettingsBtn?.addEventListener("click", savePortraitInMatchSettings);
   addSafeListener("saveSettingsBtn", "click", () => startMatchFromSetup(false));
   els.startLiveFromSetupBtn?.addEventListener("click", () => startMatchFromSetup(true));
   els.matchSetupBackBtn?.addEventListener("click", closeMatchSetupPage);
-  [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.inMatchTitleInput, els.inMatchHomeNameInput, els.inMatchAwayNameInput, els.homeName, els.awayName].forEach((input) => {
+  [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.inMatchTitleInput, els.inMatchHomeNameInput, els.inMatchAwayNameInput, els.portraitInMatchTitleInput, els.portraitInMatchHomeNameInput, els.portraitInMatchAwayNameInput, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
   });
@@ -2962,6 +3104,8 @@ async function boot() {
     buildSwatches(els.awaySwatches, "away");
     buildSwatches(els.inMatchHomeSwatches, "home");
     buildSwatches(els.inMatchAwaySwatches, "away");
+    buildSwatches(els.portraitInMatchHomeSwatches, "home");
+    buildSwatches(els.portraitInMatchAwaySwatches, "away");
     wireEvents();
     setTeamColor("home", state.homeColor, false);
     setTeamColor("away", state.awayColor, false);

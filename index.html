@@ -252,6 +252,67 @@
         <div class="set-win-badge" id="awaySetWinBadge">Winner!</div>
       </section>
     </main>
+
+
+    <!-- =========================================================
+         Stage 5: Portrait Coach + Viewer Scoreboard
+         Dedicated portrait match experience. Landscape broadcast
+         scoreboard above remains unchanged.
+         ========================================================= -->
+    <section class="portrait-scoreboard" id="portraitScoreboard" aria-label="Portrait volleyball scoreboard">
+      <div class="portrait-scoreboard-card">
+        <div class="portrait-title-block">
+          <h1 id="portraitMatchTitle">Game Night</h1>
+          <div class="portrait-set-number">Set <strong id="portraitSetNumber">1</strong></div>
+          <div class="portrait-race-label" id="portraitRaceTo">First to 25</div>
+        </div>
+
+        <div class="portrait-teams-row">
+          <article class="portrait-team portrait-home-team">
+            <div class="portrait-logo-wrap" id="portraitHomeLogoWrap">
+              <img id="portraitHomeLogo" alt="" />
+              <span id="portraitHomeInitial">T</span>
+            </div>
+            <strong id="portraitHomeName">Team 1</strong>
+            <small><span id="portraitHomeSets">0</span> sets</small>
+          </article>
+
+          <article class="portrait-team portrait-away-team">
+            <div class="portrait-logo-wrap" id="portraitAwayLogoWrap">
+              <img id="portraitAwayLogo" alt="" />
+              <span id="portraitAwayInitial">V</span>
+            </div>
+            <strong id="portraitAwayName">Team 2</strong>
+            <small><span id="portraitAwaySets">0</span> sets</small>
+          </article>
+        </div>
+
+        <div class="portrait-score-row" aria-label="Current portrait score">
+          <button id="portraitHomeScoreBtn" class="portrait-score-number portrait-home-score" type="button" aria-label="Add point to home team">0</button>
+          <span class="portrait-score-divider" aria-hidden="true">:</span>
+          <button id="portraitAwayScoreBtn" class="portrait-score-number portrait-away-score" type="button" aria-label="Add point to visitor team">0</button>
+        </div>
+
+        <div class="portrait-alert" id="portraitAlertBanner">First to 25</div>
+
+        <div class="portrait-coach-controls" aria-label="Portrait scoring controls">
+          <div class="portrait-point-group portrait-home-controls">
+            <button id="portraitHomePlus" class="portrait-point-btn plus" type="button">+1</button>
+            <button id="portraitHomeMinus" class="portrait-point-btn minus" type="button">−1</button>
+          </div>
+          <div class="portrait-point-group portrait-away-controls">
+            <button id="portraitAwayPlus" class="portrait-point-btn plus" type="button">+1</button>
+            <button id="portraitAwayMinus" class="portrait-point-btn minus" type="button">−1</button>
+          </div>
+        </div>
+
+        <div class="portrait-match-actions">
+          <button id="portraitNewMatchBtn" type="button">New Match</button>
+          <button id="portraitShareBtn" type="button">Share Live</button>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <aside class="in-match-settings-drawer" id="inMatchSettingsDrawer" aria-hidden="true">
@@ -281,6 +342,51 @@
       </div>
     </div>
   </aside>
+
+
+
+  <!-- =========================================================
+       Stage 5: Portrait In-Match Settings Page
+       Right-slide setup editor for portrait scoring.
+       ========================================================= -->
+  <section class="portrait-in-match-settings-screen" id="portraitInMatchSettingsScreen" aria-label="Portrait Match Settings">
+    <header class="settings-hero portrait-in-match-hero">
+      <div class="settings-topline">
+        <button id="portraitInMatchSettingsBackBtn" class="match-history-back-btn" type="button">← Back</button>
+        <img class="home-brand-logo" src="scoreflow-logo.png" alt="ScoreFlow" />
+      </div>
+
+      <div class="hero-copy">
+        <span class="eyebrow">Match Settings</span>
+        <h2>Update Setup.</h2>
+      </div>
+    </header>
+
+    <main class="portrait-in-match-settings-list">
+      <section class="match-setup-card">
+        <label>Match title<input id="portraitInMatchTitleInput" value="Game Night" /></label>
+      </section>
+
+      <section class="match-setup-card team-setup-card">
+        <div class="match-setup-section-head"><h2>Teams</h2><small>Current match</small></div>
+        <div class="setup-team-grid portrait-in-match-team-grid">
+          <div class="setup-team-column setup-team-home">
+            <label>Home team<input id="portraitInMatchHomeNameInput" value="Team 1" /></label>
+            <div class="swatch-section compact-swatch-section"><h3>Home Color</h3><div class="swatches compact-swatches" id="portraitInMatchHomeSwatches"></div></div>
+          </div>
+          <div class="setup-team-column setup-team-away">
+            <label>Visitor team<input id="portraitInMatchAwayNameInput" value="Team 2" /></label>
+            <div class="swatch-section compact-swatch-section"><h3>Visitor Color</h3><div class="swatches compact-swatches" id="portraitInMatchAwaySwatches"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="portrait-in-match-actions">
+        <button id="portraitInMatchSaveSettingsBtn" type="button">Save Changes</button>
+      </div>
+    </main>
+  </section>
+
 
   <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
     <button class="fan-zone-toggle" id="fanZoneToggle" type="button" aria-expanded="false">Chat</button>
