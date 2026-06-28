@@ -330,6 +330,7 @@ const seenReactionIds = new Set();
 let applyingRemote = false;
 let liveReady = false;
 let remoteTimer = null;
+let brandingRemoteTimer = null;
 let initialSetupActive = false;
 let setupComplete = false;
 let splashClosed = false;
@@ -1014,7 +1015,7 @@ function saveHomeTeam() {
   updateHomeTeamCard(team);
   updateHomeTeamSummary();
   render();
-  queueRemoteUpdate();
+  queueRemoteBrandingUpdate();
   els.homeTeamDialog?.close();
   toast("Home team saved");
 }
@@ -1319,13 +1320,10 @@ function applyTeamToSlot(team, slot) {
   if (!team) return;
   state[`${slot}Name`] = team.name || (slot === "home" ? "Team 1" : "Team 2");
   setTeamColor(slot, team.color || (slot === "home" ? state.homeColor : state.awayColor), false);
-  const img = slot === "home" ? els.homeLogo : els.awayLogo;
-  if (team.logo && img) {
-    img.src = team.logo;
-    img.closest(".logo-picker")?.classList.add("has-logo");
-  }
+  state[`${slot}Logo`] = team.logo || "";
+  updateBroadcastLogo(slot);
   render();
-  queueRemoteUpdate();
+  queueRemoteBrandingUpdate();
   toast(`${team.name} loaded`);
 }
 
@@ -1662,8 +1660,8 @@ function endInitialPortraitSetup() {
   updateRotateScreenState();
 }
 
-function publicState() {
-  return {
+function publicState(includeBranding = true) {
+  const data = {
     homeScore: state.homeScore,
     awayScore: state.awayScore,
     homeSets: state.homeSets,
@@ -1683,10 +1681,15 @@ function publicState() {
     setFlashTeam: state.setFlashTeam,
     setFlashId: state.setFlashId,
     completedSets: state.completedSets,
-    lastPointFlashId: state.lastPointFlashId,
-    homeLogo: state.homeLogo || "",
-    awayLogo: state.awayLogo || ""
+    lastPointFlashId: state.lastPointFlashId
   };
+
+  if (includeBranding) {
+    data.homeLogo = state.homeLogo || "";
+    data.awayLogo = state.awayLogo || "";
+  }
+
+  return data;
 }
 
 function applyState(next) {
@@ -1776,18 +1779,26 @@ async function createLiveGame() {
 }
 
 function queueRemoteUpdate() {
-  // Push every scorer change to Firestore. Use setDoc(..., merge:true) instead
-  // of updateDoc so a live game can recover even if the document was not fully ready yet.
+  // Push lightweight live score changes only. Team logos are large data URLs and
+  // should not be re-uploaded on every point tap.
   if (!db || !liveGameId || isViewer || applyingRemote) return;
   clearTimeout(remoteTimer);
   remoteTimer = setTimeout(pushRemoteUpdate, 120);
+}
+
+function queueRemoteBrandingUpdate() {
+  // Use this when names, colors, or logos change. It sends the full public state
+  // once, then regular scoring goes back to lightweight updates.
+  if (!db || !liveGameId || isViewer || applyingRemote) return;
+  clearTimeout(brandingRemoteTimer);
+  brandingRemoteTimer = setTimeout(pushRemoteBrandingUpdate, 120);
 }
 
 async function pushRemoteUpdate() {
   if (!db || !liveGameId || isViewer || applyingRemote) return;
   try {
     await setDoc(liveDocRef(), {
-      ...publicState(),
+      ...publicState(false),
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
     }, { merge: true });
@@ -1797,6 +1808,23 @@ async function pushRemoteUpdate() {
     console.error(error);
     setConnectionStatus("error", "Sync Error");
     toast("Live update failed", true);
+  }
+}
+
+async function pushRemoteBrandingUpdate() {
+  if (!db || !liveGameId || isViewer || applyingRemote) return;
+  try {
+    await setDoc(liveDocRef(), {
+      ...publicState(true),
+      updatedAt: serverTimestamp(),
+      updatedAtMs: Date.now()
+    }, { merge: true });
+    liveReady = true;
+    setConnectionStatus("online", "Online");
+  } catch (error) {
+    console.error(error);
+    setConnectionStatus("error", "Sync Error");
+    toast("Live branding update failed", true);
   }
 }
 
@@ -2808,6 +2836,7 @@ function loadTeamProfiles() {
   updateBroadcastLogo("home");
   updateBroadcastLogo("away");
   render();
+  queueRemoteBrandingUpdate();
   toast("Teams loaded");
 }
 
@@ -2822,7 +2851,7 @@ function handleLogo(input, img, picker) {
     state[`${team}Logo`] = logo;
     setLogoElement(img, picker, logo);
     updatePortraitScoreboard();
-    queueRemoteUpdate();
+    queueRemoteBrandingUpdate();
   };
   reader.readAsDataURL(file);
 }
