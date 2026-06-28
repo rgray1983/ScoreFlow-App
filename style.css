@@ -8,7 +8,7 @@
    01. Design Tokens + Reset
    ========================================================= */
 :root {
-  --scoreflow-vh: 100vh;
+  --scoreflow-vh: 100dvh;
   --bg: #080b12;
   --bg-soft: #0d1422;
   --panel: #101827;
@@ -37,10 +37,11 @@
 }
 
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--bg); }
+html { min-height: 100%; height: var(--scoreflow-vh); background: var(--bg); }
 body {
   margin: 0;
-  min-height: 100svh;
+  min-height: var(--scoreflow-vh);
+  height: var(--scoreflow-vh);
   color: var(--text);
   font-family: var(--font-ui);
   background:
@@ -1681,8 +1682,8 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   .scoreboard-active .app-shell,
   .viewer-mode .app-shell {
     inset: 0 0 auto 0;
-    height: 67svh;
-    min-height: 67svh;
+    height: calc(var(--scoreflow-vh) * 0.67);
+    min-height: calc(var(--scoreflow-vh) * 0.67);
     padding: max(8px, env(safe-area-inset-top)) 10px 8px;
     grid-template-rows: 48px minmax(0, 1fr);
     gap: 6px;
@@ -2037,8 +2038,8 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 @media (orientation: portrait) and (max-height: 740px) {
   .scoreboard-active .app-shell,
   .viewer-mode .app-shell {
-    height: 66svh;
-    min-height: 66svh;
+    height: calc(var(--scoreflow-vh) * 0.66);
+    min-height: calc(var(--scoreflow-vh) * 0.66);
   }
 
   .portrait-scoreboard-card {
@@ -2080,8 +2081,8 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 @media (orientation: portrait) {
   .scoreboard-active .app-shell,
   .viewer-mode .app-shell {
-    height: 67svh;
-    min-height: 67svh;
+    height: calc(var(--scoreflow-vh) * 0.67);
+    min-height: calc(var(--scoreflow-vh) * 0.67);
   }
 
   .scoreboard-top-bar {
@@ -2242,7 +2243,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
     right: 0;
     bottom: 0;
     z-index: 32;
-    height: 33svh;
+    height: calc(var(--scoreflow-vh) * 0.33);
     display: block;
     padding: 0 10px max(8px, env(safe-area-inset-bottom));
     pointer-events: auto;
@@ -2473,11 +2474,11 @@ dialog::backdrop { background: rgba(0,0,0,95); }
 @media (orientation: landscape) {
   #shareDialog {
     width: min(880px, calc(100vw - 28px));
-    max-height: calc(100vh - 24px);
+    max-height: calc(var(--scoreflow-vh) - 24px);
   }
 
   #shareDialog .share-card {
-    max-height: calc(100vh - 24px);
+    max-height: calc(var(--scoreflow-vh) - 24px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -3650,5 +3651,79 @@ body[data-theme="fire"] {
   .match-setup-screen .setup-team-away,
   .match-setup-screen .setup-team-away label {
     text-align: left;
+  }
+}
+
+
+/* =========================================================
+   17. Stage 5.1 Viewport Engine
+   Centralized iPhone/Safari/PWA height handling. These rules
+   intentionally use --scoreflow-vh instead of vh/svh/dvh so
+   JavaScript can sync the usable screen height after Safari,
+   PWA chrome, orientation, and visualViewport changes settle.
+   ========================================================= */
+html,
+body {
+  min-height: var(--scoreflow-vh);
+  height: var(--scoreflow-vh);
+  overflow: hidden;
+}
+
+.home-screen,
+.match-history-screen,
+.settings-screen,
+.settings-subscreen,
+.match-setup-screen,
+.portrait-in-match-settings-screen,
+.splash-screen,
+.live-start-overlay {
+  height: var(--scoreflow-vh);
+  min-height: var(--scoreflow-vh);
+  max-height: var(--scoreflow-vh);
+}
+
+.app-shell {
+  height: var(--scoreflow-vh);
+  min-height: var(--scoreflow-vh);
+  max-height: var(--scoreflow-vh);
+}
+
+@media (orientation: portrait) {
+  .home-screen,
+  .match-history-screen,
+  .settings-screen,
+  .settings-subscreen,
+  .match-setup-screen,
+  .portrait-in-match-settings-screen {
+    inset: 0;
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
+    max-height: var(--scoreflow-vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scoreboard-active .app-shell,
+  .viewer-mode .app-shell {
+    inset: 0 0 auto 0;
+    height: calc(var(--scoreflow-vh) * 0.67);
+    min-height: calc(var(--scoreflow-vh) * 0.67);
+    max-height: calc(var(--scoreflow-vh) * 0.67);
+  }
+
+  .scoreboard-active .fan-zone,
+  .viewer-mode .fan-zone {
+    height: calc(var(--scoreflow-vh) * 0.33);
+    min-height: calc(var(--scoreflow-vh) * 0.33);
+    max-height: calc(var(--scoreflow-vh) * 0.33);
+  }
+}
+
+@media (orientation: landscape) {
+  .app-shell {
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
+    max-height: var(--scoreflow-vh);
   }
 }

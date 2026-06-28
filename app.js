@@ -336,18 +336,32 @@ let activeResultsGraphicPromise = null;
 
 
 function updateViewportHeight() {
-  // iOS Safari reports visualViewport.height as the space ABOVE the browser chrome.
-  // Using that value for fixed screens caused the white strip at the bottom.
-  // Keep the CSS variable at least as tall as the layout viewport and let 100svh
-  // handle the stable visible phone height.
-  const layoutHeight = Math.max(
-    window.innerHeight || 0,
-    document.documentElement.clientHeight || 0,
-    window.visualViewport?.height || 0
-  );
-  if (layoutHeight) {
-    document.documentElement.style.setProperty("--scoreflow-vh", `${Math.ceil(layoutHeight)}px`);
-  }
+  const visualHeight = window.visualViewport?.height || 0;
+  const innerHeight = window.innerHeight || 0;
+  const clientHeight = document.documentElement.clientHeight || 0;
+  const screenHeight = window.screen?.height || 0;
+  const isPortrait = window.matchMedia?.("(orientation: portrait)")?.matches ?? innerHeight >= window.innerWidth;
+  const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+
+  // iPhone Safari/PWA can report the smaller "safe" viewport first, then settle.
+  // For installed portrait PWAs, screen.height is usually the full usable canvas.
+  // In regular Safari, prefer the largest live layout value so fixed screens do
+  // not stop short and leave the dark strip at the bottom.
+  const candidates = [innerHeight, clientHeight, visualHeight].filter(Boolean);
+  if (isPortrait && standalone && screenHeight) candidates.push(screenHeight);
+
+  const layoutHeight = Math.max(...candidates);
+  if (!layoutHeight || !Number.isFinite(layoutHeight)) return;
+
+  document.documentElement.style.setProperty("--scoreflow-vh", `${Math.ceil(layoutHeight)}px`);
+}
+
+function scheduleViewportUpdate() {
+  updateViewportHeight();
+  requestAnimationFrame(updateViewportHeight);
+  window.setTimeout(updateViewportHeight, 60);
+  window.setTimeout(updateViewportHeight, 180);
+  window.setTimeout(updateViewportHeight, 420);
 }
 
 function hideSplash() {
@@ -3061,17 +3075,24 @@ function wireEvents() {
     if (event.key === "Enter" || event.key === " ") closeWinner();
   });
   window.addEventListener("resize", () => {
-    updateViewportHeight();
+    scheduleViewportUpdate();
     if (state.confettiRunning) startConfetti();
     updateRotateScreenState();
     fitHeaderTitle();
   });
 
-  window.visualViewport?.addEventListener("resize", updateViewportHeight);
-  window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+  window.visualViewport?.addEventListener("resize", scheduleViewportUpdate);
+  window.visualViewport?.addEventListener("scroll", scheduleViewportUpdate);
 
   window.addEventListener("orientationchange", () => {
-    window.setTimeout(() => { updateViewportHeight(); updateRotateScreenState(); fitHeaderTitle(); }, 160);
+    scheduleViewportUpdate();
+    window.setTimeout(() => { scheduleViewportUpdate(); updateRotateScreenState(); fitHeaderTitle(); }, 160);
+    window.setTimeout(() => { scheduleViewportUpdate(); updateRotateScreenState(); fitHeaderTitle(); }, 520);
+  });
+
+  window.addEventListener("pageshow", scheduleViewportUpdate);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) scheduleViewportUpdate();
   });
 }
 
@@ -3092,7 +3113,7 @@ function applyViewerMode() {
 }
 
 async function boot() {
-  updateViewportHeight();
+  scheduleViewportUpdate();
   preventMobileDoubleTapZoom();
 
   let shouldShowViewerStart = false;
@@ -3121,6 +3142,7 @@ async function boot() {
     }
     applyViewerMode();
     if (!isViewer && liveGameId) document.body.classList.add("scoreboard-active");
+    scheduleViewportUpdate();
     updateRotateScreenState();
     registerServiceWorker();
     shouldShowViewerStart = isViewer;
@@ -3131,6 +3153,7 @@ async function boot() {
     } catch {}
   } finally {
     window.setTimeout(() => {
+      scheduleViewportUpdate();
       hideSplash();
       if (shouldShowViewerStart) requestAnimationFrame(showLiveStartOverlay);
       else requestAnimationFrame(showHomeScreen);
