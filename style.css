@@ -3853,3 +3853,247 @@ body {
 .viewer-mode .team-name:disabled {
   -webkit-text-fill-color: currentColor;
 }
+
+/* =========================================================
+   19. Stage 6 - Responsive Broadcast Layout System
+   Viewer-only layout polish. This intentionally does NOT use
+   transform scaling; it preserves the native scoreboard layout
+   and adjusts spacing, type, and logo sizing by viewport.
+   ========================================================= */
+.viewer-mode {
+  --viewer-topbar-h: clamp(44px, 7.5svh, 66px);
+  --viewer-gap: clamp(5px, 1svh, 10px);
+  --viewer-shell-pad-x: max(8px, env(safe-area-inset-left), env(safe-area-inset-right));
+  --viewer-shell-pad-y: max(6px, env(safe-area-inset-top));
+}
+
+@media (orientation: landscape) {
+  .viewer-mode .app-shell {
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
+    max-height: var(--scoreflow-vh);
+    grid-template-rows: var(--viewer-topbar-h) minmax(0, 1fr);
+    gap: var(--viewer-gap);
+    padding: var(--viewer-shell-pad-y) var(--viewer-shell-pad-x) max(6px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .viewer-mode .scoreboard-top-bar {
+    min-height: 0;
+    height: 100%;
+    padding: clamp(4px, 1svh, 8px) clamp(8px, 1.3vw, 18px);
+    border-radius: clamp(10px, 1.4vw, 22px);
+  }
+
+  .viewer-mode .brand-wrap {
+    display: grid;
+  }
+
+  .viewer-mode .scoreflow-header-logo {
+    width: clamp(118px, min(15vw, 30svh), 250px);
+    max-height: calc(var(--viewer-topbar-h) - 10px);
+  }
+
+  .viewer-mode .scoreboard-left-controls,
+  .viewer-mode .status-cluster {
+    min-width: clamp(84px, 13vw, 172px);
+  }
+
+  .viewer-mode .scoreboard-top-bar .viewer-count,
+  .viewer-mode .scoreboard-top-bar .live-status {
+    min-height: clamp(24px, 4.6svh, 34px);
+    padding: clamp(4px, .8svh, 7px) clamp(7px, 1vw, 12px);
+    font-size: clamp(9px, min(1.2vw, 2.4svh), 14px);
+  }
+
+  .viewer-mode .broadcast-scoreboard {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(160px, .96fr) minmax(300px, 1.28fr) minmax(160px, .96fr);
+    border-radius: clamp(12px, 1.6vw, 24px);
+  }
+
+  .viewer-mode .broadcast-team {
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(6px, 1.2svh, 14px);
+    padding: clamp(14px, 4.5svh, 48px) clamp(14px, 3.2vw, 66px) clamp(12px, 3svh, 32px);
+  }
+
+  .viewer-mode .team-name {
+    font-size: clamp(24px, min(5vw, 10svh), 74px);
+    line-height: .9;
+  }
+
+  .viewer-mode .broadcast-logo-picker {
+    width: clamp(96px, min(17vw, 32svh), 285px);
+    height: clamp(96px, min(17vw, 32svh), 285px);
+    align-self: center;
+    font-size: clamp(46px, min(8vw, 16svh), 124px);
+  }
+
+  .viewer-mode .broadcast-center {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    gap: clamp(4px, .9svh, 12px);
+    padding: clamp(12px, 4svh, 42px) clamp(10px, 1.8vw, 28px) clamp(12px, 3svh, 30px);
+  }
+
+  .viewer-mode .broadcast-title-block .match-title-left {
+    font-size: clamp(24px, min(4.7vw, 9.5svh), 68px);
+  }
+
+  .viewer-mode .broadcast-set-box {
+    min-width: clamp(84px, min(12vw, 22svh), 172px);
+    min-height: clamp(34px, min(7.4svh, 6vw), 78px);
+    border-width: clamp(2px, .55vw, 4px);
+    border-radius: clamp(16px, 2vw, 28px);
+  }
+
+  .viewer-mode .broadcast-set-box span {
+    font-size: clamp(24px, min(5vw, 9svh), 70px);
+  }
+
+  .viewer-mode .alert-banner {
+    font-size: clamp(9px, min(1.2vw, 2.3svh), 18px);
+  }
+
+  .viewer-mode .broadcast-score-row {
+    width: min(100%, 780px);
+    grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr);
+    gap: clamp(6px, 1.4vw, 26px);
+    align-self: center;
+  }
+
+  .viewer-mode .broadcast-score-btn {
+    font-size: clamp(78px, min(17vw, 30svh), 280px);
+    line-height: .78;
+  }
+
+  .viewer-mode .score-divider {
+    width: clamp(16px, min(3.5vw, 7svh), 48px);
+    gap: clamp(6px, min(1.1vw, 2svh), 16px);
+  }
+
+  .viewer-mode .score-divider::before,
+  .viewer-mode .score-divider::after {
+    width: clamp(7px, min(1.3vw, 2.5svh), 22px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .viewer-mode {
+    --viewer-topbar-h: clamp(34px, 10svh, 48px);
+    --viewer-gap: 5px;
+  }
+
+  .viewer-mode .broadcast-scoreboard {
+    grid-template-columns: minmax(130px, .92fr) minmax(250px, 1.24fr) minmax(130px, .92fr);
+  }
+
+  .viewer-mode .broadcast-team {
+    padding: clamp(10px, 3svh, 18px) clamp(12px, 2.5vw, 34px) clamp(8px, 2svh, 16px);
+  }
+
+  .viewer-mode .team-name {
+    font-size: clamp(20px, min(4.3vw, 9svh), 42px);
+  }
+
+  .viewer-mode .broadcast-logo-picker {
+    width: clamp(82px, min(15vw, 30svh), 160px);
+    height: clamp(82px, min(15vw, 30svh), 160px);
+  }
+
+  .viewer-mode .broadcast-center {
+    padding: clamp(8px, 2.5svh, 16px) 10px clamp(8px, 2svh, 16px);
+  }
+
+  .viewer-mode .broadcast-title-block .match-title-left {
+    font-size: clamp(20px, min(4vw, 8.5svh), 42px);
+  }
+
+  .viewer-mode .broadcast-set-box {
+    min-height: clamp(28px, 8svh, 42px);
+  }
+
+  .viewer-mode .broadcast-set-box span {
+    font-size: clamp(22px, min(4vw, 8svh), 40px);
+  }
+
+  .viewer-mode .alert-banner {
+    min-height: 14px;
+  }
+
+  .viewer-mode .broadcast-score-btn {
+    font-size: clamp(72px, min(15vw, 29svh), 140px);
+  }
+}
+
+@media (orientation: landscape) and (min-width: 1600px) and (min-height: 850px) {
+  .viewer-mode .broadcast-scoreboard {
+    grid-template-columns: minmax(260px, 1fr) minmax(520px, 1.22fr) minmax(260px, 1fr);
+  }
+
+  .viewer-mode .broadcast-logo-picker {
+    width: clamp(220px, 15vw, 330px);
+    height: clamp(220px, 15vw, 330px);
+  }
+
+  .viewer-mode .broadcast-score-btn {
+    font-size: clamp(210px, 15vw, 320px);
+  }
+}
+
+@media (orientation: portrait) {
+  .viewer-mode .app-shell {
+    height: calc(var(--scoreflow-vh) * 0.67);
+    min-height: calc(var(--scoreflow-vh) * 0.67);
+    max-height: calc(var(--scoreflow-vh) * 0.67);
+    overflow: hidden;
+  }
+
+  .viewer-mode .fan-zone {
+    height: calc(var(--scoreflow-vh) * 0.33);
+    min-height: calc(var(--scoreflow-vh) * 0.33);
+    max-height: calc(var(--scoreflow-vh) * 0.33);
+  }
+
+  .viewer-mode .portrait-scoreboard-card {
+    min-height: 0;
+  }
+
+  .viewer-mode .portrait-score-number {
+    font-size: clamp(92px, min(32vw, 22svh), 210px);
+  }
+
+  .viewer-mode .portrait-logo-wrap {
+    width: clamp(64px, min(20vw, 12.5svh), 108px);
+    height: clamp(64px, min(20vw, 12.5svh), 108px);
+  }
+
+  .viewer-mode .fan-zone-card {
+    min-height: 0;
+  }
+}
+
+@media (orientation: portrait) and (max-height: 760px) {
+  .viewer-mode .app-shell {
+    height: calc(var(--scoreflow-vh) * 0.65);
+    min-height: calc(var(--scoreflow-vh) * 0.65);
+    max-height: calc(var(--scoreflow-vh) * 0.65);
+  }
+
+  .viewer-mode .fan-zone {
+    height: calc(var(--scoreflow-vh) * 0.35);
+    min-height: calc(var(--scoreflow-vh) * 0.35);
+    max-height: calc(var(--scoreflow-vh) * 0.35);
+  }
+
+  .viewer-mode .portrait-score-number {
+    font-size: clamp(80px, min(30vw, 20svh), 170px);
+  }
+
+  .viewer-mode .portrait-logo-wrap {
+    width: clamp(56px, min(18vw, 11svh), 86px);
+    height: clamp(56px, min(18vw, 11svh), 86px);
+  }
+}
