@@ -179,7 +179,7 @@
       </div>
 
       <div class="status-cluster">
-        <div class="viewer-count" id="viewerCount" title="Live viewers">👁 0</div>
+        <div class="viewer-count" id="viewerCount" title="Live viewers">Viewers&nbsp;0</div>
         <div class="live-status offline" id="liveStatus">Offline</div>
       </div>
     </header>
@@ -225,7 +225,7 @@
 
         <div class="control-grid broadcast-control-grid">
           <button id="newMatchBtn" type="button">New Match</button>
-          <button id="shareBtn" type="button">Share Live</button>
+          <button id="shareBtn" type="button">Share</button>
         </div>
       </section>
 
@@ -253,6 +253,58 @@
       </section>
     </main>
   </div>
+
+  <aside class="in-match-settings-drawer" id="inMatchSettingsDrawer" aria-hidden="true">
+    <div class="in-match-settings-panel">
+      <div class="in-match-settings-head">
+        <div>
+          <span class="eyebrow">Match Settings</span>
+          <h2>Update Setup</h2>
+        </div>
+        <button id="inMatchSettingsCloseBtn" class="match-history-back-btn" type="button">Close</button>
+      </div>
+
+      <div class="in-match-settings-grid">
+        <label class="in-match-full">Match title<input id="inMatchTitleInput" value="Game Night" /></label>
+
+        <div class="in-match-team-column in-match-team-home">
+          <label>Home team<input id="inMatchHomeNameInput" value="Team 1" /></label>
+          <div class="swatch-section compact-swatch-section"><h3>Home Color</h3><div class="swatches compact-swatches" id="inMatchHomeSwatches"></div></div>
+        </div>
+
+        <div class="in-match-team-column in-match-team-away">
+          <label>Visitor team<input id="inMatchAwayNameInput" value="Team 2" /></label>
+          <div class="swatch-section compact-swatch-section"><h3>Visitor Color</h3><div class="swatches compact-swatches" id="inMatchAwaySwatches"></div></div>
+        </div>
+
+        <button id="inMatchSaveSettingsBtn" class="in-match-save-btn in-match-full" type="button">Save Setup</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="fan-zone" id="fanZone" aria-label="Live fan zone">
+    <button class="fan-zone-toggle" id="fanZoneToggle" type="button" aria-expanded="false">Chat</button>
+    <div class="floating-reactions" id="floatingReactions" aria-hidden="true"></div>
+    <div class="fan-zone-card">
+      <div class="fan-zone-head">
+        <div><strong>Fan Zone</strong><span>Cheer live with chat and reactions</span></div>
+        <div class="fan-live-pill">Live</div>
+      </div>
+      <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
+      <div class="reaction-row viewer-reactions" id="reactionRow" aria-label="Send a reaction">
+        <button type="button" data-reaction="❤️">❤️</button>
+        <button type="button" data-reaction="🔥">🔥</button>
+        <button type="button" data-reaction="👏">👏</button>
+        <button type="button" data-reaction="🎉">🎉</button>
+        <button type="button" data-reaction="🏐">🏐</button>
+        <button type="button" data-reaction="💪">💪</button>
+      </div>
+      <form class="chat-form" id="chatForm">
+        <input id="chatInput" maxlength="60" autocomplete="off" placeholder="Cheer on your team..." />
+        <button id="sendChatBtn" type="submit">Send</button>
+      </form>
+    </div>
+  </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -314,13 +366,15 @@
 
       <section class="match-setup-card team-setup-card">
         <div class="match-setup-section-head"><h2>Teams</h2><small>Names and colors</small></div>
-        <div class="two-col setup-team-inputs"><label>Home team<input id="homeNameSetting" value="Team 1" /></label>
-        <div class="setup-color-grid">
-          <div class="swatch-section compact-swatch-section"><h3>Home Color</h3><div class="swatches compact-swatches" id="homeSwatches"></div></div>
-        </div>
-        <label>Visitor team<input id="awayNameSetting" value="Team 2" /></label></div>
-        <div class="setup-color-grid">
-          <div class="swatch-section compact-swatch-section"><h3>Visitor Color</h3><div class="swatches compact-swatches" id="awaySwatches"></div></div>
+        <div class="setup-team-grid">
+          <div class="setup-team-column setup-team-home">
+            <label>Home team<input id="homeNameSetting" value="Team 1" /></label>
+            <div class="swatch-section compact-swatch-section"><h3>Home Color</h3><div class="swatches compact-swatches" id="homeSwatches"></div></div>
+          </div>
+          <div class="setup-team-column setup-team-away">
+            <label>Visitor team<input id="awayNameSetting" value="Team 2" /></label>
+            <div class="swatch-section compact-swatch-section"><h3>Visitor Color</h3><div class="swatches compact-swatches" id="awaySwatches"></div></div>
+          </div>
         </div>
       </section>
 

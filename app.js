@@ -245,7 +245,15 @@ const els = {
   chatInput: $("chatInput"),
   sendChatBtn: $("sendChatBtn"),
   reactionRow: $("reactionRow"),
-  floatingReactions: $("floatingReactions")
+  floatingReactions: $("floatingReactions"),
+  inMatchSettingsDrawer: $("inMatchSettingsDrawer"),
+  inMatchSettingsCloseBtn: $("inMatchSettingsCloseBtn"),
+  inMatchSaveSettingsBtn: $("inMatchSaveSettingsBtn"),
+  inMatchTitleInput: $("inMatchTitleInput"),
+  inMatchHomeNameInput: $("inMatchHomeNameInput"),
+  inMatchAwayNameInput: $("inMatchAwayNameInput"),
+  inMatchHomeSwatches: $("inMatchHomeSwatches"),
+  inMatchAwaySwatches: $("inMatchAwaySwatches")
 };
 
 
@@ -666,7 +674,7 @@ function showHomeScreen() {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
   document.body.classList.add("home-active");
-  document.body.classList.remove("scoreboard-active", "setup-active", "history-active", "match-setup-active", "settings-active");
+  document.body.classList.remove("scoreboard-active", "setup-active", "history-active", "match-setup-active", "settings-active", "in-match-settings-open");
   initialSetupActive = false;
   updateRotateScreenState();
   renderHomeData();
@@ -676,7 +684,7 @@ function showHomeScreen() {
 function openScoreboardFromHome(startFresh = false) {
   if (isViewer) return;
   document.body.classList.add("screen-transitioning");
-  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active");
+  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active", "in-match-settings-open");
   document.body.classList.add("scoreboard-active");
   window.setTimeout(() => document.body.classList.remove("screen-transitioning"), 260);
   if (startFresh) {
@@ -1843,6 +1851,9 @@ function render() {
   els.awayName.value = state.awayName;
   els.homeNameSetting.value = state.homeName;
   els.awayNameSetting.value = state.awayName;
+  if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
+  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
+  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
   els.matchFormatSetting.value = state.matchFormat;
   els.matchPill.textContent = matchLabel();
   updateScoreButton(els.homeScoreBtn, state.homeScore);
@@ -2049,6 +2060,9 @@ function populateMatchSetupFields() {
   if (els.homeNameSetting) els.homeNameSetting.value = state.homeName;
   if (els.awayNameSetting) els.awayNameSetting.value = state.awayName;
   if (els.matchFormatSetting) els.matchFormatSetting.value = state.matchFormat;
+  if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
+  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
+  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
   if (els.matchPill) els.matchPill.textContent = matchLabel();
   setTeamColor("home", state.homeColor, false);
   setTeamColor("away", state.awayColor, false);
@@ -2082,7 +2096,43 @@ async function startMatchFromSetup(startLive = false) {
   }
 }
 
+function populateInMatchSettingsFields() {
+  if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
+  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
+  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
+  setTeamColor("home", state.homeColor, false);
+  setTeamColor("away", state.awayColor, false);
+}
+
+function openInMatchSettings() {
+  if (isViewer) return;
+  populateInMatchSettingsFields();
+  document.body.classList.add("in-match-settings-open");
+  els.inMatchSettingsDrawer?.setAttribute("aria-hidden", "false");
+}
+
+function closeInMatchSettings() {
+  document.body.classList.remove("in-match-settings-open");
+  els.inMatchSettingsDrawer?.setAttribute("aria-hidden", "true");
+}
+
+function saveInMatchSettings() {
+  if (isViewer) return;
+  state.matchTitle = els.inMatchTitleInput?.value?.trim() || "Game Night";
+  state.homeName = els.inMatchHomeNameInput?.value?.trim() || "Team 1";
+  state.awayName = els.inMatchAwayNameInput?.value?.trim() || "Team 2";
+  state.lastAlert = "";
+  render();
+  queueRemoteUpdate();
+  closeInMatchSettings();
+  toast("Setup saved");
+}
+
 function openSettings() {
+  if (document.body.classList.contains("scoreboard-active")) {
+    openInMatchSettings();
+    return;
+  }
   openMatchSetupPage();
 }
 
@@ -2642,7 +2692,7 @@ function setTeamColor(team, value, shouldSync = true) {
   if (isViewer && shouldSync) return;
   state[`${team}Color`] = value;
   document.documentElement.style.setProperty(team === "home" ? "--home" : "--away", value);
-  document.querySelectorAll(`#${team}Swatches .swatch`).forEach((swatch) => {
+  document.querySelectorAll(`#${team}Swatches .swatch, #inMatch${team === "home" ? "Home" : "Away"}Swatches .swatch`).forEach((swatch) => {
     swatch.classList.toggle("selected", swatch.dataset.value.toLowerCase() === value.toLowerCase());
   });
   if (shouldSync) queueRemoteUpdate();
@@ -2770,10 +2820,12 @@ function wireEvents() {
   addSafeListener("shareBtn", "click", openShare);
   els.scoreboardHomeBtn?.addEventListener("click", showHomeScreen);
   addSafeListener("settingsBtn", "click", openSettings);
+  els.inMatchSettingsCloseBtn?.addEventListener("click", closeInMatchSettings);
+  els.inMatchSaveSettingsBtn?.addEventListener("click", saveInMatchSettings);
   addSafeListener("saveSettingsBtn", "click", () => startMatchFromSetup(false));
   els.startLiveFromSetupBtn?.addEventListener("click", () => startMatchFromSetup(true));
   els.matchSetupBackBtn?.addEventListener("click", closeMatchSetupPage);
-  [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.homeName, els.awayName].forEach((input) => {
+  [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.inMatchTitleInput, els.inMatchHomeNameInput, els.inMatchAwayNameInput, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
   });
@@ -2908,6 +2960,8 @@ async function boot() {
     applySavedHomeTeam();
     buildSwatches(els.homeSwatches, "home");
     buildSwatches(els.awaySwatches, "away");
+    buildSwatches(els.inMatchHomeSwatches, "home");
+    buildSwatches(els.inMatchAwaySwatches, "away");
     wireEvents();
     setTeamColor("home", state.homeColor, false);
     setTeamColor("away", state.awayColor, false);

@@ -64,12 +64,6 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.55; }
 img { max-width: 100%; display: block; }
 html, body { touch-action: manipulation; }
 
-/* Hide native file inputs inside logo pickers. The visible logo circle/card is the tap target. */
-.logo-picker input[type="file"],
-.broadcast-logo-picker input[type="file"] {
-  display: none;
-}
-
 /* =========================================================
    02. Shared Components
    ========================================================= */
@@ -944,10 +938,460 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 .scoreboard-active .broadcast-set-box,
 .scoreboard-active .broadcast-score-row,
 .scoreboard-active .broadcast-control-grid {
+  animation: scoreboardFadeUp .42s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.scoreboard-active .broadcast-set-box { animation-delay: .05s; }
+.scoreboard-active .broadcast-score-row { animation-delay: .1s; }
+.scoreboard-active .broadcast-control-grid { animation-delay: .16s; }
+
+.scoreboard-top-bar {
+  position: relative;
+  z-index: 2;
+  min-height: 54px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 0;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.72));
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+}
+
+.scoreboard-left-controls {
+  display: flex;
+  gap: 8px;
+  min-width: 146px;
+}
+
+.scoreboard-top-bar .icon-btn {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 23px;
+  text-shadow: 0 2px 10px rgba(0,0,0,.55);
+}
+
+.scoreboard-top-bar .icon-btn:active {
+  transform: scale(.94);
+}
+
+.brand-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+}
+
+.scoreflow-header-logo {
+  width: clamp(128px, 16vw, 210px);
+  max-height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.55));
+}
+
+.status-cluster {
+  min-width: 146px;
+  justify-content: flex-end;
+}
+
+.scoreboard-top-bar .viewer-count,
+.scoreboard-top-bar .live-status {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 0;
+  background: rgba(0,0,0,.76);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.scoreboard-top-bar .viewer-count {
+  color: var(--success);
+}
+
+.scoreboard-top-bar .live-status.online {
+  color: var(--success);
+}
+
+.scoreboard-top-bar .live-status.online::before,
+.scoreboard-top-bar .live-status.connecting::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 12px currentColor;
+  animation: liveDotPulse 1.8s ease-in-out infinite;
+}
+
+.live-status.connecting { color: var(--warning); }
+.live-status.error { color: #fb7185; }
+
+/* =========================================================
+   06. Broadcast Scoreboard Layout
+   Rebuilt from the user's Illustrator direction. Keeps original
+   IDs so the scoring engine continues working.
+   ========================================================= */
+.broadcast-scoreboard {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, .9fr) minmax(310px, 1.15fr) minmax(190px, .9fr);
+  grid-template-areas: "home center away";
+  gap: 0;
+  align-items: stretch;
+  overflow: hidden;
+  border: 2px solid rgba(0,0,0,.85);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,.36)),
+    rgba(255,255,255,.36);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.24),
+    0 22px 54px rgba(0,0,0,.4);
+}
+
+.broadcast-scoreboard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 7%, rgba(255,255,255,.58), transparent 17%),
+    radial-gradient(circle at 88% 7%, rgba(255,255,255,.42), transparent 18%),
+    linear-gradient(90deg, color-mix(in srgb, var(--home), transparent 88%), transparent 32%, transparent 68%, color-mix(in srgb, var(--away), transparent 88%)),
+    rgba(0,0,0,.1);
+  mix-blend-mode: screen;
+}
+
+.broadcast-scoreboard::after {
+  content: "VOLLEYBALL";
+  position: absolute;
+  left: 28px;
+  bottom: 112px;
+  width: calc(100% - 56px);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  color: rgba(255,255,255,.28);
+  font-family: var(--font-score);
+  font-size: clamp(18px, 3vw, 42px);
+  font-style: italic;
+  letter-spacing: -.04em;
+  text-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+
+.team-panel,
+.center-panel {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.broadcast-team {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(8px, 1.6vh, 14px);
+  padding: clamp(22px, 4vh, 42px) clamp(18px, 3vw, 54px) clamp(16px, 3vh, 30px);
+  align-items: center;
+  justify-items: center;
+}
+
+.broadcast-team.home {
+  grid-area: home;
+  --team-side-color: var(--home);
+}
+
+.broadcast-team.away {
+  grid-area: away;
+  --team-side-color: var(--away);
+}
+
+.broadcast-team::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--team-side-color), transparent 78%), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.12));
+  opacity: .8;
+}
+
+.team-name {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #05070c;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: clamp(28px, 4.8vw, 62px);
+  font-weight: 900;
+  line-height: .9;
+  letter-spacing: -.055em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255,255,255,.42);
+}
+
+.broadcast-logo-picker {
+  position: relative;
+  z-index: 2;
+  width: clamp(118px, 18vw, 245px);
+  height: clamp(118px, 18vw, 245px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #05070c;
+  font-size: clamp(54px, 8vw, 112px);
+  font-weight: 900;
+  filter: drop-shadow(0 14px 20px rgba(0,0,0,.32));
+}
+
+.broadcast-logo-picker input { display: none; }
+
+.broadcast-logo-picker img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.broadcast-logo-picker.has-logo img { display: block; }
+.broadcast-logo-picker.has-logo span { display: none; }
+
+.broadcast-logo-picker span {
+  width: 76%;
+  height: 76%;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #05070c;
+  box-shadow: 0 8px 22px rgba(0,0,0,.28);
+}
+
+.broadcast-point-actions {
+  position: relative;
+  z-index: 4;
+  width: min(100%, 270px);
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 3px;
+  align-self: end;
+}
+
+.broadcast-point-actions .point-btn {
+  min-height: clamp(40px, 6.8vh, 62px);
+  border-radius: 18px 6px 28px 18px;
+  border: 2px solid rgba(0,0,0,.72);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.2),
+    0 8px 16px rgba(0,0,0,.22);
+  color: #fff;
+  font-size: clamp(18px, 2.5vw, 34px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.broadcast-point-actions .point-btn.plus {
+  background: var(--team-side-color);
+}
+
+.broadcast-point-actions .point-btn.minus {
+  background: #040507;
+  color: #fff;
+}
+
+.broadcast-team.home .broadcast-point-actions .point-btn.plus {
+  border-radius: 6px 10px 10px 28px;
+}
+
+.broadcast-team.away .broadcast-point-actions .point-btn.plus {
+  border-radius: 10px 6px 28px 10px;
+}
+
+.broadcast-team.home .broadcast-point-actions .point-btn.minus {
+  border-radius: 10px 6px 28px 10px;
+}
+
+.broadcast-team.away .broadcast-point-actions .point-btn.minus {
+  border-radius: 6px 10px 10px 28px;
+}
+
+.broadcast-team.away .broadcast-point-actions {
+  direction: rtl;
+}
+
+.broadcast-team.away .broadcast-point-actions .point-btn {
+  direction: ltr;
+}
+
+.broadcast-sets-card {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 270px);
+  display: none;
+}
+
+.broadcast-center {
+  grid-area: center;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: clamp(5px, 1.2vh, 12px);
+  align-items: center;
+  justify-items: center;
+  padding: clamp(18px, 4vh, 40px) clamp(12px, 2vw, 24px) clamp(16px, 3vh, 30px);
+  text-align: center;
+}
+
+.broadcast-title-block {
+  min-width: 0;
+}
+
+.broadcast-title-block .match-pill {
+  display: none;
+}
+
+.broadcast-title-block .match-title-left {
+  margin: 0;
+  max-width: 100%;
+  color: rgba(5,7,12,.58);
+  font-size: clamp(24px, 4.1vw, 58px);
+  font-weight: 900;
+  line-height: .92;
+  letter-spacing: -.055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.broadcast-set-box {
+  display: grid;
+  place-items: center;
+  min-width: clamp(112px, 13vw, 170px);
+  min-height: clamp(48px, 7.4vh, 78px);
+  padding: 4px 18px;
+  border: 4px solid rgba(5,7,12,.45);
+  border-radius: 26px;
+  background: rgba(255,255,255,.16);
+  color: rgba(5,7,12,.62);
+}
+
+.broadcast-set-box span {
+  display: flex;
+  align-items: baseline;
+  gap: .25em;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: -.06em;
+  font-size: clamp(32px, 5vw, 70px);
+  font-weight: 900;
+  line-height: .85;
+}
+
+.broadcast-set-box strong {
+  display: inline;
+  color: inherit;
+  font-family: var(--font-ui);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.alert-banner {
+  min-height: 22px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(5,7,12,.45);
+  font-size: clamp(12px, 1.4vw, 18px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.alert-banner.hot {
+  color: var(--brand);
+  animation: alertPulse .9s ease-in-out infinite alternate;
+}
+
+.broadcast-score-row {
+  align-self: center;
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr);
+  align-items: center;
+  gap: clamp(8px, 1.7vw, 24px);
+  width: min(100%, 620px);
+}
+
+.broadcast-score-btn {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  border: 0 !important;
+  background: transparent;
+  color: #020305;
+  font-family: var(--font-score);
+  font-size: clamp(96px, 18.5vw, 250px);
+  line-height: .78;
+  letter-spacing: -.04em;
+  box-shadow: none;
+  text-shadow:
+    0 2px 0 rgba(255,255,255,.24),
+    0 12px 28px rgba(0,0,0,.16);
+}
+
+.broadcast-score-btn.score-pop {
+  animation: scorePop .24s cubic-bezier(.2,.9,.3,1.2);
+}
+
+.score-divider {
+  display: inline-grid;
+  place-items: center;
+  gap: clamp(8px, 1.5vw, 16px);
+  width: clamp(22px, 4vw, 48px);
+  transform: translateY(-.02em);
+  color: rgba(5,7,12,.58);
+  font-size: 0;
+  line-height: 1;
+  animation: colonBreathe 2.4s ease-in-out infinite;
+}
+
+.score-divider::before,
+.score-divider::after {
+  content: "";
+  width: clamp(10px, 1.6vw, 22px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 6px 12px rgba(0,0,0,.14);
+}
+
+.broadcast-control-grid {
   width: min(100%, 430px);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 72px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
   align-self: end;
 }
 
@@ -964,10 +1408,11 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 }
 
 .broadcast-control-grid #newMatchBtn {
-  background: rgba(5,7,12,.66);
+  grid-column: span 2;
 }
 
 .broadcast-control-grid #shareBtn {
+  grid-column: span 2;
   background: linear-gradient(180deg, #d9b637, #c99f24);
   color: #fff;
 }
@@ -1034,6 +1479,182 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   to { transform: scale(1.04); filter: drop-shadow(0 0 10px rgba(255, 20, 20, .36)); }
 }
 
+
+/* =========================================================
+   06B. In-Match Settings Drawer
+   Landscape-only match setup edits while scoring.
+   Designed to fit a 16:9 landscape screen without scrolling.
+   ========================================================= */
+.in-match-settings-drawer {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 42;
+  padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-100%);
+  transition: opacity .24s ease, transform .32s cubic-bezier(.2,.8,.2,1), visibility .24s ease;
+}
+
+.in-match-settings-open .in-match-settings-drawer {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+}
+
+.in-match-settings-panel {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 0 0 24px 24px;
+  background: linear-gradient(180deg, rgba(9, 13, 22, .98), rgba(12, 18, 30, .96));
+  box-shadow: 0 18px 48px rgba(0,0,0,.38);
+  overflow: hidden;
+}
+
+.in-match-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.in-match-settings-head h2 {
+  margin: 2px 0 0;
+  font-size: clamp(20px, 2.5vw, 30px);
+  line-height: .95;
+  letter-spacing: -.05em;
+}
+
+.in-match-settings-head .eyebrow {
+  font-size: 10px;
+}
+
+.in-match-settings-head .match-history-back-btn {
+  padding: 7px 12px;
+  font-size: 11px;
+}
+
+.in-match-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.in-match-full {
+  grid-column: 1 / -1;
+}
+
+.in-match-team-column {
+  display: grid;
+  gap: 8px;
+}
+
+.in-match-team-away,
+.in-match-team-away label {
+  text-align: right;
+}
+
+.in-match-settings-grid label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.in-match-settings-grid input,
+.in-match-settings-grid select {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.in-match-settings-grid .swatches {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.in-match-settings-grid .swatch {
+  height: clamp(30px, 6.2vh, 42px);
+  border-radius: 999px;
+}
+
+.in-match-save-btn {
+  min-height: clamp(38px, 7vh, 46px);
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 950;
+  letter-spacing: -.03em;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .in-match-settings-drawer {
+    padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left));
+  }
+
+  .in-match-settings-panel {
+    gap: 6px;
+    padding: 8px 10px 10px;
+    border-radius: 0 0 20px 20px;
+  }
+
+  .in-match-settings-head h2 {
+    font-size: clamp(18px, 2.25vw, 26px);
+  }
+
+  .in-match-settings-grid {
+    gap: 8px 10px;
+  }
+
+  .in-match-team-column {
+    gap: 6px;
+  }
+
+  .in-match-settings-grid label {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .in-match-settings-grid input,
+  .in-match-settings-grid select {
+    min-height: 36px;
+    padding: 8px 11px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .in-match-settings-grid .swatches {
+    gap: 6px;
+  }
+
+  .in-match-settings-grid .swatch {
+    height: clamp(26px, 6vh, 34px);
+  }
+
+  .in-match-save-btn {
+    min-height: 36px;
+  }
+}
+
+@media (orientation: portrait) {
+  .in-match-settings-drawer {
+    display: none;
+  }
+}
+
+
 /* =========================================================
    07. Dialogs + Forms
    ========================================================= */
@@ -1081,6 +1702,142 @@ dialog::backdrop { background: rgba(0,0,0,95); }
 .theme-choice.active { background: rgba(255,255,255,.14); }
 .theme-choice small { display: block; color: var(--muted); margin-top: 4px; }
 .poster-card canvas { width: 100%; height: auto; border-radius: 18px; background: #111; }
+
+/* =========================================================
+   07B. Landscape Live Share Dialog Fit
+   Keeps the live share popup usable on 16:9 landscape screens.
+   ========================================================= */
+@media (orientation: landscape) {
+  #shareDialog {
+    width: min(880px, calc(100vw - 28px));
+    max-height: calc(100vh - 24px);
+  }
+
+  #shareDialog .share-card {
+    max-height: calc(100vh - 24px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head head"
+      "hint hint"
+      "link qr"
+      "actions actions"
+      "note note";
+    align-items: end;
+    gap: 10px 12px;
+    padding: 14px;
+    overflow: hidden;
+  }
+
+  #shareDialog .settings-head {
+    grid-area: head;
+  }
+
+  #shareDialog .settings-head h2 {
+    font-size: clamp(20px, 3vw, 28px);
+    line-height: .95;
+  }
+
+  #shareDialog .hint {
+    grid-area: hint;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  #shareDialog label {
+    grid-area: link;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  #shareDialog #viewerLink {
+    min-height: 40px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+  }
+
+  #shareDialog .qr-card {
+    grid-area: qr;
+    width: 116px;
+    min-width: 116px;
+    gap: 5px;
+    padding: 8px;
+    border-radius: 14px;
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  #shareDialog .qr-card[hidden] {
+    display: none;
+  }
+
+  #shareDialog .qr-card img {
+    width: 88px;
+    height: 88px;
+  }
+
+  #shareDialog .share-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  #shareDialog .share-actions button {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: clamp(10px, 1.35vw, 13px);
+    white-space: nowrap;
+  }
+
+  #shareDialog .firebase-note {
+    grid-area: note;
+    margin: 0;
+    min-height: 0;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  #shareDialog .share-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head qr"
+      "link qr"
+      "actions actions"
+      "note note";
+    gap: 8px 10px;
+    padding: 12px;
+  }
+
+  #shareDialog .hint {
+    display: none;
+  }
+
+  #shareDialog .settings-head h2 {
+    font-size: 22px;
+  }
+
+  #shareDialog .qr-card {
+    width: 96px;
+    min-width: 96px;
+    padding: 7px;
+  }
+
+  #shareDialog .qr-card img {
+    width: 72px;
+    height: 72px;
+  }
+
+  #shareDialog .share-actions button {
+    min-height: 34px;
+    font-size: 10px;
+  }
+}
+
 
 /* =========================================================
    08. Fan Zone + Viewer Mode
@@ -1212,6 +1969,26 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   gap: 10px;
 }
 
+.setup-team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.setup-team-column {
+  display: grid;
+  gap: 10px;
+}
+
+.setup-team-away {
+  text-align: right;
+}
+
+.setup-team-away label {
+  text-align: right;
+}
+
+
 .compact-swatch-section {
   margin: 0;
   padding: 10px;
@@ -1285,8 +2062,14 @@ dialog::backdrop { background: rgba(0,0,0,95); }
 
 @media (max-width: 420px) {
   .setup-color-grid,
+  .setup-team-grid,
   .match-setup-actions {
     grid-template-columns: 1fr;
+  }
+
+  .setup-team-away,
+  .setup-team-away label {
+    text-align: left;
   }
 }
 
@@ -1323,6 +2106,11 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   .home-primary-actions { min-width: 250px; }
 
   .broadcast-scoreboard { overflow: hidden; }
+
+  .scoreboard-active .fan-zone,
+  .viewer-mode .fan-zone {
+    display: none;
+  }
 }
 
 /* =========================================================
@@ -1415,13 +2203,7 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   }
 
   .score-divider {
-    width: clamp(24px, 5vw, 48px);
-    gap: clamp(8px, 1.6vw, 16px);
-  }
-
-  .score-divider::before,
-  .score-divider::after {
-    width: clamp(10px, 1.9vw, 20px);
+    font-size: 0);
   }
 
   .broadcast-point-actions {
@@ -1436,7 +2218,7 @@ dialog::backdrop { background: rgba(0,0,0,95); }
 
   .broadcast-control-grid {
     width: min(100%, 360px);
-    gap: 40px;
+    gap: 6px;
   }
 }
 
