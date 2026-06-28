@@ -3853,3 +3853,100 @@ body {
 .viewer-mode .team-name:disabled {
   -webkit-text-fill-color: currentColor;
 }
+
+
+/* =========================================================
+   21. Polish Phase - Viewer Broadcast Scaling Engine
+   Scales the viewer composition as a locked broadcast canvas.
+   Scorer mode keeps the normal touch-first responsive layout.
+   ========================================================= */
+.viewer-mode {
+  background: #05070c;
+  overflow: hidden;
+}
+
+.viewer-mode .app-shell {
+  left: var(--viewer-stage-left, 0px);
+  top: var(--viewer-stage-top, 0px);
+  right: auto;
+  bottom: auto;
+  width: var(--viewer-stage-width, 100vw);
+  height: var(--viewer-app-height, var(--scoreflow-vh));
+  min-width: var(--viewer-stage-width, 100vw);
+  min-height: var(--viewer-app-height, var(--scoreflow-vh));
+  max-width: none;
+  max-height: none;
+  transform: scale(var(--viewer-scale, 1));
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+.viewer-mode .app-shell::before {
+  position: absolute;
+  inset: 0;
+}
+
+.viewer-mode .scoreboard-top-bar,
+.viewer-mode .broadcast-scoreboard,
+.viewer-mode .portrait-scoreboard {
+  width: 100%;
+}
+
+@media (orientation: landscape) {
+  .viewer-mode .app-shell {
+    grid-template-rows: 54px minmax(0, 1fr);
+    gap: 8px;
+    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+
+  .viewer-mode .broadcast-scoreboard {
+    display: grid;
+  }
+
+  .viewer-mode .portrait-scoreboard,
+  .viewer-mode .fan-zone {
+    display: none;
+  }
+}
+
+@media (orientation: portrait) {
+  .viewer-mode .app-shell {
+    inset: auto;
+    left: var(--viewer-stage-left, 0px);
+    top: var(--viewer-stage-top, 0px);
+    width: var(--viewer-stage-width, 100vw);
+    height: var(--viewer-app-height, calc(var(--scoreflow-vh) * 0.67));
+    min-width: var(--viewer-stage-width, 100vw);
+    min-height: var(--viewer-app-height, calc(var(--scoreflow-vh) * 0.67));
+    max-height: none;
+    grid-template-rows: 48px minmax(0, 1fr);
+    gap: 6px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+    transform: scale(var(--viewer-scale, 1));
+    transform-origin: top left;
+  }
+
+  .viewer-mode .broadcast-scoreboard {
+    display: none;
+  }
+
+  .viewer-mode .portrait-scoreboard {
+    display: grid;
+  }
+
+  .viewer-mode .fan-zone {
+    left: var(--viewer-stage-left, 0px);
+    top: var(--viewer-fanzone-top, auto);
+    right: auto;
+    bottom: auto;
+    width: var(--viewer-stage-width, 100vw);
+    height: var(--viewer-fanzone-height, calc(var(--scoreflow-vh) * 0.33));
+    min-width: var(--viewer-stage-width, 100vw);
+    min-height: var(--viewer-fanzone-height, calc(var(--scoreflow-vh) * 0.33));
+    max-height: none;
+    padding: 0 10px max(8px, env(safe-area-inset-bottom));
+    transform: scale(var(--viewer-scale, 1));
+    transform-origin: top left;
+    overflow: hidden;
+  }
+}

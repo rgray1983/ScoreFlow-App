@@ -360,12 +360,45 @@ function updateViewportHeight() {
   document.documentElement.style.setProperty("--scoreflow-vh", `${Math.ceil(layoutHeight)}px`);
 }
 
+function updateBroadcastScale() {
+  if (!isViewer) return;
+
+  const viewportWidth = Math.max(1, window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || 1);
+  const viewportHeight = Math.max(1, window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 1);
+  const isPortrait = viewportHeight >= viewportWidth;
+
+  const designWidth = isPortrait ? 1080 : 1920;
+  const designHeight = isPortrait ? 1920 : 1080;
+  const maxScale = isPortrait ? 1.05 : 1.2;
+  const scale = Math.min(viewportWidth / designWidth, viewportHeight / designHeight, maxScale);
+  const stageWidth = designWidth * scale;
+  const stageHeight = designHeight * scale;
+  const stageLeft = Math.max(0, (viewportWidth - stageWidth) / 2);
+  const stageTop = Math.max(0, (viewportHeight - stageHeight) / 2);
+
+  const portraitAppHeight = 1286.4;
+  const portraitFanZoneHeight = designHeight - portraitAppHeight;
+
+  document.documentElement.style.setProperty("--viewer-scale", String(scale));
+  document.documentElement.style.setProperty("--viewer-stage-width", `${designWidth}px`);
+  document.documentElement.style.setProperty("--viewer-stage-height", `${designHeight}px`);
+  document.documentElement.style.setProperty("--viewer-stage-left", `${stageLeft}px`);
+  document.documentElement.style.setProperty("--viewer-stage-top", `${stageTop}px`);
+  document.documentElement.style.setProperty("--viewer-app-height", `${isPortrait ? portraitAppHeight : designHeight}px`);
+  document.documentElement.style.setProperty("--viewer-fanzone-height", `${portraitFanZoneHeight}px`);
+  document.documentElement.style.setProperty("--viewer-fanzone-top", `${stageTop + portraitAppHeight * scale}px`);
+}
+
 function scheduleViewportUpdate() {
   updateViewportHeight();
-  requestAnimationFrame(updateViewportHeight);
-  window.setTimeout(updateViewportHeight, 60);
-  window.setTimeout(updateViewportHeight, 180);
-  window.setTimeout(updateViewportHeight, 420);
+  updateBroadcastScale();
+  requestAnimationFrame(() => {
+    updateViewportHeight();
+    updateBroadcastScale();
+  });
+  window.setTimeout(() => { updateViewportHeight(); updateBroadcastScale(); }, 60);
+  window.setTimeout(() => { updateViewportHeight(); updateBroadcastScale(); }, 180);
+  window.setTimeout(() => { updateViewportHeight(); updateBroadcastScale(); }, 420);
 }
 
 function hideSplash() {
