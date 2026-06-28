@@ -4097,3 +4097,40 @@ body {
     height: clamp(56px, min(18vw, 11svh), 86px);
   }
 }
+
+/* =========================================================
+   19A. Stage 6 - Portrait Viewer Score Separation Fix
+   Keeps viewer scores clear of the logo/name cards on iPhone
+   portrait sizes without changing scorer portrait controls.
+   ========================================================= */
+@media (orientation: portrait) {
+  .viewer-mode .portrait-scoreboard-card {
+    grid-template-rows: auto auto minmax(0, .78fr) minmax(0, 1.22fr);
+    align-content: stretch;
+  }
+
+  .viewer-mode .portrait-teams-row {
+    align-self: start;
+  }
+
+  .viewer-mode .portrait-score-row {
+    align-self: start;
+    margin-top: clamp(18px, 3.2svh, 34px);
+  }
+}
+
+@media (orientation: portrait) and (max-width: 390px),
+       (orientation: portrait) and (max-height: 780px) {
+  .viewer-mode .portrait-score-row {
+    margin-top: clamp(22px, 3.8svh, 38px);
+  }
+
+  .viewer-mode .portrait-score-number {
+    font-size: clamp(80px, min(30vw, 19svh), 170px);
+  }
+
+  .viewer-mode .portrait-logo-wrap {
+    width: clamp(56px, min(18vw, 10.75svh), 88px);
+    height: clamp(56px, min(18vw, 10.75svh), 88px);
+  }
+}
