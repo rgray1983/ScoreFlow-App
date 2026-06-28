@@ -2203,7 +2203,7 @@ dialog::backdrop { background: rgba(0,0,0,95); }
   }
 
   .score-divider {
-    font-size: 0);
+    font-size: 0;
   }
 
   .broadcast-point-actions {
@@ -2814,4 +2814,77 @@ body[data-theme="fire"] {
 
 @keyframes resultsScoreIn {
   to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* =========================================================
+   04D PATCH. Match Setup Portrait Overflow Guard
+   Prevents iPhone Safari/PWA horizontal drift on the pre-match setup page.
+   ========================================================= */
+.match-setup-screen {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.match-setup-screen *,
+.match-setup-screen *::before,
+.match-setup-screen *::after {
+  max-width: 100%;
+}
+
+.match-setup-screen .settings-hero,
+.match-setup-screen .match-setup-page-list,
+.match-setup-screen .match-setup-card,
+.match-setup-screen .setup-team-grid,
+.match-setup-screen .setup-team-column,
+.match-setup-screen .setup-color-grid,
+.match-setup-screen .match-setup-save-row,
+.match-setup-screen .match-setup-actions,
+.match-setup-screen label,
+.match-setup-screen input,
+.match-setup-screen select {
+  min-width: 0;
+}
+
+.match-setup-screen .settings-hero,
+.match-setup-screen .match-setup-card {
+  overflow: hidden;
+}
+
+.match-setup-screen input,
+.match-setup-screen select,
+.match-setup-screen button {
+  max-width: 100%;
+}
+
+.match-setup-screen .compact-swatches {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (orientation: portrait) {
+  .match-setup-screen {
+    left: 0;
+    right: 0;
+    width: auto;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .match-setup-screen .settings-topline,
+  .match-setup-screen .settings-hero,
+  .match-setup-screen .match-setup-page-list {
+    width: 100%;
+  }
+
+  .match-setup-screen .setup-team-grid,
+  .match-setup-screen .setup-color-grid,
+  .match-setup-screen .match-setup-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .match-setup-screen .setup-team-away,
+  .match-setup-screen .setup-team-away label {
+    text-align: left;
+  }
 }
