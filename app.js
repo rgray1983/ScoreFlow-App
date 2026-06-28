@@ -3156,7 +3156,9 @@ function applyViewerMode() {
   const viewerAllowedIds = new Set([
     "liveStartWatchBtn",
     "chatInput",
-    "sendChatBtn"
+    "sendChatBtn",
+    "resultsCloseBtn",
+    "shareRecapBtn"
   ]);
   document.querySelectorAll("button, input").forEach((el) => {
     if (viewerAllowedIds.has(el.id) || el.closest("#fanZone")) return;
