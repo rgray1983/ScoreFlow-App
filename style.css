@@ -606,7 +606,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border-radius: 18px;
+  border-radius: clamp(12px, 1.45vw, 18px);
   background: rgba(255,255,255,.05);
 }
 
@@ -889,10 +889,10 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   position: fixed;
   inset: 0;
   min-height: var(--scoreflow-vh);
-  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   display: grid;
-  grid-template-rows: 54px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-rows: clamp(44px, 7.2vh, 54px) minmax(0, 1fr);
+  gap: clamp(5px, .9vh, 8px);
   opacity: 0;
   visibility: hidden;
   transform: translateY(10px);
@@ -949,10 +949,11 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 .scoreboard-top-bar {
   position: relative;
   z-index: 2;
-  min-height: 54px;
+  min-height: 0;
+  height: 100%;
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: 0;
-  padding: 6px 10px;
+  border-radius: clamp(10px, 1.35vw, 18px);
+  padding: clamp(4px, .9vh, 6px) clamp(8px, 1.2vw, 14px);
   background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.72));
   box-shadow: 0 12px 28px rgba(0,0,0,.28);
 }
@@ -1043,7 +1044,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   z-index: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(190px, .9fr) minmax(310px, 1.15fr) minmax(190px, .9fr);
+  grid-template-columns: minmax(170px, .94fr) minmax(280px, 1.12fr) minmax(170px, .94fr);
   grid-template-areas: "home center away";
   gap: 0;
   align-items: stretch;
@@ -1101,9 +1102,9 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: clamp(8px, 1.6vh, 14px);
-  padding: clamp(22px, 4vh, 42px) clamp(18px, 3vw, 54px) clamp(16px, 3vh, 30px);
+  grid-template-rows: auto minmax(92px, 1fr) auto auto;
+  gap: clamp(6px, 1.25vh, 12px);
+  padding: clamp(16px, 3.6vh, 36px) clamp(16px, 2.7vw, 48px) clamp(12px, 2.5vh, 24px);
   align-items: center;
   justify-items: center;
 }
@@ -1139,7 +1140,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   color: #05070c;
   text-align: center;
   font-family: var(--font-ui);
-  font-size: clamp(28px, 4.8vw, 62px);
+  font-size: clamp(24px, min(4.5vw, 8.8vh), 58px);
   font-weight: 900;
   line-height: .9;
   letter-spacing: -.055em;
@@ -1150,8 +1151,8 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 .broadcast-logo-picker {
   position: relative;
   z-index: 2;
-  width: clamp(118px, 18vw, 245px);
-  height: clamp(118px, 18vw, 245px);
+  width: clamp(104px, min(17.5vw, 34vh), 235px);
+  height: clamp(104px, min(17.5vw, 34vh), 235px);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -1159,7 +1160,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   border-radius: 0;
   background: transparent;
   color: #05070c;
-  font-size: clamp(54px, 8vw, 112px);
+  font-size: clamp(48px, min(8vw, 15vh), 108px);
   font-weight: 900;
   filter: drop-shadow(0 14px 20px rgba(0,0,0,.32));
 }
@@ -1198,14 +1199,14 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 }
 
 .broadcast-point-actions .point-btn {
-  min-height: clamp(40px, 6.8vh, 62px);
+  min-height: clamp(36px, 6.2vh, 58px);
   border-radius: 18px 6px 28px 18px;
   border: 2px solid rgba(0,0,0,.72);
   box-shadow:
     inset 0 2px 0 rgba(255,255,255,.2),
     0 8px 16px rgba(0,0,0,.22);
   color: #fff;
-  font-size: clamp(18px, 2.5vw, 34px);
+  font-size: clamp(17px, min(2.45vw, 4.6vh), 32px);
   font-weight: 900;
   line-height: 1;
 }
@@ -1256,10 +1257,10 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   z-index: 3;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  gap: clamp(5px, 1.2vh, 12px);
+  gap: clamp(4px, 1vh, 10px);
   align-items: center;
   justify-items: center;
-  padding: clamp(18px, 4vh, 40px) clamp(12px, 2vw, 24px) clamp(16px, 3vh, 30px);
+  padding: clamp(14px, 3.5vh, 34px) clamp(10px, 1.7vw, 22px) clamp(12px, 2.4vh, 24px);
   text-align: center;
 }
 
@@ -1275,7 +1276,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   margin: 0;
   max-width: 100%;
   color: rgba(5,7,12,.58);
-  font-size: clamp(24px, 4.1vw, 58px);
+  font-size: clamp(22px, min(4vw, 7.8vh), 54px);
   font-weight: 900;
   line-height: .92;
   letter-spacing: -.055em;
@@ -1289,7 +1290,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   display: grid;
   place-items: center;
   min-width: clamp(112px, 13vw, 170px);
-  min-height: clamp(48px, 7.4vh, 78px);
+  min-height: clamp(40px, min(7.2vh, 6vw), 72px);
   padding: 4px 18px;
   border: 4px solid rgba(5,7,12,.45);
   border-radius: 26px;
@@ -1304,7 +1305,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   color: inherit;
   text-transform: none;
   letter-spacing: -.06em;
-  font-size: clamp(32px, 5vw, 70px);
+  font-size: clamp(28px, min(4.8vw, 8.8vh), 64px);
   font-weight: 900;
   line-height: .85;
 }
@@ -1323,7 +1324,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   border-radius: 0;
   background: transparent;
   color: rgba(5,7,12,.45);
-  font-size: clamp(12px, 1.4vw, 18px);
+  font-size: clamp(10px, min(1.3vw, 2.5vh), 17px);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .1em;
@@ -1340,7 +1341,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr);
   align-items: center;
   gap: clamp(8px, 1.7vw, 24px);
-  width: min(100%, 620px);
+  width: min(100%, 600px);
 }
 
 .broadcast-score-btn {
@@ -1353,7 +1354,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   background: transparent;
   color: #020305;
   font-family: var(--font-score);
-  font-size: clamp(96px, 18.5vw, 250px);
+  font-size: clamp(84px, min(17.5vw, 33vh), 230px);
   line-height: .78;
   letter-spacing: -.04em;
   box-shadow: none;
@@ -1397,7 +1398,7 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 }
 
 .broadcast-control-grid button {
-  min-height: clamp(36px, 6vh, 54px);
+  min-height: clamp(34px, 5.5vh, 50px);
   border: 0;
   border-radius: 999px;
   background: rgba(5,7,12,.66);
@@ -1478,6 +1479,112 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
 @keyframes alertPulse {
   from { transform: scale(1); filter: none; }
   to { transform: scale(1.04); filter: drop-shadow(0 0 10px rgba(255, 20, 20, .36)); }
+}
+
+
+/* =========================================================
+   06A. Broadcast Fit Polish
+   Keeps the landscape scoreboard inside short browser windows
+   without shrinking the whole composition with transforms.
+   ========================================================= */
+@media (orientation: landscape) and (max-height: 520px) {
+  .app-shell {
+    grid-template-rows: clamp(36px, 9vh, 46px) minmax(0, 1fr);
+    gap: 5px;
+    padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+
+  .scoreflow-header-logo {
+    width: clamp(104px, 14vw, 168px);
+    max-height: 34px;
+  }
+
+  .scoreboard-top-bar .viewer-count,
+  .scoreboard-top-bar .live-status {
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .broadcast-scoreboard {
+    grid-template-columns: minmax(128px, .9fr) minmax(236px, 1.16fr) minmax(128px, .9fr);
+  }
+
+  .broadcast-team {
+    grid-template-rows: auto minmax(72px, 1fr) auto auto;
+    gap: 5px;
+    padding: clamp(9px, 2.7vh, 16px) clamp(10px, 2.2vw, 28px) clamp(7px, 1.8vh, 14px);
+  }
+
+  .team-name {
+    font-size: clamp(19px, min(4.1vw, 8.6vh), 42px);
+  }
+
+  .broadcast-logo-picker {
+    width: clamp(74px, min(14.5vw, 29vh), 154px);
+    height: clamp(74px, min(14.5vw, 29vh), 154px);
+  }
+
+  .broadcast-center {
+    padding: clamp(7px, 2.3vh, 14px) 9px clamp(7px, 1.9vh, 14px);
+    gap: 3px;
+  }
+
+  .broadcast-title-block .match-title-left {
+    font-size: clamp(18px, min(3.7vw, 8vh), 40px);
+  }
+
+  .broadcast-set-box {
+    min-width: clamp(78px, min(11vw, 22vh), 132px);
+    min-height: clamp(28px, min(7.4vh, 5.4vw), 42px);
+    border-width: 2px;
+    border-radius: 16px;
+  }
+
+  .broadcast-set-box span {
+    font-size: clamp(21px, min(3.8vw, 7.6vh), 40px);
+  }
+
+  .alert-banner {
+    min-height: 12px;
+    font-size: clamp(8px, min(1.05vw, 2.1vh), 12px);
+  }
+
+  .broadcast-score-row {
+    width: min(100%, 500px);
+    gap: clamp(4px, 1vw, 14px);
+  }
+
+  .broadcast-score-btn {
+    font-size: clamp(64px, min(14.8vw, 28vh), 138px);
+  }
+
+  .broadcast-control-grid {
+    width: min(100%, 360px);
+    gap: 6px;
+  }
+
+  .broadcast-control-grid button,
+  .broadcast-point-actions .point-btn {
+    min-height: clamp(28px, 5.5vh, 36px);
+    font-size: clamp(10px, min(1.25vw, 2.4vh), 15px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 390px) {
+  .broadcast-scoreboard::after {
+    bottom: 58px;
+    opacity: .7;
+  }
+
+  .broadcast-logo-picker {
+    width: clamp(64px, min(13vw, 27vh), 118px);
+    height: clamp(64px, min(13vw, 27vh), 118px);
+  }
+
+  .broadcast-score-btn {
+    font-size: clamp(58px, min(13.8vw, 26vh), 112px);
+  }
 }
 
 
@@ -3654,6 +3761,133 @@ body[data-theme="fire"] {
 
   .match-setup-screen .setup-team-away,
   .match-setup-screen .setup-team-away label {
+    text-align: left;
+  }
+}
+
+
+
+/* =========================================================
+   16A. Portrait Settings Overflow Guard
+   Keeps all portrait settings-style pages inside the iPhone viewport.
+   This mirrors the Match Setup overflow guard and prevents horizontal
+   drift from wide grids, fixed-width inputs, and safe-area padding.
+   ========================================================= */
+.settings-screen,
+.settings-subscreen,
+.portrait-in-match-settings-screen {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.settings-screen *,
+.settings-screen *::before,
+.settings-screen *::after,
+.settings-subscreen *,
+.settings-subscreen *::before,
+.settings-subscreen *::after,
+.portrait-in-match-settings-screen *,
+.portrait-in-match-settings-screen *::before,
+.portrait-in-match-settings-screen *::after {
+  max-width: 100%;
+}
+
+.settings-screen .settings-hero,
+.settings-screen .settings-page-list,
+.settings-screen .settings-nav-card,
+.settings-screen .settings-choice-grid,
+.settings-screen .theme-grid,
+.settings-screen .premium-settings-grid,
+.settings-screen .premium-panel,
+.settings-subscreen .settings-hero,
+.settings-subscreen .settings-page-list,
+.settings-subscreen .settings-nav-card,
+.settings-subscreen .settings-choice-grid,
+.settings-subscreen .theme-grid,
+.settings-subscreen .premium-settings-grid,
+.settings-subscreen .premium-panel,
+.portrait-in-match-settings-screen .settings-hero,
+.portrait-in-match-settings-screen .portrait-in-match-settings-list,
+.portrait-in-match-settings-screen .match-setup-card,
+.portrait-in-match-settings-screen .setup-team-grid,
+.portrait-in-match-settings-screen .portrait-in-match-team-grid,
+.portrait-in-match-settings-screen .setup-team-column,
+.portrait-in-match-settings-screen .setup-color-grid,
+.portrait-in-match-settings-screen .portrait-in-match-actions,
+.portrait-in-match-settings-screen label,
+.portrait-in-match-settings-screen input,
+.portrait-in-match-settings-screen select,
+.portrait-in-match-settings-screen button {
+  min-width: 0;
+}
+
+.settings-screen .settings-hero,
+.settings-screen .settings-nav-card,
+.settings-screen .premium-panel,
+.settings-subscreen .settings-hero,
+.settings-subscreen .settings-nav-card,
+.settings-subscreen .premium-panel,
+.portrait-in-match-settings-screen .settings-hero,
+.portrait-in-match-settings-screen .match-setup-card {
+  overflow: hidden;
+}
+
+@media (orientation: portrait) {
+  .settings-screen,
+  .settings-subscreen,
+  .portrait-in-match-settings-screen {
+    left: 0;
+    right: 0;
+    width: auto;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .settings-screen .settings-topline,
+  .settings-screen .settings-hero,
+  .settings-screen .settings-page-list,
+  .settings-subscreen .settings-topline,
+  .settings-subscreen .settings-hero,
+  .settings-subscreen .settings-page-list,
+  .portrait-in-match-settings-screen .settings-topline,
+  .portrait-in-match-settings-screen .settings-hero,
+  .portrait-in-match-settings-screen .portrait-in-match-settings-list {
+    width: 100%;
+  }
+
+  .settings-screen .settings-choice-grid,
+  .settings-screen .theme-grid,
+  .settings-subscreen .settings-choice-grid,
+  .settings-subscreen .theme-grid,
+  .portrait-in-match-settings-screen .setup-team-grid,
+  .portrait-in-match-settings-screen .portrait-in-match-team-grid,
+  .portrait-in-match-settings-screen .setup-color-grid,
+  .portrait-in-match-settings-screen .portrait-in-match-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-screen input,
+  .settings-screen select,
+  .settings-screen button,
+  .settings-subscreen input,
+  .settings-subscreen select,
+  .settings-subscreen button,
+  .portrait-in-match-settings-screen input,
+  .portrait-in-match-settings-screen select,
+  .portrait-in-match-settings-screen button {
+    max-width: 100%;
+  }
+
+  .settings-screen .swatches,
+  .settings-subscreen .swatches,
+  .portrait-in-match-settings-screen .compact-swatches,
+  .portrait-in-match-settings-screen .swatches {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .portrait-in-match-settings-screen .setup-team-away,
+  .portrait-in-match-settings-screen .setup-team-away label {
     text-align: left;
   }
 }
