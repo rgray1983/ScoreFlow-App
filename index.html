@@ -441,6 +441,18 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <dialog id="liveRecoveryDialog" class="live-recovery-dialog">
+    <form method="dialog" class="settings-card live-recovery-card">
+      <div class="settings-head"><h2>Live Match In Progress</h2></div>
+      <p class="hint">ScoreFlow found an unfinished live match on this device.</p>
+      <p class="live-recovery-summary" id="liveRecoverySummary"></p>
+      <div class="dialog-actions live-recovery-actions">
+        <button id="liveRecoveryResumeBtn" class="resume-live-btn" value="default" type="button">Resume Match</button>
+        <button id="liveRecoveryEndBtn" class="end-live-btn" value="default" type="button">End Match</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="shareDialog">
     <form method="dialog" class="settings-card share-card">
       <div class="settings-head"><h2>Live Share</h2></div>
@@ -448,7 +460,8 @@
       <label>Viewer link<input id="viewerLink" readonly placeholder="Create a live game first" /></label>
       <div class="qr-card" id="qrCard" hidden><img id="qrImage" alt="Live game QR code" /><span>Scan to follow live</span></div>
       <div class="dialog-actions share-actions">
-        <button id="createLiveBtn" value="default" type="button">Create Live Game</button>
+        <button id="createLiveBtn" class="create-live-btn" value="default" type="button">Create Live Game</button>
+        <button id="endLiveBtn" class="end-live-btn" value="default" type="button" hidden>End Live Match</button>
         <button id="copyLinkBtn" value="default" type="button">Copy Viewer Link</button>
         <button id="nativeShareBtn" value="default" type="button">Share Link</button>
         <button id="showQrBtn" value="default" type="button">QR Code</button>

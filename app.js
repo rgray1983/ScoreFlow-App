@@ -144,6 +144,11 @@ const els = {
   winnerOverlay: $("winnerOverlay"),
   winnerText: $("winnerText"),
   viewerLink: $("viewerLink"),
+  endLiveBtn: $("endLiveBtn"),
+  liveRecoveryDialog: $("liveRecoveryDialog"),
+  liveRecoveryResumeBtn: $("liveRecoveryResumeBtn"),
+  liveRecoveryEndBtn: $("liveRecoveryEndBtn"),
+  liveRecoverySummary: $("liveRecoverySummary"),
   nativeShareBtn: $("nativeShareBtn"),
   showQrBtn: $("showQrBtn"),
   qrCard: $("qrCard"),
@@ -345,6 +350,9 @@ let splashClosed = false;
 let activeResultsMatch = null;
 let activeResultsGraphic = null;
 let activeResultsGraphicPromise = null;
+let liveEnded = false;
+
+const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV1";
 
 
 /* =========================================================
@@ -448,6 +456,181 @@ function commitMatchDraft(mode = matchDraft?.mode || "landscape") {
   render();
   queueRemoteUpdate();
   return true;
+}
+
+
+function activeLiveRecoveryPayload() {
+  if (!liveGameId || isViewer) return null;
+  return {
+    gameId: liveGameId,
+    scorerLink: buildScorerLink(liveGameId),
+    viewerLink: buildViewerLink(liveGameId),
+    savedAtMs: Date.now(),
+    active: true,
+    state: publicState(true)
+  };
+}
+
+function saveActiveLiveMatch() {
+  if (isViewer || !liveGameId || liveEnded) return;
+  const payload = activeLiveRecoveryPayload();
+  if (!payload) return;
+  try {
+    localStorage.setItem(ACTIVE_LIVE_MATCH_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn("Live recovery save failed", error);
+  }
+}
+
+function clearActiveLiveMatch() {
+  try {
+    localStorage.removeItem(ACTIVE_LIVE_MATCH_KEY);
+  } catch (error) {
+    console.warn("Live recovery clear failed", error);
+  }
+}
+
+function readActiveLiveMatch() {
+  if (isViewer) return null;
+  try {
+    const saved = JSON.parse(localStorage.getItem(ACTIVE_LIVE_MATCH_KEY) || "null");
+    if (!saved || !saved.active || !saved.gameId || !saved.state) return null;
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+function recoverySummaryText(recovery) {
+  const data = recovery?.state || {};
+  const home = data.homeName || "Team 1";
+  const away = data.awayName || "Team 2";
+  const homeScore = Number(data.homeScore || 0);
+  const awayScore = Number(data.awayScore || 0);
+  const setNumber = Number(data.setNumber || 1);
+  return `${data.matchTitle || "Live Match"} · Set ${setNumber} · ${home} ${homeScore} - ${awayScore} ${away}`;
+}
+
+function shouldPromptLiveRecovery() {
+  return Boolean(readActiveLiveMatch()) && !liveGameId && !isViewer;
+}
+
+function showLiveRecoveryPrompt() {
+  const recovery = readActiveLiveMatch();
+  if (!recovery || !els.liveRecoveryDialog) return false;
+  if (els.liveRecoverySummary) els.liveRecoverySummary.textContent = recoverySummaryText(recovery);
+  if (typeof els.liveRecoveryDialog.showModal === "function") {
+    els.liveRecoveryDialog.showModal();
+  } else {
+    els.liveRecoveryDialog.setAttribute("open", "");
+  }
+  return true;
+}
+
+async function resumeRecoveredLiveMatch() {
+  const recovery = readActiveLiveMatch();
+  if (!recovery) {
+    els.liveRecoveryDialog?.close?.();
+    showHomeScreen();
+    return;
+  }
+  liveGameId = recovery.gameId;
+  liveEnded = false;
+  applyState(recovery.state || {});
+  window.history.replaceState({}, "", buildScorerLink(liveGameId));
+  els.liveRecoveryDialog?.close?.();
+  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active", "in-match-settings-open");
+  document.body.classList.add("scoreboard-active");
+  setupComplete = true;
+  if (db) await startLiveListener();
+  else setConnectionStatus("offline", "Offline");
+  saveActiveLiveMatch();
+  updateRotateScreenState();
+  toast("Live match resumed");
+}
+
+async function endRecoveredLiveMatch() {
+  const recovery = readActiveLiveMatch();
+  if (recovery?.gameId) {
+    const previousGameId = liveGameId;
+    liveGameId = recovery.gameId;
+    if (db) {
+      try {
+        await setDoc(liveDocRef(), {
+          ended: true,
+          endedAt: serverTimestamp(),
+          endedAtMs: Date.now(),
+          updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now()
+        }, { merge: true });
+      } catch (error) {
+        console.warn("Recovered live match end failed", error);
+      }
+    }
+    liveGameId = previousGameId;
+  }
+  clearActiveLiveMatch();
+  els.liveRecoveryDialog?.close?.();
+  showHomeScreen();
+  toast("Live match ended");
+}
+
+function handleLiveEnded(data = {}) {
+  liveEnded = true;
+  if (data && Object.keys(data).length) applyState(data);
+  setConnectionStatus("offline", "Ended");
+  if (isViewer) {
+    document.body.classList.add("live-ended");
+    updateLiveStartOverlay(true);
+    showLiveStartOverlay();
+  } else {
+    clearActiveLiveMatch();
+    liveReady = false;
+  }
+}
+
+async function endLiveMatch() {
+  if (isViewer) return;
+  if (!liveGameId) {
+    toast("No live match is active", true);
+    return;
+  }
+  const confirmEnd = window.confirm("End this live match? Viewer links for this match will stop being active.");
+  if (!confirmEnd) return;
+
+  try {
+    if (db) {
+      await setDoc(liveDocRef(), {
+        ended: true,
+        endedAt: serverTimestamp(),
+        endedAtMs: Date.now(),
+        updatedAt: serverTimestamp(),
+        updatedAtMs: Date.now()
+      }, { merge: true });
+    }
+    unsubscribeLive?.();
+    unsubscribeLive = null;
+    clearActiveLiveMatch();
+    liveEnded = true;
+    liveReady = false;
+    liveGameId = "";
+    setConnectionStatus("offline", "Offline");
+    if (els.viewerLink) els.viewerLink.value = "";
+    updateShareExtras();
+    updateShareLiveControls();
+    window.history.replaceState({}, "", `${window.location.origin}${window.location.pathname}`);
+    toast("Live match ended");
+  } catch (error) {
+    console.error(error);
+    toast("Live match could not be ended", true);
+  }
+}
+
+function updateShareLiveControls() {
+  const hasLive = Boolean(liveGameId) && !liveEnded;
+  if (els.endLiveBtn) els.endLiveBtn.hidden = !hasLive;
+  const createBtn = $("createLiveBtn");
+  if (createBtn) createBtn.textContent = hasLive ? "Live Game Active" : "Create Live Game";
 }
 
 
@@ -812,12 +995,13 @@ async function sendReaction(emoji) {
   }
 }
 
-function updateLiveStartOverlay() {
+function updateLiveStartOverlay(ended = liveEnded) {
   if (!els.liveStartOverlay) return;
-  els.liveStartTitle.textContent = state.matchTitle || "Game Night";
+  els.liveStartTitle.textContent = ended ? "Match Ended" : (state.matchTitle || "Game Night");
   els.liveStartHome.textContent = teamName("home");
   els.liveStartAway.textContent = teamName("away");
-  els.liveStartMeta.textContent = `Set ${state.setNumber} · Race to ${pointsToWinForCurrentSet()}`;
+  els.liveStartMeta.textContent = ended ? "This live match has ended." : `Set ${state.setNumber} · Race to ${pointsToWinForCurrentSet()}`;
+  els.liveStartOverlay.classList.toggle("ended", Boolean(ended));
   els.liveStartOverlay.style.setProperty("--live-home", state.homeColor);
   els.liveStartOverlay.style.setProperty("--live-away", state.awayColor);
 }
@@ -1985,12 +2169,14 @@ async function createLiveGame() {
     return;
   }
 
-  if (!liveGameId) {
+  if (!liveGameId || liveEnded) {
     liveGameId = `game-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   }
+  liveEnded = false;
 
   await setDoc(liveDocRef(), {
     ...publicState(),
+    ended: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     updatedAtMs: Date.now()
@@ -2000,6 +2186,8 @@ async function createLiveGame() {
   updateShareExtras();
   els.firebaseNote.textContent = "Live game created. Share the viewer link with family.";
   window.history.replaceState({}, "", buildScorerLink());
+  saveActiveLiveMatch();
+  updateShareLiveControls();
   await startLiveListener();
   toast("Live game created");
 }
@@ -2007,7 +2195,8 @@ async function createLiveGame() {
 function queueRemoteUpdate() {
   // Push lightweight live score changes only. Team logos are large data URLs and
   // should not be re-uploaded on every point tap.
-  if (!db || !liveGameId || isViewer || applyingRemote) return;
+  if (!db || !liveGameId || isViewer || applyingRemote || liveEnded) return;
+  saveActiveLiveMatch();
   clearTimeout(remoteTimer);
   remoteTimer = setTimeout(pushRemoteUpdate, 120);
 }
@@ -2015,7 +2204,8 @@ function queueRemoteUpdate() {
 function queueRemoteBrandingUpdate() {
   // Use this when names, colors, or logos change. It sends the full public state
   // once, then regular scoring goes back to lightweight updates.
-  if (!db || !liveGameId || isViewer || applyingRemote) return;
+  if (!db || !liveGameId || isViewer || applyingRemote || liveEnded) return;
+  saveActiveLiveMatch();
   clearTimeout(brandingRemoteTimer);
   brandingRemoteTimer = setTimeout(pushRemoteBrandingUpdate, 120);
 }
@@ -2025,9 +2215,11 @@ async function pushRemoteUpdate() {
   try {
     await setDoc(liveDocRef(), {
       ...publicState(false),
+      ended: false,
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
     }, { merge: true });
+    saveActiveLiveMatch();
     liveReady = true;
     setConnectionStatus("online", "Online");
   } catch (error) {
@@ -2042,9 +2234,11 @@ async function pushRemoteBrandingUpdate() {
   try {
     await setDoc(liveDocRef(), {
       ...publicState(true),
+      ended: false,
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
     }, { merge: true });
+    saveActiveLiveMatch();
     liveReady = true;
     setConnectionStatus("online", "Online");
   } catch (error) {
@@ -2059,14 +2253,19 @@ async function startLiveListener() {
   unsubscribeLive?.();
   const ref = liveDocRef();
   const snap = await getDoc(ref);
+  if (snap.exists() && snap.data()?.ended) {
+    handleLiveEnded(snap.data());
+    return;
+  }
   if (!snap.exists()) {
     if (isViewer) {
       setConnectionStatus("error", "Not Found");
       toast("Game link not found", true);
       return;
     }
-    await setDoc(ref, { ...publicState(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    await setDoc(ref, { ...publicState(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   }
+  liveEnded = false;
   els.viewerLink.value = buildViewerLink();
   updateShareExtras();
   liveReady = true;
@@ -2078,9 +2277,16 @@ async function startLiveListener() {
 
   unsubscribeLive = onSnapshot(ref, (documentSnap) => {
     if (!documentSnap.exists()) return;
+    const remoteData = documentSnap.data();
+    if (remoteData?.ended) {
+      handleLiveEnded(remoteData);
+      return;
+    }
+    liveEnded = false;
     applyingRemote = true;
-    applyState(documentSnap.data());
+    applyState(remoteData);
     applyingRemote = false;
+    if (!isViewer) saveActiveLiveMatch();
     liveReady = true;
     setConnectionStatus("online", "Online");
   }, (error) => {
@@ -2555,10 +2761,11 @@ function openSettings() {
 }
 
 function openShare() {
-  els.viewerLink.value = liveGameId ? buildViewerLink() : "";
+  els.viewerLink.value = liveGameId && !liveEnded ? buildViewerLink() : "";
   updateShareExtras();
+  updateShareLiveControls();
   els.firebaseNote.textContent = hasFirebaseConfig()
-    ? (liveGameId ? "This is your read-only viewer link." : "Create a live game to get a viewer link.")
+    ? (liveGameId && !liveEnded ? "This is your read-only viewer link. End the live match when you're finished." : "Create a live game to get a viewer link.")
     : "Live sharing needs Firebase connected first. Fill in firebase-config.js.";
   els.shareDialog.showModal();
 }
@@ -3327,6 +3534,9 @@ function wireEvents() {
   });
   bindDialogBackdropClose();
   addSafeListener("createLiveBtn", "click", createLiveGame);
+  addSafeListener("endLiveBtn", "click", endLiveMatch);
+  els.liveRecoveryResumeBtn?.addEventListener("click", resumeRecoveredLiveMatch);
+  els.liveRecoveryEndBtn?.addEventListener("click", endRecoveredLiveMatch);
   addSafeListener("copyLinkBtn", "click", copyViewerLink);
   els.nativeShareBtn?.addEventListener("click", shareViewerLink);
   els.showQrBtn?.addEventListener("click", toggleQrCard);
@@ -3445,8 +3655,11 @@ function wireEvents() {
 
   window.addEventListener("pageshow", scheduleViewportUpdate);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) scheduleViewportUpdate();
+    if (document.hidden) saveActiveLiveMatch();
+    else scheduleViewportUpdate();
   });
+  window.addEventListener("pagehide", saveActiveLiveMatch);
+  window.addEventListener("beforeunload", saveActiveLiveMatch);
 }
 
 function applyViewerMode() {
@@ -3514,6 +3727,12 @@ async function boot() {
       scheduleViewportUpdate();
       hideSplash();
       if (shouldShowViewerStart) requestAnimationFrame(showLiveStartOverlay);
+      else if (shouldPromptLiveRecovery()) requestAnimationFrame(showLiveRecoveryPrompt);
+      else if (!isViewer && liveGameId) requestAnimationFrame(() => {
+        document.body.classList.remove("home-active");
+        document.body.classList.add("scoreboard-active");
+        updateRotateScreenState();
+      });
       else requestAnimationFrame(showHomeScreen);
     }, 900);
   }

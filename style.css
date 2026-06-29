@@ -4737,3 +4737,61 @@ body {
     transform: translateX(-18px);
   }
 }
+
+
+/* =========================================================
+   17C. Live Match Recovery + End Live Controls
+   Keeps live matches recoverable after app switches/crashes.
+   ========================================================= */
+#createLiveBtn,
+.create-live-btn,
+.resume-live-btn {
+  background: linear-gradient(180deg, #fbbf24, #d99a13) !important;
+  color: #1f1300 !important;
+  border: 1px solid rgba(251, 191, 36, .42) !important;
+  box-shadow: 0 14px 28px rgba(251, 191, 36, .18), inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+#endLiveBtn,
+.end-live-btn {
+  background: linear-gradient(180deg, #ef4444, #b91c1c) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow: 0 14px 28px rgba(185, 28, 28, .22), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.live-recovery-dialog::backdrop {
+  background: rgba(0,0,0,.74);
+  backdrop-filter: blur(10px);
+}
+
+.live-recovery-card {
+  width: min(430px, calc(100vw - 28px));
+}
+
+.live-recovery-summary {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.live-recovery-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.live-start-overlay.ended .live-start-card button {
+  display: none;
+}
+
+.live-start-overlay.ended .live-chip {
+  background: rgba(239, 68, 68, .16);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, .32);
+}
+
