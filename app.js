@@ -354,6 +354,13 @@ let liveEnded = false;
 
 const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV1";
 
+let setHistoryTickerEl = null;
+let setHistoryTickerTextEl = null;
+let setHistoryTickerTimer = null;
+let setHistoryTickerIndex = 0;
+let setHistoryTickerKey = "";
+let setHistoryTickerLastCount = 0;
+
 
 /* =========================================================
    Match Draft Manager
@@ -633,6 +640,126 @@ function updateShareLiveControls() {
   if (createBtn) createBtn.textContent = hasLive ? "Live Game Active" : "Create Live Game";
 }
 
+
+
+/* =========================================================
+   Landscape Set History Ticker
+   Shows completed set winners in the broadcast top bar only in
+   landscape mode. Hidden automatically in portrait by CSS.
+   ========================================================= */
+function ensureSetHistoryTicker() {
+  if (setHistoryTickerEl) return setHistoryTickerEl;
+  const topBar = document.querySelector(".scoreboard-top-bar");
+  if (!topBar) return null;
+
+  setHistoryTickerEl = document.createElement("div");
+  setHistoryTickerEl.className = "set-history-ticker";
+  setHistoryTickerEl.setAttribute("aria-live", "polite");
+  setHistoryTickerEl.hidden = true;
+
+  setHistoryTickerTextEl = document.createElement("div");
+  setHistoryTickerTextEl.className = "set-history-ticker-text";
+  setHistoryTickerEl.appendChild(setHistoryTickerTextEl);
+
+  const leftControls = topBar.querySelector(".scoreboard-left-controls");
+  if (leftControls?.nextSibling) topBar.insertBefore(setHistoryTickerEl, leftControls.nextSibling);
+  else topBar.appendChild(setHistoryTickerEl);
+
+  return setHistoryTickerEl;
+}
+
+function completedSetWinnerPayload(set = {}) {
+  const winner = set.winner === "away" ? "away" : "home";
+  const homeScore = Number(set.homeScore || 0);
+  const awayScore = Number(set.awayScore || 0);
+  const winnerScore = winner === "home" ? homeScore : awayScore;
+  const loserScore = winner === "home" ? awayScore : homeScore;
+  const winnerName = set.winnerName || (winner === "home" ? state.homeName : state.awayName) || (winner === "home" ? "Team 1" : "Team 2");
+  const winnerColor = normalizeHex(set.winnerColor || (winner === "home" ? state.homeColor : state.awayColor), winner === "home" ? "#d62828" : "#1565c0");
+
+  return {
+    setNumber: Number(set.set || 1),
+    winner,
+    winnerName,
+    winnerColor,
+    winnerScore,
+    loserScore
+  };
+}
+
+function buildSetHistoryTickerItems() {
+  const completed = Array.isArray(state.completedSets) ? state.completedSets : [];
+  return completed
+    .filter((set) => Number(set.set || 0) > 0)
+    .map(completedSetWinnerPayload)
+    .map((item) => ({
+      key: `${item.setNumber}-${item.winner}-${item.winnerScore}-${item.loserScore}`,
+      html: `<span class="ticker-label">WINNER SET ${item.setNumber}:</span> <span class="ticker-winner" style="--ticker-team-color:${item.winnerColor}">${escapeHtml(item.winnerName)} - ${item.winnerScore}:${item.loserScore}</span>`
+    }));
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function showSetHistoryTickerItem(items, forceAnimate = false) {
+  const ticker = ensureSetHistoryTicker();
+  if (!ticker || !setHistoryTickerTextEl || !items.length) return;
+
+  const item = items[setHistoryTickerIndex % items.length];
+  ticker.hidden = false;
+  ticker.classList.add("has-items");
+
+  if (!forceAnimate && setHistoryTickerKey === item.key) return;
+  setHistoryTickerKey = item.key;
+
+  setHistoryTickerTextEl.classList.remove("is-showing");
+  window.setTimeout(() => {
+    if (!setHistoryTickerTextEl) return;
+    setHistoryTickerTextEl.innerHTML = item.html;
+    setHistoryTickerTextEl.classList.add("is-showing");
+  }, forceAnimate ? 90 : 40);
+}
+
+function updateSetHistoryTicker() {
+  const ticker = ensureSetHistoryTicker();
+  if (!ticker) return;
+
+  const items = buildSetHistoryTickerItems();
+  window.clearInterval(setHistoryTickerTimer);
+  setHistoryTickerTimer = null;
+
+  if (!items.length) {
+    ticker.hidden = true;
+    ticker.classList.remove("has-items");
+    if (setHistoryTickerTextEl) setHistoryTickerTextEl.innerHTML = "";
+    setHistoryTickerIndex = 0;
+    setHistoryTickerKey = "";
+    setHistoryTickerLastCount = 0;
+    return;
+  }
+
+  const newSetAdded = items.length > setHistoryTickerLastCount;
+  setHistoryTickerLastCount = items.length;
+  if (newSetAdded) setHistoryTickerIndex = items.length - 1;
+  else if (setHistoryTickerIndex >= items.length) setHistoryTickerIndex = 0;
+
+  showSetHistoryTickerItem(items, newSetAdded);
+
+  if (items.length > 1) {
+    setHistoryTickerTimer = window.setInterval(() => {
+      const latestItems = buildSetHistoryTickerItems();
+      if (!latestItems.length) return updateSetHistoryTicker();
+      setHistoryTickerIndex = (setHistoryTickerIndex + 1) % latestItems.length;
+      showSetHistoryTickerItem(latestItems, true);
+    }, 5000);
+  }
+}
 
 function updateViewportHeight() {
   const visualHeight = window.visualViewport?.height || 0;
@@ -2461,6 +2588,7 @@ function render() {
   updateBroadcastLogo("away");
   updatePortraitScoreboard();
   updateLiveStartOverlay();
+  updateSetHistoryTicker();
 }
 
 function updateAlertBanner() {
@@ -2547,7 +2675,9 @@ function winSet(team) {
     set: state.setNumber,
     homeScore: state.homeScore,
     awayScore: state.awayScore,
-    winner: team
+    winner: team,
+    winnerName: teamName(team),
+    winnerColor: normalizeHex(state[`${team}Color`], team === "home" ? "#d62828" : "#1565c0")
   });
   state[`${team}Sets`] += 1;
   state.setFlashTeam = team;

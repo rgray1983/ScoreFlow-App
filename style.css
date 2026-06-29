@@ -958,6 +958,72 @@ input:focus, select:focus { border-color: rgba(255, 255, 255, 0.28); }
   box-shadow: 0 12px 28px rgba(0,0,0,.28);
 }
 
+
+.set-history-ticker {
+  position: absolute;
+  left: clamp(98px, 9.5vw, 150px);
+  right: calc(50% + clamp(92px, 10vw, 150px));
+  top: 50%;
+  z-index: 3;
+  min-width: 0;
+  height: calc(100% - 12px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity .24s ease;
+}
+
+.set-history-ticker.has-items {
+  opacity: 1;
+}
+
+.set-history-ticker[hidden] {
+  display: none;
+}
+
+.set-history-ticker::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 42px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.78));
+}
+
+.set-history-ticker-text {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateX(-18px);
+  transition: opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1);
+  color: rgba(245, 248, 252, .7);
+  font-size: clamp(12px, min(1.55vw, 3vh), 22px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(0,0,0,.65);
+}
+
+.set-history-ticker-text.is-showing {
+  opacity: 1;
+  transform: none;
+}
+
+.set-history-ticker .ticker-label {
+  color: rgba(245, 248, 252, .7);
+}
+
+.set-history-ticker .ticker-winner {
+  color: var(--ticker-team-color, #fff);
+  font-weight: 1000;
+}
+
 .scoreboard-left-controls {
   display: flex;
   gap: 8px;
@@ -4793,5 +4859,25 @@ body {
   background: rgba(239, 68, 68, .16);
   color: #fecaca;
   border-color: rgba(239, 68, 68, .32);
+}
+
+
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .set-history-ticker {
+    left: clamp(84px, 9vw, 128px);
+    right: calc(50% + clamp(78px, 9vw, 126px));
+    height: calc(100% - 8px);
+  }
+
+  .set-history-ticker-text {
+    font-size: clamp(10px, min(1.35vw, 2.7vh), 16px);
+  }
+}
+
+@media (orientation: portrait) {
+  .set-history-ticker {
+    display: none !important;
+  }
 }
 
