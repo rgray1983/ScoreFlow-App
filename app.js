@@ -250,6 +250,7 @@ const els = {
   chatNameDialog: $("chatNameDialog"),
   chatNameInput: $("chatNameInput"),
   chatNameSaveBtn: $("chatNameSaveBtn"),
+  landscapeChatOverlay: $("landscapeChatOverlay"),
   reactionRow: $("reactionRow"),
   floatingReactions: $("floatingReactions"),
   inMatchSettingsDrawer: $("inMatchSettingsDrawer"),
@@ -331,6 +332,7 @@ let chatCooldownUntil = 0;
 let reactionCooldownUntil = 0;
 let viewerChatName = "";
 const seenReactionIds = new Set();
+const seenLandscapeChatIds = new Set();
 let applyingRemote = false;
 let liveReady = false;
 let remoteTimer = null;
@@ -574,6 +576,34 @@ function renderChatMessages(messages = []) {
   els.chatFeed.scrollTop = els.chatFeed.scrollHeight;
 }
 
+function showLandscapeChatMessage(message = {}, docId = "") {
+  if (!isViewer || !els.landscapeChatOverlay || !message?.text) return;
+  if (docId && seenLandscapeChatIds.has(docId)) return;
+  if (docId) seenLandscapeChatIds.add(docId);
+
+  const createdAtMs = Number(message.createdAtMs || 0);
+  if (createdAtMs && Date.now() - createdAtMs > 9000) return;
+
+  const item = document.createElement("article");
+  item.className = `landscape-chat-toast ${message.role === "scorer" ? "scorer-message" : ""}`;
+
+  const name = document.createElement("strong");
+  name.textContent = message.name || (message.role === "scorer" ? "Scorer" : "Fan");
+
+  const text = document.createElement("span");
+  text.textContent = message.text || "";
+
+  item.append(name, text);
+  els.landscapeChatOverlay.appendChild(item);
+
+  while (els.landscapeChatOverlay.children.length > 4) {
+    els.landscapeChatOverlay.firstElementChild?.remove();
+  }
+
+  window.setTimeout(() => item.classList.add("is-leaving"), 5600);
+  window.setTimeout(() => item.remove(), 6500);
+}
+
 function showFloatingReaction(emoji) {
   if (!els.floatingReactions || !emoji) return;
   const bubble = document.createElement("div");
@@ -595,6 +625,10 @@ async function startFanZoneListeners() {
     const chatQuery = query(chatRef, orderBy("createdAtMs", "asc"), limit(40));
     unsubscribeChat = onSnapshot(chatQuery, (snap) => {
       renderChatMessages(snap.docs.map((d) => d.data()));
+      snap.docChanges().forEach((change) => {
+        if (change.type !== "added") return;
+        showLandscapeChatMessage(change.doc.data(), change.doc.id);
+      });
     }, (error) => console.warn("Chat listener failed", error));
   }
 
