@@ -251,6 +251,8 @@ const els = {
   chatNameInput: $("chatNameInput"),
   chatNameSaveBtn: $("chatNameSaveBtn"),
   landscapeChatOverlay: $("landscapeChatOverlay"),
+  landscapeReactionStrip: $("landscapeReactionStrip"),
+  landscapeFloatingReactions: $("landscapeFloatingReactions"),
   reactionRow: $("reactionRow"),
   floatingReactions: $("floatingReactions"),
   inMatchSettingsDrawer: $("inMatchSettingsDrawer"),
@@ -604,14 +606,24 @@ function showLandscapeChatMessage(message = {}, docId = "") {
   window.setTimeout(() => item.remove(), 3600);
 }
 
+function isLandscapeOrientation() {
+  return window.matchMedia?.("(orientation: landscape)")?.matches ?? window.innerWidth > window.innerHeight;
+}
+
+function reactionLayer() {
+  if (isViewer && isLandscapeOrientation() && els.landscapeFloatingReactions) return els.landscapeFloatingReactions;
+  return els.floatingReactions;
+}
+
 function showFloatingReaction(emoji) {
-  if (!els.floatingReactions || !emoji) return;
+  const layer = reactionLayer();
+  if (!layer || !emoji) return;
   const bubble = document.createElement("div");
   bubble.className = "floating-reaction";
   bubble.textContent = emoji;
   bubble.style.left = `${18 + Math.random() * 64}%`;
   bubble.style.setProperty("--drift", `${(Math.random() - 0.5) * 90}px`);
-  els.floatingReactions.appendChild(bubble);
+  layer.appendChild(bubble);
   window.setTimeout(() => bubble.remove(), 5200);
 }
 
@@ -3284,6 +3296,11 @@ function wireEvents() {
     const button = event.target.closest("[data-reaction]");
     if (button) sendReaction(button.dataset.reaction);
   });
+
+  els.landscapeReactionStrip?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-reaction]");
+    if (button) sendReaction(button.dataset.reaction);
+  });
   els.savedTeamsList?.addEventListener("click", wireHomeListClicks);
   els.favoriteTeamsList?.addEventListener("click", wireHomeListClicks);
   els.homeLogoInput?.addEventListener("change", () => handleLogo(els.homeLogoInput, els.homeLogo, els.homeLogoInput.closest(".logo-picker")));
@@ -3329,7 +3346,7 @@ function applyViewerMode() {
     "shareRecapBtn"
   ]);
   document.querySelectorAll("button, input").forEach((el) => {
-    if (viewerAllowedIds.has(el.id) || el.closest("#fanZone")) return;
+    if (viewerAllowedIds.has(el.id) || el.closest("#fanZone") || el.closest("#landscapeReactionStrip")) return;
     el.disabled = true;
   });
   closeMatchSetupPage();
