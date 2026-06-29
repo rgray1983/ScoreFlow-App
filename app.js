@@ -347,6 +347,110 @@ let activeResultsGraphic = null;
 let activeResultsGraphicPromise = null;
 
 
+/* =========================================================
+   Match Draft Manager
+   In-match settings edit a draft first, then commit once on Save.
+   This prevents live Firebase renders or swatch clicks from reverting
+   unsaved title/team changes while the settings panel is open.
+   ========================================================= */
+let matchDraft = null;
+
+function createMatchDraft(mode = "landscape") {
+  return {
+    mode,
+    matchTitle: state.matchTitle || "Game Night",
+    homeName: state.homeName || "Team 1",
+    awayName: state.awayName || "Team 2",
+    homeColor: normalizeHex(state.homeColor || "#d62828"),
+    awayColor: normalizeHex(state.awayColor || "#1565c0"),
+    homeLogo: state.homeLogo || "",
+    awayLogo: state.awayLogo || ""
+  };
+}
+
+function isMatchDraftActive() {
+  return Boolean(matchDraft);
+}
+
+function matchViewState() {
+  return matchDraft || state;
+}
+
+function beginMatchDraft(mode = "landscape") {
+  matchDraft = createMatchDraft(mode);
+  syncMatchDraftInputs();
+  previewMatchDraft();
+  return matchDraft;
+}
+
+function syncMatchDraftInputs() {
+  if (!matchDraft) return;
+  if (els.inMatchTitleInput) els.inMatchTitleInput.value = matchDraft.matchTitle;
+  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = matchDraft.homeName;
+  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = matchDraft.awayName;
+  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = matchDraft.matchTitle;
+  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = matchDraft.homeName;
+  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = matchDraft.awayName;
+}
+
+function readMatchDraftInputs(mode = matchDraft?.mode || "landscape") {
+  if (!matchDraft) return;
+  const titleInput = mode === "portrait" ? els.portraitInMatchTitleInput : els.inMatchTitleInput;
+  const homeInput = mode === "portrait" ? els.portraitInMatchHomeNameInput : els.inMatchHomeNameInput;
+  const awayInput = mode === "portrait" ? els.portraitInMatchAwayNameInput : els.inMatchAwayNameInput;
+  matchDraft.matchTitle = titleInput?.value?.trim() || "Game Night";
+  matchDraft.homeName = homeInput?.value?.trim() || "Team 1";
+  matchDraft.awayName = awayInput?.value?.trim() || "Team 2";
+}
+
+function updateMatchDraft(updates = {}) {
+  if (!matchDraft) beginMatchDraft("landscape");
+  Object.assign(matchDraft, updates);
+  matchDraft.homeColor = normalizeHex(matchDraft.homeColor, state.homeColor);
+  matchDraft.awayColor = normalizeHex(matchDraft.awayColor, state.awayColor);
+  previewMatchDraft();
+}
+
+function applyTeamColorDisplay(team, value) {
+  const color = normalizeHex(value, team === "home" ? "#d62828" : "#1565c0");
+  document.documentElement.style.setProperty(team === "home" ? "--home" : "--away", color);
+  document.querySelectorAll(`#${team}Swatches .swatch, #inMatch${team === "home" ? "Home" : "Away"}Swatches .swatch, #portraitInMatch${team === "home" ? "Home" : "Away"}Swatches .swatch`).forEach((swatch) => {
+    swatch.classList.toggle("selected", swatch.dataset.value.toLowerCase() === color.toLowerCase());
+  });
+}
+
+function previewMatchDraft() {
+  if (!matchDraft) return;
+  applyTeamColorDisplay("home", matchDraft.homeColor);
+  applyTeamColorDisplay("away", matchDraft.awayColor);
+  render();
+}
+
+function discardMatchDraft() {
+  matchDraft = null;
+  applyTeamColorDisplay("home", state.homeColor);
+  applyTeamColorDisplay("away", state.awayColor);
+  render();
+}
+
+function commitMatchDraft(mode = matchDraft?.mode || "landscape") {
+  if (isViewer || !matchDraft) return false;
+  readMatchDraftInputs(mode);
+  state.matchTitle = matchDraft.matchTitle || "Game Night";
+  state.homeName = matchDraft.homeName || "Team 1";
+  state.awayName = matchDraft.awayName || "Team 2";
+  state.homeColor = normalizeHex(matchDraft.homeColor, state.homeColor);
+  state.awayColor = normalizeHex(matchDraft.awayColor, state.awayColor);
+  state.homeLogo = matchDraft.homeLogo || state.homeLogo || "";
+  state.awayLogo = matchDraft.awayLogo || state.awayLogo || "";
+  state.lastAlert = "";
+  matchDraft = null;
+  render();
+  queueRemoteUpdate();
+  return true;
+}
+
+
 function updateViewportHeight() {
   const visualHeight = window.visualViewport?.height || 0;
   const innerHeight = window.innerHeight || 0;
@@ -1987,7 +2091,8 @@ async function startLiveListener() {
 }
 
 function teamName(team) {
-  return (team === "home" ? state.homeName : state.awayName).trim() || (team === "home" ? "Team 1" : "Team 2");
+  const source = matchViewState();
+  return (team === "home" ? source.homeName : source.awayName).trim() || (team === "home" ? "Team 1" : "Team 2");
 }
 
 function otherTeam(team) {
@@ -2054,7 +2159,8 @@ function updateScoreButton(button, value) {
    Stage 5: Portrait Scoreboard Rendering
    ========================================================= */
 function currentTeamLogo(team) {
-  const stateLogo = state[`${team}Logo`] || "";
+  const source = matchViewState();
+  const stateLogo = source[`${team}Logo`] || "";
   const img = team === "home" ? els.homeLogo : els.awayLogo;
   const savedLogo = team === "home" ? (savedHomeTeam()?.logo || "") : "";
   return stateLogo || (img?.src?.startsWith("data:") ? img.src : "") || savedLogo;
@@ -2085,7 +2191,8 @@ function updatePortraitLogo(team) {
 
 function updatePortraitScoreboard() {
   const target = pointsToWinForCurrentSet();
-  if (els.portraitMatchTitle) els.portraitMatchTitle.textContent = (state.matchTitle || "Game Night").toUpperCase();
+  const view = matchViewState();
+  if (els.portraitMatchTitle) els.portraitMatchTitle.textContent = (view.matchTitle || "Game Night").toUpperCase();
   if (els.portraitSetNumber) els.portraitSetNumber.textContent = state.setNumber;
   if (els.portraitRaceTo) els.portraitRaceTo.textContent = `First to ${target}`;
   if (els.portraitHomeName) els.portraitHomeName.textContent = teamName("home");
@@ -2099,8 +2206,8 @@ function updatePortraitScoreboard() {
   updatePortraitLogo("home");
   updatePortraitLogo("away");
   if (els.portraitScoreboard) {
-    els.portraitScoreboard.style.setProperty("--portrait-home-color", state.homeColor);
-    els.portraitScoreboard.style.setProperty("--portrait-away-color", state.awayColor);
+    els.portraitScoreboard.style.setProperty("--portrait-home-color", view.homeColor);
+    els.portraitScoreboard.style.setProperty("--portrait-away-color", view.awayColor);
   }
   if (els.portraitLiveStatus && els.liveStatus) {
     els.portraitLiveStatus.textContent = els.liveStatus.textContent || "Offline";
@@ -2111,24 +2218,22 @@ function updatePortraitScoreboard() {
 
 function render() {
   const target = pointsToWinForCurrentSet();
-  els.matchTitle.textContent = state.matchTitle.toUpperCase();
+  const view = matchViewState();
+  if (isMatchDraftActive()) {
+    applyTeamColorDisplay("home", view.homeColor);
+    applyTeamColorDisplay("away", view.awayColor);
+  }
+  els.matchTitle.textContent = (view.matchTitle || "Game Night").toUpperCase();
   requestAnimationFrame(fitHeaderTitle);
   els.titleInput.value = state.matchTitle;
-  els.homeName.value = state.homeName;
-  els.awayName.value = state.awayName;
+  els.homeName.value = view.homeName;
+  els.awayName.value = view.awayName;
   els.homeNameSetting.value = state.homeName;
   els.awayNameSetting.value = state.awayName;
-  // Keep active in-match settings drafts intact while live snapshots/render cycles occur.
-  // In live matches, swatch clicks can trigger remote updates before Save is tapped;
-  // these guards prevent unsaved title/team edits from being overwritten.
-  const landscapeSettingsEditing = document.body.classList.contains("in-match-settings-open");
-  const portraitSettingsEditing = document.body.classList.contains("portrait-in-match-settings-active");
-  if (!landscapeSettingsEditing) {
+  if (!isMatchDraftActive()) {
     if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
     if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
     if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
-  }
-  if (!portraitSettingsEditing) {
     if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
     if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
     if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
@@ -2386,14 +2491,7 @@ async function startMatchFromSetup(startLive = false) {
 }
 
 function populateInMatchSettingsFields() {
-  if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
-  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
-  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
-  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
-  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
-  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
-  setTeamColor("home", state.homeColor, false);
-  setTeamColor("away", state.awayColor, false);
+  beginMatchDraft("landscape");
 }
 
 function openInMatchSettings() {
@@ -2406,17 +2504,15 @@ function openInMatchSettings() {
 function closeInMatchSettings() {
   document.body.classList.remove("in-match-settings-open");
   els.inMatchSettingsDrawer?.setAttribute("aria-hidden", "true");
+  discardMatchDraft();
 }
 
 function saveInMatchSettings() {
   if (isViewer) return;
-  state.matchTitle = els.inMatchTitleInput?.value?.trim() || "Game Night";
-  state.homeName = els.inMatchHomeNameInput?.value?.trim() || "Team 1";
-  state.awayName = els.inMatchAwayNameInput?.value?.trim() || "Team 2";
-  state.lastAlert = "";
-  render();
-  queueRemoteUpdate();
-  closeInMatchSettings();
+  const saved = commitMatchDraft("landscape");
+  if (!saved) return;
+  document.body.classList.remove("in-match-settings-open");
+  els.inMatchSettingsDrawer?.setAttribute("aria-hidden", "true");
   toast("Setup saved");
 }
 
@@ -2426,11 +2522,7 @@ function saveInMatchSettings() {
    Stage 5: Portrait In-Match Settings
    ========================================================= */
 function populatePortraitInMatchSettingsFields() {
-  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
-  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
-  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
-  setTeamColor("home", state.homeColor, false);
-  setTeamColor("away", state.awayColor, false);
+  beginMatchDraft("portrait");
 }
 
 function openPortraitInMatchSettings() {
@@ -2442,17 +2534,14 @@ function openPortraitInMatchSettings() {
 
 function closePortraitInMatchSettings() {
   document.body.classList.remove("portrait-in-match-settings-active");
+  discardMatchDraft();
 }
 
 function savePortraitInMatchSettings() {
   if (isViewer) return;
-  state.matchTitle = els.portraitInMatchTitleInput?.value?.trim() || "Game Night";
-  state.homeName = els.portraitInMatchHomeNameInput?.value?.trim() || "Team 1";
-  state.awayName = els.portraitInMatchAwayNameInput?.value?.trim() || "Team 2";
-  state.lastAlert = "";
-  render();
-  queueRemoteUpdate();
-  closePortraitInMatchSettings();
+  const saved = commitMatchDraft("portrait");
+  if (!saved) return;
+  document.body.classList.remove("portrait-in-match-settings-active");
   toast("Setup saved");
 }
 
@@ -3069,11 +3158,15 @@ function buildSwatches(container, team) {
 
 function setTeamColor(team, value, shouldSync = true) {
   if (isViewer && shouldSync) return;
-  state[`${team}Color`] = value;
-  document.documentElement.style.setProperty(team === "home" ? "--home" : "--away", value);
-  document.querySelectorAll(`#${team}Swatches .swatch, #inMatch${team === "home" ? "Home" : "Away"}Swatches .swatch, #portraitInMatch${team === "home" ? "Home" : "Away"}Swatches .swatch`).forEach((swatch) => {
-    swatch.classList.toggle("selected", swatch.dataset.value.toLowerCase() === value.toLowerCase());
-  });
+  const color = normalizeHex(value, team === "home" ? state.homeColor : state.awayColor);
+
+  if (isMatchDraftActive() && shouldSync) {
+    updateMatchDraft({ [`${team}Color`]: color });
+    return;
+  }
+
+  state[`${team}Color`] = color;
+  applyTeamColorDisplay(team, color);
   if (shouldSync) queueRemoteUpdate();
 }
 
@@ -3217,6 +3310,20 @@ function wireEvents() {
   [els.titleInput, els.homeNameSetting, els.awayNameSetting, els.inMatchTitleInput, els.inMatchHomeNameInput, els.inMatchAwayNameInput, els.portraitInMatchTitleInput, els.portraitInMatchHomeNameInput, els.portraitInMatchAwayNameInput, els.homeName, els.awayName].forEach((input) => {
     input?.addEventListener("focus", selectExistingText);
     input?.addEventListener("click", selectExistingText);
+  });
+  [els.inMatchTitleInput, els.inMatchHomeNameInput, els.inMatchAwayNameInput].forEach((input) => {
+    input?.addEventListener("input", () => {
+      if (!isMatchDraftActive()) return;
+      readMatchDraftInputs("landscape");
+      previewMatchDraft();
+    });
+  });
+  [els.portraitInMatchTitleInput, els.portraitInMatchHomeNameInput, els.portraitInMatchAwayNameInput].forEach((input) => {
+    input?.addEventListener("input", () => {
+      if (!isMatchDraftActive()) return;
+      readMatchDraftInputs("portrait");
+      previewMatchDraft();
+    });
   });
   bindDialogBackdropClose();
   addSafeListener("createLiveBtn", "click", createLiveGame);
