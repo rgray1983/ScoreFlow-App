@@ -588,20 +588,20 @@ function showLandscapeChatMessage(message = {}, docId = "") {
   item.className = `landscape-chat-toast ${message.role === "scorer" ? "scorer-message" : ""}`;
 
   const name = document.createElement("strong");
-  name.textContent = message.name || (message.role === "scorer" ? "Scorer" : "Fan");
+  name.textContent = message.role === "scorer" ? "Scorer:" : `${message.name || "Fan"}:`;
 
   const text = document.createElement("span");
   text.textContent = message.text || "";
 
-  item.append(name, text);
+  item.append(name, document.createTextNode(" "), text);
   els.landscapeChatOverlay.appendChild(item);
 
   while (els.landscapeChatOverlay.children.length > 4) {
     els.landscapeChatOverlay.firstElementChild?.remove();
   }
 
-  window.setTimeout(() => item.classList.add("is-leaving"), 5600);
-  window.setTimeout(() => item.remove(), 6500);
+  window.setTimeout(() => item.classList.add("is-leaving"), 2800);
+  window.setTimeout(() => item.remove(), 3600);
 }
 
 function showFloatingReaction(emoji) {
