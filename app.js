@@ -2118,12 +2118,21 @@ function render() {
   els.awayName.value = state.awayName;
   els.homeNameSetting.value = state.homeName;
   els.awayNameSetting.value = state.awayName;
-  if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
-  if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
-  if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
-  if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
-  if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
-  if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
+  // Keep active in-match settings drafts intact while live snapshots/render cycles occur.
+  // In live matches, swatch clicks can trigger remote updates before Save is tapped;
+  // these guards prevent unsaved title/team edits from being overwritten.
+  const landscapeSettingsEditing = document.body.classList.contains("in-match-settings-open");
+  const portraitSettingsEditing = document.body.classList.contains("portrait-in-match-settings-active");
+  if (!landscapeSettingsEditing) {
+    if (els.inMatchTitleInput) els.inMatchTitleInput.value = state.matchTitle;
+    if (els.inMatchHomeNameInput) els.inMatchHomeNameInput.value = state.homeName;
+    if (els.inMatchAwayNameInput) els.inMatchAwayNameInput.value = state.awayName;
+  }
+  if (!portraitSettingsEditing) {
+    if (els.portraitInMatchTitleInput) els.portraitInMatchTitleInput.value = state.matchTitle;
+    if (els.portraitInMatchHomeNameInput) els.portraitInMatchHomeNameInput.value = state.homeName;
+    if (els.portraitInMatchAwayNameInput) els.portraitInMatchAwayNameInput.value = state.awayName;
+  }
   els.matchFormatSetting.value = state.matchFormat;
   els.matchPill.textContent = matchLabel();
   updateScoreButton(els.homeScoreBtn, state.homeScore);
@@ -3062,7 +3071,7 @@ function setTeamColor(team, value, shouldSync = true) {
   if (isViewer && shouldSync) return;
   state[`${team}Color`] = value;
   document.documentElement.style.setProperty(team === "home" ? "--home" : "--away", value);
-  document.querySelectorAll(`#${team}Swatches .swatch, #inMatch${team === "home" ? "Home" : "Away"}Swatches .swatch`).forEach((swatch) => {
+  document.querySelectorAll(`#${team}Swatches .swatch, #inMatch${team === "home" ? "Home" : "Away"}Swatches .swatch, #portraitInMatch${team === "home" ? "Home" : "Away"}Swatches .swatch`).forEach((swatch) => {
     swatch.classList.toggle("selected", swatch.dataset.value.toLowerCase() === value.toLowerCase());
   });
   if (shouldSync) queueRemoteUpdate();
