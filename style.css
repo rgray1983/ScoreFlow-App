@@ -84,8 +84,8 @@ html, body { touch-action: manipulation; }
 .live-start-card button {
   min-height: 44px;
   border-radius: 999px;
-  background: #ffffff;
-  color: #07101e;
+  background: #FF1414;
+  color: #fff;
   font-weight: 900;
   letter-spacing: -0.01em;
 }
