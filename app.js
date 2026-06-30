@@ -351,6 +351,7 @@ let activeResultsMatch = null;
 let activeResultsGraphic = null;
 let activeResultsGraphicPromise = null;
 let liveEnded = false;
+let liveRecoveryPromptShownThisBoot = false;
 
 const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV2";
 const ACTIVE_LIVE_MATCH_LEGACY_KEYS = ["scoreflowActiveLiveMatchV1", "scoreflowActiveLiveMatchSessionV1"];
@@ -592,8 +593,10 @@ function scheduleLiveRecoveryPromptChecks() {
 }
 
 function showLiveRecoveryPrompt() {
+  if (liveRecoveryPromptShownThisBoot) return false;
   const recovery = readActiveLiveMatch();
   if (!recovery || !els.liveRecoveryDialog) return false;
+  liveRecoveryPromptShownThisBoot = true;
   if (els.liveRecoverySummary) els.liveRecoverySummary.textContent = recoverySummaryText(recovery);
   if (typeof els.liveRecoveryDialog.showModal === "function") {
     if (!els.liveRecoveryDialog.open) els.liveRecoveryDialog.showModal();
