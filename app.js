@@ -352,8 +352,8 @@ let activeResultsGraphic = null;
 let activeResultsGraphicPromise = null;
 let liveEnded = false;
 
-const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV1";
-const ACTIVE_LIVE_MATCH_SESSION_KEY = "scoreflowActiveLiveMatchSessionV1";
+const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV2";
+const ACTIVE_LIVE_MATCH_LEGACY_KEYS = ["scoreflowActiveLiveMatchV1", "scoreflowActiveLiveMatchSessionV1"];
 
 let setHistoryTickerEl = null;
 let setHistoryTickerTextEl = null;
@@ -467,65 +467,101 @@ function commitMatchDraft(mode = matchDraft?.mode || "landscape") {
 }
 
 
+/* =========================================================
+   Live Recovery Manager
+   Persistent, compact recovery for scorer-side live matches.
+   Uses localStorage only so a full iOS PWA kill can still resume.
+   Logos are intentionally excluded from the recovery payload because
+   large data URLs can make localStorage writes fail on iPhone.
+   Firebase restores the full branding when the live listener reconnects.
+   ========================================================= */
+function compactRecoveryState() {
+  return publicState(false);
+}
+
 function activeLiveRecoveryPayload() {
-  if (!liveGameId || isViewer) return null;
+  if (!liveGameId || isViewer || liveEnded) return null;
   return {
+    version: 2,
     gameId: liveGameId,
     scorerLink: buildScorerLink(liveGameId),
     viewerLink: buildViewerLink(liveGameId),
     savedAtMs: Date.now(),
     active: true,
-    state: publicState(true)
+    state: compactRecoveryState()
   };
 }
 
-function writeRecoveryStorage(key, payload) {
-  const serialized = JSON.stringify(payload);
+function isValidRecoveryPayload(saved) {
+  return Boolean(saved && saved.active && saved.gameId && saved.state && typeof saved.state === "object");
+}
+
+function readRecoveryKey(key) {
   try {
-    localStorage.setItem(key, serialized);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    return isValidRecoveryPayload(saved) ? saved : null;
   } catch (error) {
-    console.warn("Live recovery localStorage save failed", error);
-  }
-  try {
-    sessionStorage.setItem(key, serialized);
-  } catch (error) {
-    console.warn("Live recovery sessionStorage save failed", error);
+    console.warn("Live recovery read failed", error);
+    return null;
   }
 }
 
-function readRecoveryStorage(key) {
-  const candidates = [];
-  try { candidates.push(localStorage.getItem(key)); } catch {}
-  try { candidates.push(sessionStorage.getItem(key)); } catch {}
-
-  for (const raw of candidates) {
-    if (!raw) continue;
-    try {
-      const saved = JSON.parse(raw);
-      if (saved && saved.active && saved.gameId && saved.state) return saved;
-    } catch {}
+function writeRecoveryKey(key, payload) {
+  try {
+    localStorage.setItem(key, JSON.stringify(payload));
+    return true;
+  } catch (error) {
+    console.warn("Live recovery save failed", error);
+    return false;
   }
-  return null;
+}
+
+function removeRecoveryKey(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.warn("Live recovery clear failed", error);
+  }
 }
 
 function saveActiveLiveMatch() {
-  if (isViewer || !liveGameId || liveEnded) return;
   const payload = activeLiveRecoveryPayload();
-  if (!payload) return;
-  writeRecoveryStorage(ACTIVE_LIVE_MATCH_KEY, payload);
-  writeRecoveryStorage(ACTIVE_LIVE_MATCH_SESSION_KEY, payload);
+  if (!payload) return false;
+  return writeRecoveryKey(ACTIVE_LIVE_MATCH_KEY, payload);
 }
 
 function clearActiveLiveMatch() {
-  [ACTIVE_LIVE_MATCH_KEY, ACTIVE_LIVE_MATCH_SESSION_KEY].forEach((key) => {
-    try { localStorage.removeItem(key); } catch (error) { console.warn("Live recovery localStorage clear failed", error); }
-    try { sessionStorage.removeItem(key); } catch (error) { console.warn("Live recovery sessionStorage clear failed", error); }
-  });
+  removeRecoveryKey(ACTIVE_LIVE_MATCH_KEY);
+  ACTIVE_LIVE_MATCH_LEGACY_KEYS.forEach(removeRecoveryKey);
 }
 
 function readActiveLiveMatch() {
   if (isViewer) return null;
-  return readRecoveryStorage(ACTIVE_LIVE_MATCH_KEY) || readRecoveryStorage(ACTIVE_LIVE_MATCH_SESSION_KEY);
+  return readRecoveryKey(ACTIVE_LIVE_MATCH_KEY) || ACTIVE_LIVE_MATCH_LEGACY_KEYS.map(readRecoveryKey).find(Boolean) || null;
+}
+
+function restoreRecoveryAsActive(recovery) {
+  if (!recovery) return false;
+  liveGameId = recovery.gameId;
+  liveEnded = false;
+  applyState(recovery.state || {});
+  setupComplete = true;
+  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active", "in-match-settings-open");
+  document.body.classList.add("scoreboard-active");
+  updateShareExtras();
+  updateShareLiveControls();
+  updateRotateScreenState();
+  return true;
+}
+
+function prepareLiveRecoveryPrompt() {
+  const recovery = readActiveLiveMatch();
+  if (!recovery) return false;
+  if (!liveGameId) liveGameId = recovery.gameId;
+  if (els.liveRecoverySummary) els.liveRecoverySummary.textContent = recoverySummaryText(recovery);
+  return true;
 }
 
 function recoverySummaryText(recovery) {
@@ -550,8 +586,9 @@ function scheduleLiveRecoveryPromptChecks() {
     showLiveRecoveryPrompt();
   };
   requestAnimationFrame(tryPrompt);
-  window.setTimeout(tryPrompt, 300);
-  window.setTimeout(tryPrompt, 1000);
+  window.setTimeout(tryPrompt, 250);
+  window.setTimeout(tryPrompt, 750);
+  window.setTimeout(tryPrompt, 1500);
 }
 
 function showLiveRecoveryPrompt() {
@@ -559,7 +596,7 @@ function showLiveRecoveryPrompt() {
   if (!recovery || !els.liveRecoveryDialog) return false;
   if (els.liveRecoverySummary) els.liveRecoverySummary.textContent = recoverySummaryText(recovery);
   if (typeof els.liveRecoveryDialog.showModal === "function") {
-    els.liveRecoveryDialog.showModal();
+    if (!els.liveRecoveryDialog.open) els.liveRecoveryDialog.showModal();
   } else {
     els.liveRecoveryDialog.setAttribute("open", "");
   }
@@ -573,17 +610,13 @@ async function resumeRecoveredLiveMatch() {
     showHomeScreen();
     return;
   }
-  liveGameId = recovery.gameId;
-  liveEnded = false;
-  applyState(recovery.state || {});
+
+  restoreRecoveryAsActive(recovery);
   window.history.replaceState({}, "", buildScorerLink(liveGameId));
   els.liveRecoveryDialog?.close?.();
-  document.body.classList.remove("home-active", "match-setup-active", "settings-active", "history-active", "in-match-settings-open");
-  document.body.classList.add("scoreboard-active");
-  setupComplete = true;
+  saveActiveLiveMatch();
   if (db) await startLiveListener();
   else setConnectionStatus("offline", "Offline");
-  saveActiveLiveMatch();
   updateRotateScreenState();
   toast("Live match resumed");
 }
@@ -610,6 +643,8 @@ async function endRecoveredLiveMatch() {
   }
   clearActiveLiveMatch();
   els.liveRecoveryDialog?.close?.();
+  liveGameId = "";
+  liveEnded = false;
   showHomeScreen();
   toast("Live match ended");
 }
@@ -3893,9 +3928,10 @@ async function boot() {
   } finally {
     window.setTimeout(() => {
       scheduleViewportUpdate();
+      const hasRecoveryToPrompt = !isViewer && prepareLiveRecoveryPrompt();
       hideSplash();
       if (shouldShowViewerStart) requestAnimationFrame(showLiveStartOverlay);
-      else if (shouldPromptLiveRecovery()) requestAnimationFrame(showLiveRecoveryPrompt);
+      else if (hasRecoveryToPrompt) requestAnimationFrame(showLiveRecoveryPrompt);
       else if (!isViewer && liveGameId) requestAnimationFrame(() => {
         document.body.classList.remove("home-active");
         document.body.classList.add("scoreboard-active");
