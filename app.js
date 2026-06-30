@@ -353,6 +353,7 @@ let activeResultsGraphicPromise = null;
 let liveEnded = false;
 
 const ACTIVE_LIVE_MATCH_KEY = "scoreflowActiveLiveMatchV1";
+const ACTIVE_LIVE_MATCH_SESSION_KEY = "scoreflowActiveLiveMatchSessionV1";
 
 let setHistoryTickerEl = null;
 let setHistoryTickerTextEl = null;
@@ -478,34 +479,53 @@ function activeLiveRecoveryPayload() {
   };
 }
 
+function writeRecoveryStorage(key, payload) {
+  const serialized = JSON.stringify(payload);
+  try {
+    localStorage.setItem(key, serialized);
+  } catch (error) {
+    console.warn("Live recovery localStorage save failed", error);
+  }
+  try {
+    sessionStorage.setItem(key, serialized);
+  } catch (error) {
+    console.warn("Live recovery sessionStorage save failed", error);
+  }
+}
+
+function readRecoveryStorage(key) {
+  const candidates = [];
+  try { candidates.push(localStorage.getItem(key)); } catch {}
+  try { candidates.push(sessionStorage.getItem(key)); } catch {}
+
+  for (const raw of candidates) {
+    if (!raw) continue;
+    try {
+      const saved = JSON.parse(raw);
+      if (saved && saved.active && saved.gameId && saved.state) return saved;
+    } catch {}
+  }
+  return null;
+}
+
 function saveActiveLiveMatch() {
   if (isViewer || !liveGameId || liveEnded) return;
   const payload = activeLiveRecoveryPayload();
   if (!payload) return;
-  try {
-    localStorage.setItem(ACTIVE_LIVE_MATCH_KEY, JSON.stringify(payload));
-  } catch (error) {
-    console.warn("Live recovery save failed", error);
-  }
+  writeRecoveryStorage(ACTIVE_LIVE_MATCH_KEY, payload);
+  writeRecoveryStorage(ACTIVE_LIVE_MATCH_SESSION_KEY, payload);
 }
 
 function clearActiveLiveMatch() {
-  try {
-    localStorage.removeItem(ACTIVE_LIVE_MATCH_KEY);
-  } catch (error) {
-    console.warn("Live recovery clear failed", error);
-  }
+  [ACTIVE_LIVE_MATCH_KEY, ACTIVE_LIVE_MATCH_SESSION_KEY].forEach((key) => {
+    try { localStorage.removeItem(key); } catch (error) { console.warn("Live recovery localStorage clear failed", error); }
+    try { sessionStorage.removeItem(key); } catch (error) { console.warn("Live recovery sessionStorage clear failed", error); }
+  });
 }
 
 function readActiveLiveMatch() {
   if (isViewer) return null;
-  try {
-    const saved = JSON.parse(localStorage.getItem(ACTIVE_LIVE_MATCH_KEY) || "null");
-    if (!saved || !saved.active || !saved.gameId || !saved.state) return null;
-    return saved;
-  } catch {
-    return null;
-  }
+  return readRecoveryStorage(ACTIVE_LIVE_MATCH_KEY) || readRecoveryStorage(ACTIVE_LIVE_MATCH_SESSION_KEY);
 }
 
 function recoverySummaryText(recovery) {
@@ -519,7 +539,19 @@ function recoverySummaryText(recovery) {
 }
 
 function shouldPromptLiveRecovery() {
-  return Boolean(readActiveLiveMatch()) && !liveGameId && !isViewer;
+  return Boolean(readActiveLiveMatch()) && !isViewer;
+}
+
+function scheduleLiveRecoveryPromptChecks() {
+  if (isViewer) return;
+  const tryPrompt = () => {
+    if (!shouldPromptLiveRecovery()) return;
+    if (els.liveRecoveryDialog?.open) return;
+    showLiveRecoveryPrompt();
+  };
+  requestAnimationFrame(tryPrompt);
+  window.setTimeout(tryPrompt, 300);
+  window.setTimeout(tryPrompt, 1000);
 }
 
 function showLiveRecoveryPrompt() {
@@ -3783,13 +3815,19 @@ function wireEvents() {
     window.setTimeout(() => { scheduleViewportUpdate(); updateRotateScreenState(); fitHeaderTitle(); }, 520);
   });
 
-  window.addEventListener("pageshow", scheduleViewportUpdate);
+  window.addEventListener("pageshow", () => {
+    scheduleViewportUpdate();
+    scheduleLiveRecoveryPromptChecks();
+  });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) saveActiveLiveMatch();
-    else scheduleViewportUpdate();
+    saveActiveLiveMatch();
+    if (document.hidden) return;
+    scheduleViewportUpdate();
+    scheduleLiveRecoveryPromptChecks();
   });
   window.addEventListener("pagehide", saveActiveLiveMatch);
   window.addEventListener("beforeunload", saveActiveLiveMatch);
+  window.addEventListener("freeze", saveActiveLiveMatch);
 }
 
 function applyViewerMode() {
@@ -3864,6 +3902,7 @@ async function boot() {
         updateRotateScreenState();
       });
       else requestAnimationFrame(showHomeScreen);
+      scheduleLiveRecoveryPromptChecks();
     }, 900);
   }
 }
