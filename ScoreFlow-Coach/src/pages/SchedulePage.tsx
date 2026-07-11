@@ -41,7 +41,9 @@ export default function SchedulePage() {
       </div>
     </section>
 
-    {view === 'month' ? <MonthView events={events} month={month} onMonthChange={setMonth} onSelect={setEditingId} /> : <EventList events={view === 'upcoming' ? events.filter((item) => item.date >= todayValue()) : events} onSelect={setEditingId} />}
+    {view === 'month'
+      ? <MonthView events={events} month={month} onMonthChange={setMonth} onSelect={setEditingId} />
+      : <EventList mode={view} events={view === 'upcoming' ? events.filter((item) => item.date >= todayValue()) : events} onSelect={setEditingId} />}
 
     <SlideOver open={creating || Boolean(selectedEvent)} title={creating ? 'Add schedule event' : 'Edit schedule event'} onClose={() => { setCreating(false); setEditingId(null); }}>
       <ScheduleEventForm event={selectedEvent} onDone={() => { setCreating(false); setEditingId(null); }} />
@@ -49,14 +51,16 @@ export default function SchedulePage() {
   </div>;
 }
 
-function EventList({ events, onSelect }: { events: ScheduleEvent[]; onSelect: (id: string) => void }) {
+function EventList({ events, onSelect, mode }: { events: ScheduleEvent[]; onSelect: (id: string) => void; mode: 'agenda' | 'upcoming' }) {
   const grouped = useMemo(() => events.reduce<Record<string, ScheduleEvent[]>>((result, event) => { (result[event.date] ??= []).push(event); return result; }, {}), [events]);
-  return <section className="schedule-list-panel panel">
-    <header><div><p className="eyebrow">Agenda</p><h3>Schedule</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
-    <div className="schedule-agenda">{Object.entries(grouped).map(([date, dayEvents]) => <section className="agenda-day" key={date}>
-      <div className="agenda-date"><strong>{new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`))}</strong><span>{new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`))}</span></div>
-      <div className="agenda-events">{dayEvents.map((event) => <EventRow event={event} key={event.id} onSelect={onSelect} />)}</div>
-    </section>)}{events.length === 0 && <div className="schedule-empty"><span>◇</span><p>No events scheduled for this team and season.</p></div>}</div>
+  return <section className={`schedule-list-panel panel is-${mode}`}>
+    <header><div><p className="eyebrow">{mode === 'upcoming' ? 'Next events' : 'Agenda'}</p><h3>{mode === 'upcoming' ? 'Upcoming' : 'Schedule'}</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
+    {mode === 'upcoming'
+      ? <div className="upcoming-list">{events.map((event) => <div className="upcoming-item" key={event.id}><div className="upcoming-date"><strong>{new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${event.date}T00:00:00Z`))}</strong><span>{new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${event.date}T00:00:00Z`))}</span></div><EventRow event={event} onSelect={onSelect} /></div>)}{events.length === 0 && <div className="schedule-empty"><span>◇</span><p>No upcoming events for this team and season.</p></div>}</div>
+      : <div className="schedule-agenda">{Object.entries(grouped).map(([date, dayEvents]) => <section className="agenda-day" key={date}>
+          <div className="agenda-date"><strong>{new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`))}</strong><span>{new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`))}</span></div>
+          <div className="agenda-events">{dayEvents.map((event) => <EventRow event={event} key={event.id} onSelect={onSelect} />)}</div>
+        </section>)}{events.length === 0 && <div className="schedule-empty"><span>◇</span><p>No events scheduled for this team and season.</p></div>}</div>}
   </section>;
 }
 
