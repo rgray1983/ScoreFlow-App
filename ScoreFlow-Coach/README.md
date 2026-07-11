@@ -10,6 +10,11 @@
 - React Router
 - Vite PWA
 
+## Requirements
+
+- Node.js 20.19 or newer
+- npm
+
 ## Boundary
 
 The existing ScoreFlow scoreboard remains in the repository root and is intentionally unchanged. Coach-specific pages, components, styles, PWA behavior, Firebase integration, and future modules stay inside this folder unless a later pull request explicitly defines shared code or a shared data contract.
