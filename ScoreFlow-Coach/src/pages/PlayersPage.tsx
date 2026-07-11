@@ -7,6 +7,8 @@ import type { DominantHand, Player, PlayerStatus } from '../types/workspace';
 
 const positions = ['Outside Hitter', 'Middle Blocker', 'Opposite', 'Setter', 'Libero', 'Defensive Specialist'];
 const rosterStatuses: PlayerStatus[] = ['active', 'injured', 'inactive', 'guest'];
+const footOptions = [{ value: '', label: 'Feet' }, ...Array.from({ length: 5 }, (_, index) => ({ value: String(index + 3), label: `${index + 3} ft` }))];
+const inchOptions = [{ value: '', label: 'Inches' }, ...Array.from({ length: 12 }, (_, index) => ({ value: String(index), label: `${index} in` }))];
 
 export default function PlayersPage() {
   const workspace = useWorkspace();
@@ -72,7 +74,7 @@ function PlayerForm({ player, onDone }: { player?: Player; onDone: () => void })
         <label><span>Last name</span><input name="lastName" defaultValue={player?.lastName} required /></label>
         <label><span>Preferred name</span><input name="preferredName" defaultValue={player?.preferredName} /></label>
         <label><span>Graduation year</span><input name="graduationYear" inputMode="numeric" maxLength={4} defaultValue={player?.graduationYear} /></label>
-        <label><span>Height</span><input name="height" defaultValue={player?.height} placeholder="5′10″" /></label>
+        <label><span>Height</span><HeightPicker defaultValue={player?.height} /></label>
         <label><span>Dominant hand</span><SelectField name="dominantHand" defaultValue={player?.dominantHand ?? 'right'} options={[{ value: 'right', label: 'Right' }, { value: 'left', label: 'Left' }, { value: 'ambidextrous', label: 'Ambidextrous' }]} /></label>
         <label><span>Primary position</span><SelectField name="primaryPosition" defaultValue={player?.primaryPosition ?? ''} options={positionOptions} /></label>
         <label><span>Secondary position</span><SelectField name="secondaryPosition" defaultValue={player?.secondaryPosition ?? ''} options={[{ value: '', label: 'None' }, ...positions.map((position) => ({ value: position, label: position }))]} /></label>
@@ -86,4 +88,24 @@ function PlayerForm({ player, onDone }: { player?: Player; onDone: () => void })
       <div className="slide-form-actions"><button className="button button-quiet" type="button" onClick={onDone}>Cancel</button><button className="button button-primary" type="submit">Save player</button></div>
     </form>
   );
+}
+
+function HeightPicker({ defaultValue = '' }: { defaultValue?: string }) {
+  const initial = parseHeight(defaultValue);
+  const [feet, setFeet] = useState(initial.feet);
+  const [inches, setInches] = useState(initial.inches);
+  const value = feet ? `${feet}′${inches || '0'}″` : '';
+
+  return (
+    <div className="height-picker">
+      <input name="height" type="hidden" value={value} />
+      <SelectField ariaLabel="Height in feet" value={feet} onChange={setFeet} options={footOptions} />
+      <SelectField ariaLabel="Height in inches" value={inches} onChange={setInches} options={inchOptions} disabled={!feet} />
+    </div>
+  );
+}
+
+function parseHeight(value: string) {
+  const match = value.match(/(\d+)\D+(\d+)/);
+  return { feet: match?.[1] ?? '', inches: match?.[2] ?? '' };
 }
