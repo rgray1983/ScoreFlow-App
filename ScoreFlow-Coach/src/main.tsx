@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
+import { WorkspaceProvider } from './context/WorkspaceContext';
 import './styles.css';
 import './responsive.css';
+import './teams.css';
 
 registerSW({ immediate: true });
 
@@ -17,7 +19,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <HashRouter>
-      <App />
+      <WorkspaceProvider>
+        <App />
+      </WorkspaceProvider>
     </HashRouter>
   </StrictMode>
 );
