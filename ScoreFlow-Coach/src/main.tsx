@@ -7,6 +7,7 @@ import { WorkspaceProvider } from './context/WorkspaceContext';
 import './styles.css';
 import './responsive.css';
 import './teams.css';
+import './glass-polish.css';
 
 registerSW({ immediate: true });
 
