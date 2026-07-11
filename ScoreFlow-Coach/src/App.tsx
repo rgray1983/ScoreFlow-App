@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useWorkspace } from './context/WorkspaceContext';
+import TeamsPage from './pages/TeamsPage';
 
 const navigationItems = [
   { path: '/', label: 'Hub', icon: '⌂' },
@@ -20,39 +22,47 @@ type PlaceholderPageProps = {
 
 const quickActions = [
   { label: 'Start Match', detail: 'Open live controls', path: '/live-match', tone: 'red' },
-  { label: 'Team Roster', detail: '14 active players', path: '/rosters', tone: 'gold' },
+  { label: 'Team Roster', detail: 'Build active roster', path: '/rosters', tone: 'gold' },
   { label: 'Rotations', detail: 'Review serve receive', path: '/rotations', tone: 'green' },
   { label: 'Reports', detail: 'Last match analysis', path: '/reports', tone: 'blue' }
 ] as const;
 
 function HomePage() {
+  const { activeOrganization, activeTeam, activeSeason } = useWorkspace();
+  const teamLabel = activeTeam ? `${activeTeam.name} · ${activeTeam.level}` : 'No active team selected';
+  const initials = activeTeam?.abbreviation || 'SF';
+
   return (
     <div className="dashboard-grid">
       <section className="hero-card panel">
         <div className="hero-copy">
           <div className="status-line">
             <span className="live-dot" />
-            <span>Coach workspace</span>
+            <span>Coach workspace · {activeSeason?.name ?? 'Season not selected'}</span>
           </div>
-          <p className="eyebrow">Hartsville Varsity Volleyball</p>
-          <h2>Ready for the next point.</h2>
+          <p className="eyebrow">{teamLabel}</p>
+          <h2>{activeTeam ? 'Ready for the next point.' : 'Build your volleyball program.'}</h2>
           <p className="hero-summary">
-            Everything needed for today’s team, match, and practice work—without slowing the coach down.
+            {activeTeam
+              ? `Working inside ${activeOrganization?.name ?? 'your program'}. Future schedules, rosters, matches, and reports will use this active team and season.`
+              : 'Create an organization, team, and season to establish the shared context for every Coach tool.'}
           </p>
           <div className="hero-actions">
-            <NavLink className="button button-primary" to="/live-match">Start live match</NavLink>
-            <NavLink className="button button-quiet" to="/teams">Open team</NavLink>
+            {activeTeam ? <NavLink className="button button-primary" to="/live-match">Start live match</NavLink> : null}
+            <NavLink className={`button ${activeTeam ? 'button-quiet' : 'button-primary'}`} to="/teams">
+              {activeTeam ? 'Manage program' : 'Set up program'}
+            </NavLink>
           </div>
         </div>
 
-        <div className="match-preview" aria-label="Next match preview">
-          <span className="card-kicker">Next match</span>
+        <div className="match-preview" aria-label="Active team preview">
+          <span className="card-kicker">Active context</span>
           <div className="match-teams">
-            <div><span className="team-badge">HF</span><strong>Hartsville</strong></div>
-            <span className="versus">VS</span>
-            <div><span className="team-badge opponent">WF</span><strong>West Florence</strong></div>
+            <div><span className="team-badge" style={{ background: activeTeam ? `linear-gradient(145deg, ${activeTeam.primaryColor}, #6f101c)` : undefined }}>{initials}</span><strong>{activeTeam?.name ?? 'Your team'}</strong></div>
+            <span className="versus">›</span>
+            <div><span className="team-badge opponent">{activeSeason ? '26' : '—'}</span><strong>{activeSeason?.name ?? 'Add season'}</strong></div>
           </div>
-          <div className="match-meta"><span>Thursday</span><strong>6:00 PM</strong><span>Home</span></div>
+          <div className="match-meta"><span>{activeOrganization?.type ?? 'Program'}</span><strong>{activeTeam?.level ?? 'Team'}</strong><span>{activeOrganization?.state ?? 'Local'}</span></div>
         </div>
       </section>
 
@@ -75,28 +85,28 @@ function HomePage() {
       <section className="today-panel panel">
         <div className="panel-heading compact">
           <div><p className="eyebrow">Today</p><h3>Practice plan</h3></div>
-          <span className="time-chip">4:00–5:45</span>
+          <span className="time-chip">Future schedule</span>
         </div>
         <div className="practice-list">
-          <div className="practice-row is-complete"><span>✓</span><div><strong>Dynamic warmup</strong><small>10 minutes</small></div></div>
-          <div className="practice-row is-active"><span>2</span><div><strong>Serve receive</strong><small>Three-player lanes</small></div><em>Now</em></div>
-          <div className="practice-row"><span>3</span><div><strong>Rotation five</strong><small>Base defense</small></div></div>
-          <div className="practice-row"><span>4</span><div><strong>Six-on-six</strong><small>Game-speed finish</small></div></div>
+          <div className="practice-row is-complete"><span>✓</span><div><strong>Program selected</strong><small>{activeOrganization?.name ?? 'Create an organization'}</small></div></div>
+          <div className={`practice-row${activeTeam ? ' is-complete' : ' is-active'}`}><span>{activeTeam ? '✓' : '2'}</span><div><strong>Team selected</strong><small>{activeTeam?.name ?? 'Add your first team'}</small></div>{!activeTeam && <em>Next</em>}</div>
+          <div className={`practice-row${activeSeason ? ' is-complete' : activeTeam ? ' is-active' : ''}`}><span>{activeSeason ? '✓' : '3'}</span><div><strong>Season selected</strong><small>{activeSeason?.name ?? 'Create the current season'}</small></div>{activeTeam && !activeSeason && <em>Next</em>}</div>
+          <div className="practice-row"><span>4</span><div><strong>Build roster</strong><small>Planned for the next foundation milestone</small></div></div>
         </div>
       </section>
 
       <section className="insight-panel panel">
         <div className="panel-heading compact">
-          <div><p className="eyebrow">Last match</p><h3>Performance</h3></div>
-          <NavLink className="text-link" to="/reports">View report</NavLink>
+          <div><p className="eyebrow">Program</p><h3>Current structure</h3></div>
+          <NavLink className="text-link" to="/teams">Manage</NavLink>
         </div>
         <div className="metric-grid">
-          <div><span>Result</span><strong className="success-text">W 3–1</strong></div>
-          <div><span>Side-out</span><strong>58%</strong></div>
-          <div><span>Aces</span><strong>11</strong></div>
-          <div><span>Best run</span><strong>6 pts</strong></div>
+          <div><span>Program</span><strong>{activeOrganization ? '1' : '0'}</strong></div>
+          <div><span>Team</span><strong>{activeTeam ? '1' : '0'}</strong></div>
+          <div><span>Season</span><strong>{activeSeason ? '1' : '0'}</strong></div>
+          <div><span>Storage</span><strong className="success-text">Local</strong></div>
         </div>
-        <div className="insight-note"><span>↗</span><p><strong>Rotation 2 improved.</strong> Side-out rose 12% from the previous match.</p></div>
+        <div className="insight-note"><span>↗</span><p><strong>One shared context.</strong> Future schedules, matches, rosters, and reports will reference the selected team and season.</p></div>
       </section>
     </div>
   );
@@ -108,7 +118,7 @@ function PlaceholderPage({ item }: PlaceholderPageProps) {
       <span className="placeholder-icon" aria-hidden="true">{item.icon}</span>
       <p className="eyebrow">ScoreFlow Coach</p>
       <h2>{item.label}</h2>
-      <p>This workspace is reserved for the focused {item.label.toLowerCase()} milestone. The design system and viewport-safe shell are ready for its working features.</p>
+      <p>This workspace is reserved for the focused {item.label.toLowerCase()} milestone. The design system and active organization, team, and season context are ready for its working features.</p>
       <NavLink className="button button-primary" to="/">Back to Coach Hub</NavLink>
     </section>
   );
@@ -165,7 +175,8 @@ function App() {
         <div className="route-viewport">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            {navigationItems.slice(1).map((item) => (
+            <Route path="/teams" element={<TeamsPage />} />
+            {navigationItems.slice(2).map((item) => (
               <Route key={item.path} path={item.path} element={<PlaceholderPage item={item} />} />
             ))}
             <Route path="*" element={<Navigate replace to="/" />} />
