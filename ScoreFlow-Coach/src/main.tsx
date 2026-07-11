@@ -8,6 +8,9 @@ import './styles.css';
 import './responsive.css';
 import './teams.css';
 import './glass-polish.css';
+import './context-bar.css';
+import './players.css';
+import './controls.css';
 
 registerSW({ immediate: true });
 
