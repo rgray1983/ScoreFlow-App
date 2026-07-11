@@ -3,109 +3,88 @@ import ContextBar from '../components/ContextBar';
 import SelectField from '../components/SelectField';
 import SlideOver from '../components/SlideOver';
 import { useWorkspace } from '../context/WorkspaceContext';
-import type { DominantHand, Player, PlayerStatus } from '../types/workspace';
+import type { DominantHand, Player, PlayerStatus, RosterMembership } from '../types/workspace';
 
 const positions = ['Outside Hitter', 'Middle Blocker', 'Opposite', 'Setter', 'Libero', 'Defensive Specialist'];
-const rosterStatuses: PlayerStatus[] = ['active', 'injured', 'inactive', 'guest'];
+const rosterStatuses: PlayerStatus[] = ['active', 'limited', 'injured', 'away', 'inactive'];
+const filters = ['all', 'available', 'starters', 'captains', 'liberos', 'limited', 'injured', 'away'] as const;
+type RosterFilter = typeof filters[number];
 const footOptions = [{ value: '', label: 'Feet' }, ...Array.from({ length: 5 }, (_, index) => ({ value: String(index + 3), label: `${index + 3} ft` }))];
 const inchOptions = [{ value: '', label: 'Inches' }, ...Array.from({ length: 12 }, (_, index) => ({ value: String(index), label: `${index} in` }))];
+const availabilityLabels: Record<string, string> = { active: 'Available', limited: 'Limited', injured: 'Injured', away: 'Away', inactive: 'Inactive', guest: 'Guest', graduated: 'Graduated' };
 
 export default function PlayersPage() {
   const workspace = useWorkspace();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<RosterFilter>('all');
   const selectedPlayer = workspace.players.find((player) => player.id === selectedPlayerId);
-  const players = workspace.players.filter((player) => !player.archived && player.organizationId === workspace.activeOrganizationId);
   const roster = workspace.rosterMemberships.filter((item) => item.teamId === workspace.activeTeamId && item.seasonId === workspace.activeSeasonId);
-  const rosterRows = useMemo(() => roster.map((membership) => ({ membership, player: workspace.players.find((player) => player.id === membership.playerId) })).filter((row): row is { membership: typeof roster[number]; player: Player } => Boolean(row.player)), [roster, workspace.players]);
+  const rosterRows = useMemo(() => roster.map((membership) => ({ membership, player: workspace.players.find((player) => player.id === membership.playerId) })).filter((row): row is { membership: RosterMembership; player: Player } => Boolean(row.player) && !row.player.archived), [roster, workspace.players]);
+  const visibleRows = rosterRows.filter(({ player, membership }) => {
+    const haystack = `${player.firstName} ${player.lastName} ${player.preferredName} ${membership.jerseyNumber} ${membership.position} ${player.primaryPosition}`.toLowerCase();
+    const matchesQuery = haystack.includes(query.trim().toLowerCase());
+    const matchesFilter = filter === 'all' || (filter === 'available' && membership.status === 'active') || (filter === 'starters' && membership.starter) || (filter === 'captains' && membership.captain) || (filter === 'liberos' && membership.libero) || membership.status === filter;
+    return matchesQuery && matchesFilter;
+  });
+  const counts = { total: rosterRows.length, available: rosterRows.filter((row) => row.membership.status === 'active').length, limited: rosterRows.filter((row) => row.membership.status === 'limited').length, injured: rosterRows.filter((row) => row.membership.status === 'injured').length, away: rosterRows.filter((row) => row.membership.status === 'away').length };
   const canAdd = Boolean(workspace.activeOrganizationId && workspace.activeTeamId && workspace.activeSeasonId);
   const teamStyle = { '--team-secondary': workspace.activeTeam?.secondaryColor ?? '#5d9df5' } as CSSProperties;
 
-  return (
-    <div className="players-workspace" style={teamStyle}>
-      <ContextBar label="Player context" />
-      <section className="players-summary panel"><div><p className="eyebrow">Active roster</p><h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2><p>{workspace.activeSeason?.name ?? 'Select a season'} · {rosterRows.length} players</p></div><button className="button button-primary" disabled={!canAdd} type="button" onClick={() => setCreating(true)}>＋ Add player</button></section>
-      <section className="players-grid panel">
-        <header><div><p className="eyebrow">Player directory</p><h3>Players</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
-        <div className="player-list">
-          {players.map((player) => {
-            const membership = roster.find((item) => item.playerId === player.id);
-            const displayPosition = membership?.position || player.primaryPosition || 'Position not set';
-            return (
-              <button className="player-row" key={player.id} type="button" onClick={() => setSelectedPlayerId(player.id)}>
-                <span className="player-number">#{membership?.jerseyNumber || '—'}</span>
-                <span className="player-copy"><strong>{player.preferredName || player.firstName} {player.lastName}</strong><small>{displayPosition} · Class of {player.graduationYear || '—'}</small></span>
-                <span className="player-role-badges">
-                  {membership?.captain && <em className="role-captain">Captain</em>}
-                  {membership?.libero && <em className="role-libero">Libero</em>}
-                  {membership?.starter && <em className="role-starter">Starter</em>}
-                </span>
-                <span className={`player-status status-${membership?.status ?? 'inactive'}`}>{membership?.status ?? 'Not rostered'}</span>
-                <span className="player-row-arrow" aria-hidden="true">›</span>
-              </button>
-            );
-          })}
-          {players.length === 0 && <div className="players-empty"><span>◇</span><p>No players in this organization yet.</p></div>}
-        </div>
-      </section>
-      <SlideOver open={creating || Boolean(selectedPlayer)} title={creating ? 'Add player' : 'Edit player'} onClose={() => { setCreating(false); setSelectedPlayerId(null); }}><PlayerForm player={selectedPlayer} onDone={() => { setCreating(false); setSelectedPlayerId(null); }} /></SlideOver>
-    </div>
-  );
+  function cycleAvailability(membership: RosterMembership) {
+    const order: PlayerStatus[] = ['active', 'limited', 'injured', 'away', 'inactive'];
+    const next = order[(Math.max(0, order.indexOf(membership.status)) + 1) % order.length];
+    workspace.updateRosterMembership(membership.id, { ...membership, status: next });
+  }
+
+  return <div className="players-workspace roster-workspace" style={teamStyle}>
+    <ContextBar label="Roster context" />
+    <section className="roster-overview panel">
+      <div className="roster-title"><p className="eyebrow">Season roster</p><h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2><p>{workspace.activeSeason?.name ?? 'Select a season'} · {counts.total} players</p></div>
+      <div className="roster-metrics"><div><strong>{counts.available}</strong><span>Available</span></div><div><strong>{counts.limited}</strong><span>Limited</span></div><div><strong>{counts.injured}</strong><span>Injured</span></div><div><strong>{counts.away}</strong><span>Away</span></div></div>
+      <button className="button button-primary" disabled={!canAdd} type="button" onClick={() => setCreating(true)}>＋ Add player</button>
+    </section>
+    <section className="players-grid roster-panel panel">
+      <header><div><p className="eyebrow">Roster management</p><h3>Active roster</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
+      <div className="roster-tools"><label className="roster-search"><span aria-hidden="true">⌕</span><input aria-label="Search roster" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, number, or position" /></label><div className="roster-filters">{filters.map((item) => <button className={filter === item ? 'is-active' : ''} key={item} onClick={() => setFilter(item)} type="button">{item}</button>)}</div></div>
+      <div className="player-list">
+        {visibleRows.map(({ player, membership }) => {
+          const displayPosition = membership.position || player.primaryPosition || 'Position not set';
+          return <div className="player-row roster-row" key={player.id}>
+            <button className="roster-row-main" type="button" onClick={() => setSelectedPlayerId(player.id)}>
+              <span className="player-number">#{membership.jerseyNumber || '—'}</span>
+              <span className="player-copy"><strong>{player.preferredName || player.firstName} {player.lastName}</strong><small>{displayPosition} · Class of {player.graduationYear || '—'}</small></span>
+              <span className="player-role-badges">{membership.captain && <em className="role-captain">Captain</em>}{membership.libero && <em className="role-libero">Libero</em>}{membership.starter && <em className="role-starter">Starter</em>}</span>
+            </button>
+            <button className={`player-status status-${membership.status}`} title="Tap to change availability" onClick={() => cycleAvailability(membership)} type="button">{availabilityLabels[membership.status] ?? membership.status}</button>
+            <button className="roster-edit-button" aria-label={`Edit ${player.firstName} ${player.lastName}`} onClick={() => setSelectedPlayerId(player.id)} type="button">›</button>
+          </div>;
+        })}
+        {visibleRows.length === 0 && <div className="players-empty"><span>◇</span><p>{rosterRows.length ? 'No roster players match this search or filter.' : 'No players are assigned to this team and season yet.'}</p></div>}
+      </div>
+    </section>
+    <SlideOver open={creating || Boolean(selectedPlayer)} title={creating ? 'Add player' : 'Edit player'} onClose={() => { setCreating(false); setSelectedPlayerId(null); }}><PlayerForm player={selectedPlayer} onDone={() => { setCreating(false); setSelectedPlayerId(null); }} /></SlideOver>
+  </div>;
 }
 
 function PlayerForm({ player, onDone }: { player?: Player; onDone: () => void }) {
   const workspace = useWorkspace();
   const membership = workspace.rosterMemberships.find((item) => item.playerId === player?.id && item.teamId === workspace.activeTeamId && item.seasonId === workspace.activeSeasonId);
   function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    event.preventDefault(); const data = new FormData(event.currentTarget);
     const playerInput = { organizationId: workspace.activeOrganizationId, firstName: String(data.get('firstName') ?? '').trim(), lastName: String(data.get('lastName') ?? '').trim(), preferredName: String(data.get('preferredName') ?? '').trim(), graduationYear: String(data.get('graduationYear') ?? '').trim(), height: String(data.get('height') ?? '').trim(), dominantHand: String(data.get('dominantHand')) as DominantHand, primaryPosition: String(data.get('primaryPosition') ?? ''), secondaryPosition: String(data.get('secondaryPosition') ?? ''), notes: String(data.get('notes') ?? '').trim() };
-    const playerId = player?.id ?? workspace.addPlayer(playerInput);
-    if (player) workspace.updatePlayer(player.id, playerInput);
+    const playerId = player?.id ?? workspace.addPlayer(playerInput); if (player) workspace.updatePlayer(player.id, playerInput);
     const rosterInput = { playerId, teamId: workspace.activeTeamId, seasonId: workspace.activeSeasonId, jerseyNumber: String(data.get('jerseyNumber') ?? '').trim(), position: String(data.get('rosterPosition') ?? ''), status: String(data.get('status')) as PlayerStatus, captain: data.get('captain') === 'on', libero: data.get('libero') === 'on', starter: data.get('starter') === 'on', notes: String(data.get('rosterNotes') ?? '').trim() };
-    if (membership) workspace.updateRosterMembership(membership.id, rosterInput); else if (workspace.activeTeamId && workspace.activeSeasonId) workspace.addRosterMembership(rosterInput);
-    onDone();
+    if (membership) workspace.updateRosterMembership(membership.id, rosterInput); else if (workspace.activeTeamId && workspace.activeSeasonId) workspace.addRosterMembership(rosterInput); onDone();
   }
   const positionOptions = [{ value: '', label: 'Select position' }, ...positions.map((position) => ({ value: position, label: position }))];
-  return (
-    <form className="player-editor-form" onSubmit={submit}>
-      <section><p className="form-section-title">Player profile</p><div className="editor-grid">
-        <label><span>First name</span><input autoFocus name="firstName" defaultValue={player?.firstName} required /></label>
-        <label><span>Last name</span><input name="lastName" defaultValue={player?.lastName} required /></label>
-        <label><span>Preferred name</span><input name="preferredName" defaultValue={player?.preferredName} /></label>
-        <label><span>Graduation year</span><input name="graduationYear" inputMode="numeric" maxLength={4} defaultValue={player?.graduationYear} /></label>
-        <label><span>Height</span><HeightPicker defaultValue={player?.height} /></label>
-        <label><span>Dominant hand</span><SelectField name="dominantHand" defaultValue={player?.dominantHand ?? 'right'} options={[{ value: 'right', label: 'Right' }, { value: 'left', label: 'Left' }, { value: 'ambidextrous', label: 'Ambidextrous' }]} /></label>
-        <label><span>Primary position</span><SelectField name="primaryPosition" defaultValue={player?.primaryPosition ?? ''} options={positionOptions} /></label>
-        <label><span>Secondary position</span><SelectField name="secondaryPosition" defaultValue={player?.secondaryPosition ?? ''} options={[{ value: '', label: 'None' }, ...positions.map((position) => ({ value: position, label: position }))]} /></label>
-      </div></section>
-      <section><p className="form-section-title">Season roster</p><div className="editor-grid">
-        <label><span>Jersey number</span><input name="jerseyNumber" inputMode="numeric" defaultValue={membership?.jerseyNumber} /></label>
-        <label><span>Roster position</span><input name="rosterPosition" defaultValue={membership?.position} placeholder="OH" /></label>
-        <label><span>Status</span><SelectField name="status" defaultValue={membership?.status ?? 'active'} options={rosterStatuses.map((status) => ({ value: status, label: status[0].toUpperCase() + status.slice(1) }))} /></label>
-      </div><div className="role-checks"><label><input type="checkbox" name="captain" defaultChecked={membership?.captain} /> Captain</label><label><input type="checkbox" name="libero" defaultChecked={membership?.libero} /> Libero</label><label><input type="checkbox" name="starter" defaultChecked={membership?.starter} /> Starter</label></div></section>
-      <label className="notes-field"><span>Coach notes</span><textarea name="notes" defaultValue={player?.notes} rows={3} /></label>
-      <div className="slide-form-actions"><button className="button button-quiet" type="button" onClick={onDone}>Cancel</button><button className="button button-primary" type="submit">Save player</button></div>
-    </form>
-  );
+  return <form className="player-editor-form" onSubmit={submit}>
+    <section><p className="form-section-title">Player profile</p><div className="editor-grid"><label><span>First name</span><input autoFocus name="firstName" defaultValue={player?.firstName} required /></label><label><span>Last name</span><input name="lastName" defaultValue={player?.lastName} required /></label><label><span>Preferred name</span><input name="preferredName" defaultValue={player?.preferredName} /></label><label><span>Graduation year</span><input name="graduationYear" inputMode="numeric" maxLength={4} defaultValue={player?.graduationYear} /></label><label><span>Height</span><HeightPicker defaultValue={player?.height} /></label><label><span>Dominant hand</span><SelectField name="dominantHand" defaultValue={player?.dominantHand ?? 'right'} options={[{ value: 'right', label: 'Right' }, { value: 'left', label: 'Left' }, { value: 'ambidextrous', label: 'Ambidextrous' }]} /></label><label><span>Primary position</span><SelectField name="primaryPosition" defaultValue={player?.primaryPosition ?? ''} options={positionOptions} /></label><label><span>Secondary position</span><SelectField name="secondaryPosition" defaultValue={player?.secondaryPosition ?? ''} options={[{ value: '', label: 'None' }, ...positions.map((position) => ({ value: position, label: position }))]} /></label></div></section>
+    <section><p className="form-section-title">Season roster</p><div className="editor-grid"><label><span>Jersey number</span><input name="jerseyNumber" inputMode="numeric" defaultValue={membership?.jerseyNumber} /></label><label><span>Roster position</span><input name="rosterPosition" defaultValue={membership?.position} placeholder="OH" /></label><label><span>Availability</span><SelectField name="status" defaultValue={membership?.status ?? 'active'} options={rosterStatuses.map((status) => ({ value: status, label: availabilityLabels[status] }))} /></label></div><div className="role-checks"><label><input type="checkbox" name="captain" defaultChecked={membership?.captain} /> Captain</label><label><input type="checkbox" name="libero" defaultChecked={membership?.libero} /> Libero</label><label><input type="checkbox" name="starter" defaultChecked={membership?.starter} /> Starter</label></div></section>
+    <label className="notes-field"><span>Coach notes</span><textarea name="notes" defaultValue={player?.notes} rows={3} /></label><div className="slide-form-actions"><button className="button button-quiet" type="button" onClick={onDone}>Cancel</button><button className="button button-primary" type="submit">Save player</button></div>
+  </form>;
 }
 
-function HeightPicker({ defaultValue = '' }: { defaultValue?: string }) {
-  const initial = parseHeight(defaultValue);
-  const [feet, setFeet] = useState(initial.feet);
-  const [inches, setInches] = useState(initial.inches);
-  const value = feet ? `${feet}′${inches || '0'}″` : '';
-
-  return (
-    <div className="height-picker">
-      <input name="height" type="hidden" value={value} />
-      <SelectField ariaLabel="Height in feet" value={feet} onChange={setFeet} options={footOptions} />
-      <SelectField ariaLabel="Height in inches" value={inches} onChange={setInches} options={inchOptions} disabled={!feet} />
-    </div>
-  );
-}
-
-function parseHeight(value: string) {
-  const match = value.match(/(\d+)\D+(\d+)/);
-  return { feet: match?.[1] ?? '', inches: match?.[2] ?? '' };
-}
+function HeightPicker({ defaultValue = '' }: { defaultValue?: string }) { const initial = parseHeight(defaultValue); const [feet, setFeet] = useState(initial.feet); const [inches, setInches] = useState(initial.inches); const value = feet ? `${feet}′${inches || '0'}″` : ''; return <div className="height-picker"><input name="height" type="hidden" value={value} /><SelectField ariaLabel="Height in feet" value={feet} onChange={setFeet} options={footOptions} /><SelectField ariaLabel="Height in inches" value={inches} onChange={setInches} options={inchOptions} disabled={!feet} /></div>; }
+function parseHeight(value: string) { const match = value.match(/(\d+)\D+(\d+)/); return { feet: match?.[1] ?? '', inches: match?.[2] ?? '' }; }
