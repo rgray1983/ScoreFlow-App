@@ -22,7 +22,7 @@
 .upcoming-item{display:grid;grid-template-columns:74px minmax(0,1fr);align-items:stretch;border-bottom:1px solid rgba(126,163,219,.1)}
 .upcoming-date{display:grid;align-content:center;padding:8px 10px;border-right:1px solid rgba(126,163,219,.1);background:rgba(93,157,245,.025)}
 .upcoming-item .schedule-row{border-bottom:0}
-.schedule-row{min-width:0;min-height:58px;display:grid;grid-template-columns:34px minmax(180px,1fr) 105px auto 12px;align-items:center;gap:10px;padding:7px 8px;border:0;border-bottom:1px solid var(--border);color:var(--text);background:transparent;text-align:left}
+.schedule-row{width:100%;min-width:0;min-height:58px;display:grid;grid-template-columns:34px minmax(180px,1fr) 105px auto 12px;align-items:center;gap:10px;padding:7px 8px;border:0;border-bottom:1px solid var(--border);color:var(--text);background:transparent;text-align:left}
 .schedule-row:hover,.schedule-row:focus-visible{background:rgba(93,157,245,.05)}
 .event-type-mark{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;font-size:.58rem;font-weight:950;background:rgba(93,157,245,.1);color:var(--blue)}
 .type-match .event-type-mark,.month-event.type-match{color:#fff;background:rgba(239,51,64,.18)}
@@ -110,10 +110,14 @@
   .schedule-list-panel{grid-template-rows:auto auto}
   .schedule-list-panel>header{padding-bottom:5px}
   .schedule-agenda,.upcoming-list{overflow:visible}
-  .agenda-day{grid-template-columns:48px minmax(0,1fr);padding:3px 0}
-  .upcoming-item{grid-template-columns:50px minmax(0,1fr)}
+  .agenda-day{grid-template-columns:44px minmax(0,1fr);gap:4px;padding:3px 0}
+  .agenda-events,.upcoming-item{min-width:0;max-width:100%;overflow:hidden}
+  .upcoming-item{grid-template-columns:46px minmax(0,1fr)}
   .upcoming-date{padding:5px}
-  .schedule-row{min-height:40px;grid-template-columns:25px minmax(0,1fr) 68px 10px;padding:3px 4px}
+  .schedule-row{min-height:40px;grid-template-columns:24px minmax(0,1fr) 74px 9px;gap:6px;padding:3px 4px;overflow:hidden}
+  .event-status{display:none}
+  .event-time{min-width:0;text-align:right}
+  .player-row-arrow{justify-self:end}
   .event-type-mark{width:23px;height:23px}
   .event-copy strong{font-size:.61rem}
   .event-copy small,.event-time small{font-size:.45rem}
