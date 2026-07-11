@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import ContextBar from '../components/ContextBar';
 import SlideOver from '../components/SlideOver';
 import { useWorkspace } from '../context/WorkspaceContext';
 import type { DominantHand, Player, PlayerStatus } from '../types/workspace';
@@ -13,6 +14,7 @@ export default function PlayersPage() {
   const selectedPlayer = workspace.players.find((player) => player.id === selectedPlayerId);
   const players = workspace.players.filter((player) => !player.archived && player.organizationId === workspace.activeOrganizationId);
   const roster = workspace.rosterMemberships.filter((item) => item.teamId === workspace.activeTeamId && item.seasonId === workspace.activeSeasonId);
+  const canAddPlayer = Boolean(workspace.activeOrganizationId && workspace.activeTeamId && workspace.activeSeasonId);
 
   const rosterRows = useMemo(() => roster.map((membership) => ({
     membership,
@@ -21,15 +23,19 @@ export default function PlayersPage() {
 
   return (
     <div className="players-workspace">
+      <ContextBar label="Player context" />
+
       <section className="players-summary panel">
         <div><p className="eyebrow">Active roster</p><h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2><p>{workspace.activeSeason?.name ?? 'Select a season'} · {rosterRows.length} players</p></div>
-        <button className="button button-primary" type="button" onClick={() => setCreating(true)}>＋ Add player</button>
+        <button className="button button-primary" disabled={!canAddPlayer} type="button" onClick={() => setCreating(true)}>＋ Add player</button>
       </section>
 
       <section className="players-grid panel">
         <header><div><p className="eyebrow">Player directory</p><h3>Players</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
         <div className="player-card-grid">
-          {players.map((player) => {
+          {players.length === 0 ? (
+            <div className="players-empty"><span>●</span><p>No players in this organization yet.</p></div>
+          ) : players.map((player) => {
             const membership = roster.find((item) => item.playerId === player.id);
             return (
               <button className="player-card" key={player.id} type="button" onClick={() => setSelectedPlayerId(player.id)}>
