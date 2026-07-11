@@ -13,6 +13,22 @@
 - `/reports` — match, team, season, and player reports
 - `/settings` — organization, team, account, and app settings
 
+## Planned navigation consolidation
+
+Teams, seasons, and the player directory are setup-oriented tools that change less often than schedule, roster, match, rotation, and reporting workflows. Once Settings and the working Roster module can expose these tools without dead ends, the primary navigation should prioritize daily coaching work:
+
+- Hub
+- Schedule
+- Roster
+- Live
+- Rotations
+- Reports
+- More
+
+Program setup and the player directory will then move under Settings or More while retaining their routes for deep linking and direct access.
+
+The Roster route remains a primary daily workspace because availability, injuries, starters, lineups, and match preparation change throughout a season.
+
 ## Routing rules
 
 - Routes remain usable as installed PWA deep links.
