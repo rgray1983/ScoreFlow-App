@@ -93,7 +93,7 @@ function CreateDialog({ mode, onClose }: { mode: Exclude<FormMode, null>; onClos
 
   return (
     <div className="dialog-layer" role="presentation">
-      <section className="create-dialog panel" role="dialog" aria-modal="true" aria-labelledby="create-title">
+      <section className={`create-dialog panel mode-${mode}`} role="dialog" aria-modal="true" aria-labelledby="create-title">
         <header><div><p className="eyebrow">Program structure</p><h2 id="create-title">Add {mode}</h2></div><button onClick={onClose} type="button" aria-label="Close">×</button></header>
         <form onSubmit={submit}>
           {mode === 'organization' && <OrganizationFields />}
@@ -115,7 +115,7 @@ function TeamFields() {
 }
 
 function SeasonFields() {
-  return <div className="form-grid"><label className="field-wide"><span>Season name</span><input autoFocus name="name" required placeholder="2026 School Season" /></label><label><span>Start date</span><input name="startDate" type="date" required /></label><label><span>End date</span><input name="endDate" type="date" required /></label><label className="field-wide"><span>Status</span><select name="status" defaultValue="active">{seasonStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></label></div>;
+  return <div className="form-grid"><label className="field-wide"><span>Season name</span><input autoFocus name="name" required placeholder="2026 School Season" /></label><label><span>Start date</span><input name="startDate" type="date" required /></label><label><span>End date</span><input name="endDate" type="date" required /></label><label className="field-wide season-status-field"><span>Status</span><select name="status" defaultValue="active">{seasonStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></label></div>;
 }
 
 function formatDate(value: string) {
