@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="ScoreFlow Coach dashboard">
+  <title>ScoreFlow Coach</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">SF</div>
+        <div>
+          <strong>ScoreFlow</strong>
+          <span>Coach</span>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item is-active" type="button" data-view="home">Home</button>
+        <button class="nav-item" type="button" data-view="teams">Teams</button>
+        <button class="nav-item" type="button" data-view="players">Players</button>
+        <button class="nav-item" type="button" data-view="rosters">Rosters</button>
+        <button class="nav-item" type="button" data-view="live-match">Live Match</button>
+        <button class="nav-item" type="button" data-view="rotations">Rotations</button>
+        <button class="nav-item" type="button" data-view="reports">Reports</button>
+        <button class="nav-item" type="button" data-view="settings">Settings</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>Coach workspace</span>
+        <small>Foundation build</small>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-button" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
+        <div>
+          <p class="eyebrow">Coach Dashboard</p>
+          <h1 id="page-title">Home</h1>
+        </div>
+        <button class="profile-button" type="button" aria-label="Coach profile">RG</button>
+      </header>
+
+      <section class="content-panel" id="app-view" aria-live="polite">
+        <div class="welcome-card">
+          <p class="eyebrow">Welcome to ScoreFlow Coach</p>
+          <h2>Your team workspace starts here.</h2>
+          <p>This foundation keeps the coach experience separate from the existing scoreboard app while giving future team, roster, match, rotation, and reporting tools a dedicated home.</p>
+          <button class="primary-button" type="button" data-view="teams">Set up a team</button>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h2>Coach tools</h2>
+          </div>
+          <span class="status-pill">Foundation</span>
+        </div>
+
+        <div class="tool-grid">
+          <article class="tool-card"><span>01</span><h3>Teams</h3><p>Create and manage clubs, teams, and seasons.</p></article>
+          <article class="tool-card"><span>02</span><h3>Players</h3><p>Build player profiles and organize roster details.</p></article>
+          <article class="tool-card"><span>03</span><h3>Live Match</h3><p>Launch the coach-side match workflow when it is ready.</p></article>
+          <article class="tool-card"><span>04</span><h3>Reports</h3><p>Review match history, trends, and team performance.</p></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
