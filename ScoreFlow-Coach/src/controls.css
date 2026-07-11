@@ -35,7 +35,7 @@
 .slide-over-panel .sf-calendar{left:0;right:auto;max-width:min(292px,calc(100vw - 32px))}
 
 @media(max-width:700px){
-  .sf-calendar{position:fixed;left:50%;right:auto;top:50%;width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;transform:translate(-50%,-50%);animation:sf-calendar-mobile 160ms cubic-bezier(.16,1,.3,1)}
+  .slide-over-panel .sf-calendar,.sf-calendar{position:fixed;left:50%;right:auto;top:50%;width:min(320px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;transform:translate(-50%,-50%);animation:sf-calendar-mobile 160ms cubic-bezier(.16,1,.3,1)}
   @keyframes sf-calendar-mobile{from{opacity:0;transform:translate(-50%,-47%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 }
 
@@ -44,7 +44,7 @@
 }
 
 @media(max-height:500px) and (orientation:landscape){
-  .sf-calendar{position:fixed;top:50%;bottom:auto;left:50%;right:auto;width:min(300px,calc(100vw - 20px));max-height:calc(100dvh - 16px);display:block;padding:8px;overflow:auto;transform:translate(-50%,-50%)}
+  .slide-over-panel .sf-calendar,.sf-calendar{position:fixed;top:50%;bottom:auto;left:50%;right:auto;width:min(300px,calc(100vw - 20px));max-width:calc(100vw - 20px);max-height:calc(100dvh - 16px);display:block;padding:8px;overflow:auto;transform:translate(-50%,-50%)}
   .sf-calendar-header{grid-template-columns:30px 1fr 30px;margin-bottom:4px}
   .sf-calendar-header button{width:30px;height:30px}
   .sf-calendar-weekdays,.sf-calendar-grid{gap:2px}
