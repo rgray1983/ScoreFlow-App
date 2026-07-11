@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import ContextBar from '../components/ContextBar';
 import SelectField from '../components/SelectField';
 import SlideOver from '../components/SlideOver';
@@ -17,12 +17,35 @@ export default function PlayersPage() {
   const roster = workspace.rosterMemberships.filter((item) => item.teamId === workspace.activeTeamId && item.seasonId === workspace.activeSeasonId);
   const rosterRows = useMemo(() => roster.map((membership) => ({ membership, player: workspace.players.find((player) => player.id === membership.playerId) })).filter((row): row is { membership: typeof roster[number]; player: Player } => Boolean(row.player)), [roster, workspace.players]);
   const canAdd = Boolean(workspace.activeOrganizationId && workspace.activeTeamId && workspace.activeSeasonId);
+  const teamStyle = { '--team-secondary': workspace.activeTeam?.secondaryColor ?? '#5d9df5' } as CSSProperties;
 
   return (
-    <div className="players-workspace">
+    <div className="players-workspace" style={teamStyle}>
       <ContextBar label="Player context" />
       <section className="players-summary panel"><div><p className="eyebrow">Active roster</p><h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2><p>{workspace.activeSeason?.name ?? 'Select a season'} · {rosterRows.length} players</p></div><button className="button button-primary" disabled={!canAdd} type="button" onClick={() => setCreating(true)}>＋ Add player</button></section>
-      <section className="players-grid panel"><header><div><p className="eyebrow">Player directory</p><h3>Players</h3></div><span className="sync-pill"><span /> Saved on device</span></header><div className="player-card-grid">{players.map((player) => { const membership = roster.find((item) => item.playerId === player.id); return <button className="player-card" key={player.id} type="button" onClick={() => setSelectedPlayerId(player.id)}><span className="player-number">{membership?.jerseyNumber || '—'}</span><span className="player-avatar">{player.firstName[0]}{player.lastName[0]}</span><span className="player-copy"><strong>{player.preferredName || player.firstName} {player.lastName}</strong><small>{membership?.position || player.primaryPosition || 'Position not set'} · Class of {player.graduationYear || '—'}</small></span><span className="player-badges">{membership?.captain && <em>C</em>}{membership?.libero && <em>L</em>}</span></button>; })}</div></section>
+      <section className="players-grid panel">
+        <header><div><p className="eyebrow">Player directory</p><h3>Players</h3></div><span className="sync-pill"><span /> Saved on device</span></header>
+        <div className="player-list">
+          {players.map((player) => {
+            const membership = roster.find((item) => item.playerId === player.id);
+            const displayPosition = membership?.position || player.primaryPosition || 'Position not set';
+            return (
+              <button className="player-row" key={player.id} type="button" onClick={() => setSelectedPlayerId(player.id)}>
+                <span className="player-number">#{membership?.jerseyNumber || '—'}</span>
+                <span className="player-copy"><strong>{player.preferredName || player.firstName} {player.lastName}</strong><small>{displayPosition} · Class of {player.graduationYear || '—'}</small></span>
+                <span className="player-role-badges">
+                  {membership?.captain && <em className="role-captain">Captain</em>}
+                  {membership?.libero && <em className="role-libero">Libero</em>}
+                  {membership?.starter && <em className="role-starter">Starter</em>}
+                </span>
+                <span className={`player-status status-${membership?.status ?? 'inactive'}`}>{membership?.status ?? 'Not rostered'}</span>
+                <span className="player-row-arrow" aria-hidden="true">›</span>
+              </button>
+            );
+          })}
+          {players.length === 0 && <div className="players-empty"><span>◇</span><p>No players in this organization yet.</p></div>}
+        </div>
+      </section>
       <SlideOver open={creating || Boolean(selectedPlayer)} title={creating ? 'Add player' : 'Edit player'} onClose={() => { setCreating(false); setSelectedPlayerId(null); }}><PlayerForm player={selectedPlayer} onDone={() => { setCreating(false); setSelectedPlayerId(null); }} /></SlideOver>
     </div>
   );
