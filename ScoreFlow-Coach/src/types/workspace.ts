@@ -2,6 +2,9 @@ export type OrganizationType = 'school' | 'club' | 'independent';
 export type SeasonStatus = 'active' | 'upcoming' | 'completed' | 'archived';
 export type PlayerStatus = 'active' | 'injured' | 'inactive' | 'graduated' | 'guest';
 export type DominantHand = 'right' | 'left' | 'ambidextrous';
+export type ScheduleEventType = 'match' | 'practice' | 'tournament' | 'scrimmage' | 'team-event';
+export type ScheduleEventStatus = 'draft' | 'scheduled' | 'changed' | 'cancelled' | 'completed';
+export type ScheduleLocationType = 'home' | 'away' | 'neutral';
 
 export type Organization = {
   id: string;
@@ -68,12 +71,35 @@ export type RosterMembership = {
   createdAt: string;
 };
 
+export type ScheduleEvent = {
+  id: string;
+  teamId: string;
+  seasonId: string;
+  type: ScheduleEventType;
+  title: string;
+  date: string;
+  startTime: string;
+  arrivalTime: string;
+  endTime: string;
+  opponent: string;
+  locationType: ScheduleLocationType;
+  venue: string;
+  address: string;
+  court: string;
+  travelNotes: string;
+  notes: string;
+  status: ScheduleEventStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type WorkspaceData = {
   organizations: Organization[];
   teams: Team[];
   seasons: Season[];
   players: Player[];
   rosterMemberships: RosterMembership[];
+  scheduleEvents: ScheduleEvent[];
   activeOrganizationId: string;
   activeTeamId: string;
   activeSeasonId: string;
@@ -84,3 +110,4 @@ export type TeamInput = Pick<Team, 'organizationId' | 'name' | 'level' | 'abbrev
 export type SeasonInput = Pick<Season, 'teamId' | 'name' | 'startDate' | 'endDate' | 'status'>;
 export type PlayerInput = Pick<Player, 'organizationId' | 'firstName' | 'lastName' | 'preferredName' | 'graduationYear' | 'height' | 'dominantHand' | 'primaryPosition' | 'secondaryPosition' | 'notes'>;
 export type RosterMembershipInput = Pick<RosterMembership, 'playerId' | 'teamId' | 'seasonId' | 'jerseyNumber' | 'position' | 'status' | 'captain' | 'libero' | 'starter' | 'notes'>;
+export type ScheduleEventInput = Pick<ScheduleEvent, 'teamId' | 'seasonId' | 'type' | 'title' | 'date' | 'startTime' | 'arrivalTime' | 'endTime' | 'opponent' | 'locationType' | 'venue' | 'address' | 'court' | 'travelNotes' | 'notes' | 'status'>;

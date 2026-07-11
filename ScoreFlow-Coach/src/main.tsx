@@ -11,21 +11,17 @@ import './glass-polish.css';
 import './context-bar.css';
 import './players.css';
 import './controls.css';
+import './schedule.css';
 
 registerSW({ immediate: true });
 
 const rootElement = document.getElementById('root');
-
-if (!rootElement) {
-  throw new Error('ScoreFlow Coach root element was not found.');
-}
+if (!rootElement) throw new Error('ScoreFlow Coach root element was not found.');
 
 createRoot(rootElement).render(
   <StrictMode>
     <HashRouter>
-      <WorkspaceProvider>
-        <App />
-      </WorkspaceProvider>
+      <WorkspaceProvider><App /></WorkspaceProvider>
     </HashRouter>
   </StrictMode>
 );
