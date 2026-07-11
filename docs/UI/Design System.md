@@ -15,6 +15,20 @@ ScoreFlow Coach is dark, premium, bold, and sports-focused without becoming clut
 - Motion supports feedback and never slows match entry
 - Safe-area support for installed iPhone and iPad PWAs
 
+## Workspace density
+
+ScoreFlow uses two deliberate interface densities:
+
+### Management data
+
+Organizations, teams, seasons, player directories, and similar setup records use compact rows, restrained surfaces, and scan-friendly metadata. These screens are optimized for occasional editing and efficient review rather than visual presentation.
+
+### Live coaching data
+
+Matches, rotations, practice activity, statistics, and other in-session tools use larger controls, stronger hierarchy, and more breathing room. These screens are optimized for fast decisions, clear feedback, and touch use during coaching.
+
+Do not use decorative profile cards when a compact management row communicates the same information more efficiently.
+
 ## Current color tokens
 
 - Background: `#08090d`
@@ -26,6 +40,14 @@ ScoreFlow Coach is dark, premium, bold, and sports-focused without becoming clut
 - Information blue: `#5d9df5`
 - Primary text: `#f7f8fb`
 - Muted text: `#8e96a6`
+
+## Team-aware colors
+
+- Captain designations use ScoreFlow gold.
+- Libero designations use the active team's secondary color.
+- Starter designations may use a restrained version of the active team's primary color.
+- Availability and status colors remain separate from team-role colors.
+- Status must always include readable text and never depend on color alone.
 
 ## Viewport rules
 
