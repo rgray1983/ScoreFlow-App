@@ -62,9 +62,11 @@ export default function LiveMatchPage(){
   return <div className="live-match-mode" style={style}>
     <header className="live-scorebar is-simplified">
       <button className="live-home" onClick={()=>setShowExit(true)} type="button" aria-label="Leave match">⌂</button>
-      <div className="live-team-score home"><div className="score-controls"><button onClick={()=>score('home',-1)} type="button">−</button><strong>{match.homeScore}</strong><button onClick={()=>score('home',1)} type="button">+1</button></div></div>
-      <div className="live-match-center"><small>SET {match.set} · R{match.rotation}</small><b>{match.homeSets} — {match.awaySets}</b><button className={`serve-pill ${match.serving}`} onClick={()=>setMatch((current)=>({...current,serving:current.serving==='home'?'away':'home'}))} type="button">{match.serving==='home'?'HOME':'AWAY'} SERVE</button></div>
-      <div className="live-team-score away"><div className="score-controls"><button onClick={()=>score('away',-1)} type="button">−</button><strong>{match.awayScore}</strong><button onClick={()=>score('away',1)} type="button">+1</button></div></div>
+      <div className="live-match-cluster">
+        <div className="live-team-score home"><div className="score-controls"><button onClick={()=>score('home',-1)} type="button">−</button><strong>{match.homeScore}</strong><button onClick={()=>score('home',1)} type="button">+1</button></div></div>
+        <div className="live-match-center"><small>SET {match.set} · R{match.rotation}</small><b>{match.homeSets} — {match.awaySets}</b><button className={`serve-pill ${match.serving}`} onClick={()=>setMatch((current)=>({...current,serving:current.serving==='home'?'away':'home'}))} type="button">{match.serving==='home'?'HOME':'AWAY'} SERVE</button></div>
+        <div className="live-team-score away"><div className="score-controls"><button onClick={()=>score('away',-1)} type="button">−</button><strong>{match.awayScore}</strong><button onClick={()=>score('away',1)} type="button">+1</button></div></div>
+      </div>
     </header>
 
     <main className="live-stage">
