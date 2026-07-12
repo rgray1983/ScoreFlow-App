@@ -42,24 +42,29 @@ export default function LiveMatchPage(){
   const style={'--live-primary':workspace.activeTeam?.primaryColor??'#ef3340','--live-secondary':workspace.activeTeam?.secondaryColor??'#f4c95d'} as CSSProperties;
 
   function addEvent(kind:LiveEvent['kind'],label:string){setMatch((current)=>({...current,events:[{id:`event-${Date.now()}-${Math.random()}`,kind,label,at:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})},...current.events].slice(0,120)}))}
-  function score(side:Side,delta:number){setMatch((current)=>({...current,[side==='home'?'homeScore':'awayScore']:Math.max(0,current[side==='home'?'homeScore':'awayScore']+delta)}));addEvent('score',`${side==='home'?workspace.activeTeam?.name||'Home':match.opponent} ${delta>0?'+1':'-1'}`)}
+  function score(side:Side,delta:number){
+    setMatch((current)=>({
+      ...current,
+      [side==='home'?'homeScore':'awayScore']:Math.max(0,current[side==='home'?'homeScore':'awayScore']+delta),
+      serving:delta>0?side:current.serving
+    }));
+    addEvent('score',`${side==='home'?workspace.activeTeam?.name||'Home':match.opponent} ${delta>0?'+1':'-1'}`);
+  }
   function recordStat(action:StatAction){if(!wheelPlayer)return;addEvent('stat',`#${wheelPlayer.number} ${wheelPlayer.name} · ${action}`);setFlash(`${wheelPlayer.name}: ${action}`);setWheelPlayerId('');setTimeout(()=>setFlash(''),900)}
   function rotate(){setMatch((current)=>{const ids=current.courtIds.length?[current.courtIds[current.courtIds.length-1],...current.courtIds.slice(0,-1)]:current.courtIds;const positions={...current.positions};ids.forEach((id,index)=>{positions[id]=defaultPoints[index]});return{...current,rotation:current.rotation===6?1:current.rotation+1,courtIds:ids,positions}});addEvent('rotation',`Rotated to R${match.rotation===6?1:match.rotation+1}`)}
   function substitute(inId:string){if(!subOut||!inId)return;setMatch((current)=>{const slot=current.courtIds.indexOf(subOut);const positions={...current.positions,[inId]:current.positions[subOut]??defaultPoints[Math.max(0,slot)]};delete positions[subOut];return{...current,courtIds:current.courtIds.map((id)=>id===subOut?inId:id),benchIds:[...current.benchIds.filter((id)=>id!==inId),subOut],positions,selectedPlayerId:inId}});const outgoing=players.find((player)=>player.id===subOut);const incoming=players.find((player)=>player.id===inId);addEvent('sub',`#${incoming?.number} ${incoming?.name} in · #${outgoing?.number} ${outgoing?.name} out`);setSubOut('')}
   function movePlayer(event:ReactPointerEvent<HTMLDivElement>){if(!draggingId)return;const rect=event.currentTarget.getBoundingClientRect();const x=Math.max(7,Math.min(46,((event.clientX-rect.left)/rect.width)*100));const y=Math.max(13,Math.min(87,((event.clientY-rect.top)/rect.height)*100));if(dragOrigin.current&&Math.hypot(event.clientX-dragOrigin.current.x,event.clientY-dragOrigin.current.y)>6)dragMoved.current=true;setMatch((current)=>({...current,positions:{...current.positions,[draggingId]:{x,y}}}))}
   function finishDrag(){if(!draggingId)return;const playerId=draggingId;setDraggingId('');dragOrigin.current=null;if(!dragMoved.current)setWheelPlayerId(playerId)}
   function undo(){setMatch((current)=>({...current,events:current.events.slice(1)}));setFlash('Last timeline event removed');setTimeout(()=>setFlash(''),900)}
-  async function enterFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch{/* browser may block */}}
   function saveExit(){if(document.fullscreenElement)void document.exitFullscreen();navigate('/')}
   function newMatch(){localStorage.removeItem(STORAGE_KEY);setMatch(buildInitial(players,scheduled?.opponent||'Opponent'));setWheelPlayerId('')}
 
   return <div className="live-match-mode" style={style}>
-    <header className="live-scorebar">
+    <header className="live-scorebar is-simplified">
       <button className="live-home" onClick={()=>setShowExit(true)} type="button" aria-label="Leave match">⌂</button>
-      <div className="live-team-score home"><span>{workspace.activeTeam?.abbreviation||'HOME'}</span><div className="score-controls"><button onClick={()=>score('home',-1)} type="button">−</button><strong>{match.homeScore}</strong><button onClick={()=>score('home',1)} type="button">+1</button></div></div>
+      <div className="live-team-score home"><div className="score-controls"><button onClick={()=>score('home',-1)} type="button">−</button><strong>{match.homeScore}</strong><button onClick={()=>score('home',1)} type="button">+1</button></div></div>
       <div className="live-match-center"><small>SET {match.set} · R{match.rotation}</small><b>{match.homeSets} — {match.awaySets}</b><button className={`serve-pill ${match.serving}`} onClick={()=>setMatch((current)=>({...current,serving:current.serving==='home'?'away':'home'}))} type="button">{match.serving==='home'?'HOME':'AWAY'} SERVE</button></div>
-      <div className="live-team-score away"><span>{match.opponent}</span><div className="score-controls"><button onClick={()=>score('away',-1)} type="button">−</button><strong>{match.awayScore}</strong><button onClick={()=>score('away',1)} type="button">+1</button></div></div>
-      <button className="fullscreen-button" onClick={enterFullscreen} type="button" aria-label="Fullscreen">⛶</button>
+      <div className="live-team-score away"><div className="score-controls"><button onClick={()=>score('away',-1)} type="button">−</button><strong>{match.awayScore}</strong><button onClick={()=>score('away',1)} type="button">+1</button></div></div>
     </header>
 
     <main className="live-stage">
