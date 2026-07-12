@@ -12,6 +12,7 @@ import './context-bar.css';
 import './players.css';
 import './controls.css';
 import './schedule.css';
+import './roster.css';
 
 registerSW({ immediate: true });
 
