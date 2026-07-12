@@ -15,6 +15,7 @@ import './schedule.css';
 import './roster.css';
 import './practice.css';
 import './live-match.css';
+import './live-match-header.css';
 import './player-action-wheel.css';
 
 registerSW({ immediate: true });
