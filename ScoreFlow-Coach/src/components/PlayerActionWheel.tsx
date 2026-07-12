@@ -13,18 +13,18 @@ type Props = {
 
 type Tone = 'positive'|'error'|'defense'|'setting'|'passing';
 const actionMeta:Record<StatAction,{icon:string;shortLabel:string;tone:Tone}> = {
-  'Kill': { icon:'K', shortLabel:'Kill', tone:'positive' },
-  'Attack error': { icon:'AE', shortLabel:'Attack err', tone:'error' },
-  'Ace': { icon:'A', shortLabel:'Ace', tone:'positive' },
-  'Serve error': { icon:'SE', shortLabel:'Serve err', tone:'error' },
-  'Dig': { icon:'D', shortLabel:'Dig', tone:'defense' },
-  'Block touch': { icon:'BT', shortLabel:'Block touch', tone:'defense' },
-  'Solo block': { icon:'SB', shortLabel:'Solo block', tone:'defense' },
-  'Assist': { icon:'AS', shortLabel:'Assist', tone:'setting' },
-  'Pass 0': { icon:'P0', shortLabel:'Pass 0', tone:'passing' },
-  'Pass 1': { icon:'P1', shortLabel:'Pass 1', tone:'passing' },
-  'Pass 2': { icon:'P2', shortLabel:'Pass 2', tone:'passing' },
-  'Pass 3': { icon:'P3', shortLabel:'Pass 3', tone:'passing' }
+  'Kill': { icon:'K', shortLabel:'KILL', tone:'positive' },
+  'Attack error': { icon:'AE', shortLabel:'ATTACK ERR', tone:'error' },
+  'Ace': { icon:'A', shortLabel:'ACE', tone:'positive' },
+  'Serve error': { icon:'SE', shortLabel:'SERVE ERR', tone:'error' },
+  'Dig': { icon:'D', shortLabel:'DIG', tone:'defense' },
+  'Block touch': { icon:'BT', shortLabel:'BLOCK TOUCH', tone:'defense' },
+  'Solo block': { icon:'SB', shortLabel:'SOLO BLOCK', tone:'defense' },
+  'Assist': { icon:'AS', shortLabel:'ASSIST', tone:'setting' },
+  'Pass 0': { icon:'P0', shortLabel:'PASS 0', tone:'passing' },
+  'Pass 1': { icon:'P1', shortLabel:'PASS 1', tone:'passing' },
+  'Pass 2': { icon:'P2', shortLabel:'PASS 2', tone:'passing' },
+  'Pass 3': { icon:'P3', shortLabel:'PASS 3', tone:'passing' }
 };
 
 const VIEWBOX_SIZE=400;
@@ -32,7 +32,7 @@ const CENTER=VIEWBOX_SIZE/2;
 const OUTER_RADIUS=174;
 const INNER_RADIUS=104;
 const ANGULAR_GAP=1.6;
-const CLOSE_DURATION=180;
+const CLOSE_DURATION=240;
 
 export default function PlayerActionWheel({ player, actions, position, onSelect, onClose }:Props){
   const [closing,setClosing]=useState(false);
@@ -69,12 +69,12 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
             if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}
           };
           const segmentPath=annularSegmentPath(CENTER,CENTER,INNER_RADIUS,OUTER_RADIUS,start,end);
-          return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={closing?-1:0} aria-label={action} onClick={activate} onKeyDown={onKeyDown}>
+          return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={closing?-1:0} aria-label={action} onClick={activate} onKeyDown={onKeyDown} style={{'--segment-index':index} as CSSProperties}>
             <path className="radial-wheel-segment-base" d={segmentPath} filter="url(#wheel-glass-shadow)" />
             <path className="radial-wheel-segment-gloss" d={segmentPath} />
             <text className="radial-wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
-              <tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.28em">{meta.icon}</tspan>
-              <tspan className="radial-wheel-name" x={labelPoint.x} dy="1.55em">{meta.shortLabel}</tspan>
+              <tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.3em">{meta.icon}</tspan>
+              <tspan className="radial-wheel-name" x={labelPoint.x} dy="1.5em">{meta.shortLabel}</tspan>
             </text>
           </g>;
         })}
