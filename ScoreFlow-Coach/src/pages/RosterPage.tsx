@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import ContextBar from '../components/ContextBar';
+import SlideOver from '../components/SlideOver';
 import { useWorkspace } from '../context/WorkspaceContext';
 import type { Player, PlayerStatus, RosterMembership, RosterMembershipInput } from '../types/workspace';
 
 type RosterView = 'players' | 'lineup' | 'stats';
 type RosterRow = { player: Player; membership: RosterMembership };
+type DropZone = 'starters' | 'bench';
 
 type Performance = {
   kills: number;
@@ -25,6 +27,8 @@ export default function RosterPage() {
   const workspace = useWorkspace();
   const [view, setView] = useState<RosterView>('players');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [mobileFocusOpen, setMobileFocusOpen] = useState(false);
+  const [isPhonePortrait, setIsPhonePortrait] = useState(false);
 
   const rows = useMemo<RosterRow[]>(() => workspace.rosterMemberships
     .filter((membership) => membership.teamId === workspace.activeTeamId && membership.seasonId === workspace.activeSeasonId)
@@ -36,6 +40,14 @@ export default function RosterPage() {
   useEffect(() => {
     if (!rows.some((row) => row.player.id === selectedPlayerId)) setSelectedPlayerId(rows[0]?.player.id ?? null);
   }, [rows, selectedPlayerId]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    const sync = () => setIsPhonePortrait(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 
   const selected = rows.find((row) => row.player.id === selectedPlayerId) ?? rows[0];
   const starters = rows.filter((row) => row.membership.starter && !row.membership.libero);
@@ -65,6 +77,11 @@ export default function RosterPage() {
     });
   }
 
+  function selectPlayer(id: string) {
+    setSelectedPlayerId(id);
+    if (isPhonePortrait) setMobileFocusOpen(true);
+  }
+
   return <div className="team-hq" style={teamStyle}>
     <ContextBar label="Roster context" />
 
@@ -86,15 +103,19 @@ export default function RosterPage() {
 
     <section className="team-hq-body">
       <div className="team-hq-main panel">
-        {view === 'players' && <PlayerGrid rows={rows} selectedId={selected?.player.id} onSelect={setSelectedPlayerId} />}
-        {view === 'lineup' && <LineupView rows={rows} starters={starters} libero={libero} onSelect={setSelectedPlayerId} />}
-        {view === 'stats' && <StatsView rows={rows} onSelect={setSelectedPlayerId} />}
+        {view === 'players' && <PlayerGrid rows={rows} selectedId={selected?.player.id} onSelect={selectPlayer} />}
+        {view === 'lineup' && <LineupView rows={rows} starters={starters} libero={libero} onSelect={selectPlayer} onUpdate={updateMembership} />}
+        {view === 'stats' && <StatsView rows={rows} onSelect={selectPlayer} />}
       </div>
 
       <aside className="player-focus panel">
         {selected ? <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} /> : <div className="team-hq-empty"><span>◇</span><p>Add players from the Players page to build this roster.</p></div>}
       </aside>
     </section>
+
+    <SlideOver open={mobileFocusOpen && Boolean(selected)} title="Player details" onClose={() => setMobileFocusOpen(false)}>
+      {selected && <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} />}
+    </SlideOver>
   </div>;
 }
 
@@ -113,19 +134,79 @@ function PlayerGrid({ rows, selectedId, onSelect }: { rows: RosterRow[]; selecte
   </div>;
 }
 
-function LineupView({ rows, starters, libero, onSelect }: { rows: RosterRow[]; starters: RosterRow[]; libero?: RosterRow; onSelect: (id: string) => void }) {
+function LineupView({ rows, starters, libero, onSelect, onUpdate }: { rows: RosterRow[]; starters: RosterRow[]; libero?: RosterRow; onSelect: (id: string) => void; onUpdate: (membership: RosterMembership, patch: Partial<RosterMembershipInput>) => void }) {
   const slots = Array.from({ length: 6 }, (_, index) => starters[index]);
   const reserves = rows.filter((row) => !row.membership.starter && !row.membership.libero);
+  const [activeZone, setActiveZone] = useState<DropZone | null>(null);
+
+  function movePlayer(row: RosterRow, zone: DropZone) {
+    if (zone === 'bench') {
+      onUpdate(row.membership, { starter: false });
+      return;
+    }
+    if (row.membership.starter) return;
+    if (starters.length >= 6) return;
+    onUpdate(row.membership, { starter: true, libero: false });
+  }
+
   return <div className="lineup-workspace">
     <div className="lineup-heading"><div><p className="eyebrow">Starting lineup</p><h3>Match-ready six</h3></div><span>{starters.length}/6 assigned</span></div>
-    <div className="lineup-court">
-      {slots.map((row, index) => <button className={`lineup-slot${row ? ' is-filled' : ''}`} key={index} onClick={() => row && onSelect(row.player.id)} type="button"><span>{index + 1}</span>{row ? <><strong>#{row.membership.jerseyNumber} {row.player.preferredName || row.player.firstName}</strong><small>{row.membership.position || row.player.primaryPosition}</small></> : <><strong>Open position</strong><small>Select a player card</small></>}</button>)}
+    <div className={`lineup-court drop-zone${activeZone === 'starters' ? ' is-drop-active' : ''}`} data-drop-zone="starters">
+      {slots.map((row, index) => row ? <TouchDragPlayer key={row.membership.id} row={row} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="lineup-slot is-filled"><span>{index + 1}</span><strong>#{row.membership.jerseyNumber} {row.player.preferredName || row.player.firstName}</strong><small>{row.membership.position || row.player.primaryPosition}</small></TouchDragPlayer> : <div className="lineup-slot" key={`open-${index}`}><span>{index + 1}</span><strong>Open position</strong><small>Drag a bench player here</small></div>)}
     </div>
     <div className="lineup-lower">
       <section><p className="eyebrow">Libero</p>{libero ? <button className="lineup-person" onClick={() => onSelect(libero.player.id)} type="button"><b>#{libero.membership.jerseyNumber}</b><span><strong>{libero.player.preferredName || libero.player.firstName} {libero.player.lastName}</strong><small>{libero.membership.position || 'L'}</small></span></button> : <div className="lineup-placeholder">No libero assigned</div>}</section>
-      <section><p className="eyebrow">Bench</p><div className="bench-list">{reserves.map((row) => <button key={row.membership.id} onClick={() => onSelect(row.player.id)} type="button"><b>#{row.membership.jerseyNumber}</b><span>{row.player.preferredName || row.player.firstName} {row.player.lastName}</span><small>{row.membership.position}</small></button>)}</div></section>
+      <section className={`drop-zone${activeZone === 'bench' ? ' is-drop-active' : ''}`} data-drop-zone="bench"><p className="eyebrow">Bench</p><div className="bench-list">{reserves.map((row) => <TouchDragPlayer key={row.membership.id} row={row} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="bench-player"><b>#{row.membership.jerseyNumber}</b><span>{row.player.preferredName || row.player.firstName} {row.player.lastName}</span><small>{row.membership.position}</small></TouchDragPlayer>)}</div></section>
     </div>
+    <p className="lineup-drag-help">Drag players between Match-Ready Six and Bench. Touch and hold briefly on iPad, then move.</p>
   </div>;
+}
+
+function TouchDragPlayer({ row, onSelect, onDrop, onZoneChange, className, children }: { row: RosterRow; onSelect: (id: string) => void; onDrop: (row: RosterRow, zone: DropZone) => void; onZoneChange: (zone: DropZone | null) => void; className: string; children: React.ReactNode }) {
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const dragging = useRef(false);
+
+  function zoneAt(x: number, y: number): DropZone | null {
+    const target = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop-zone]');
+    const value = target?.dataset.dropZone;
+    return value === 'starters' || value === 'bench' ? value : null;
+  }
+
+  function pointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    start.current = { x: event.clientX, y: event.clientY };
+    dragging.current = false;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function pointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!start.current) return;
+    const distance = Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y);
+    if (distance > 7) dragging.current = true;
+    if (!dragging.current) return;
+    event.preventDefault();
+    onZoneChange(zoneAt(event.clientX, event.clientY));
+    event.currentTarget.classList.add('is-dragging');
+  }
+
+  function pointerUp(event: ReactPointerEvent<HTMLButtonElement>) {
+    const wasDragging = dragging.current;
+    const zone = wasDragging ? zoneAt(event.clientX, event.clientY) : null;
+    event.currentTarget.classList.remove('is-dragging');
+    onZoneChange(null);
+    start.current = null;
+    dragging.current = false;
+    if (wasDragging && zone) onDrop(row, zone);
+    else if (!wasDragging) onSelect(row.player.id);
+  }
+
+  function pointerCancel(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.currentTarget.classList.remove('is-dragging');
+    onZoneChange(null);
+    start.current = null;
+    dragging.current = false;
+  }
+
+  return <button className={`${className} touch-drag-player`} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel} type="button">{children}</button>;
 }
 
 function StatsView({ rows, onSelect }: { rows: RosterRow[]; onSelect: (id: string) => void }) {
@@ -142,7 +223,7 @@ function PlayerFocus({ row, performance, onUpdate }: { row: RosterRow; performan
     <div className="player-focus-hero"><span>#{membership.jerseyNumber || '—'}</span><div><p className="eyebrow">Player focus</p><h3>{player.preferredName || player.firstName} {player.lastName}</h3><small>{membership.position || player.primaryPosition || 'Position not set'} · Class of {player.graduationYear || '—'}</small></div></div>
     <div className="focus-badges">{membership.captain && <span className="role-captain">Captain</span>}{membership.libero && <span className="role-libero">Libero</span>}{membership.starter && <span className="role-starter">Starter</span>}<span className={`focus-status status-${membership.status}`}>{statusLabel(membership.status)}</span></div>
     <div className="focus-stat-grid"><div><span>Kills</span><strong>{performance.kills || '—'}</strong></div><div><span>Aces</span><strong>{performance.aces || '—'}</strong></div><div><span>Digs</span><strong>{performance.digs || '—'}</strong></div><div><span>Blocks</span><strong>{performance.blocks || '—'}</strong></div><div><span>Assists</span><strong>{performance.assists || '—'}</strong></div><div><span>Hitting</span><strong>{performance.hitting}</strong></div></div>
-    <section className="focus-actions"><p className="eyebrow">Lineup controls</p><div><button className={membership.starter ? 'is-active' : ''} onClick={() => onUpdate({ starter: !membership.starter })} type="button">{membership.starter ? 'Remove starter' : 'Set starter'}</button><button className={membership.libero ? 'is-active' : ''} onClick={() => onUpdate({ libero: !membership.libero })} type="button">{membership.libero ? 'Remove libero' : 'Set libero'}</button><button className={membership.captain ? 'is-active' : ''} onClick={() => onUpdate({ captain: !membership.captain })} type="button">{membership.captain ? 'Remove captain' : 'Set captain'}</button></div></section>
+    <section className="focus-actions"><p className="eyebrow">Lineup controls</p><div><button className={membership.starter ? 'is-active' : ''} onClick={() => onUpdate({ starter: !membership.starter })} type="button">{membership.starter ? 'Move to bench' : 'Move to six'}</button><button className={membership.libero ? 'is-active' : ''} onClick={() => onUpdate({ libero: !membership.libero })} type="button">{membership.libero ? 'Remove libero' : 'Set libero'}</button><button className={membership.captain ? 'is-active' : ''} onClick={() => onUpdate({ captain: !membership.captain })} type="button">{membership.captain ? 'Remove captain' : 'Set captain'}</button></div></section>
     <section className="focus-availability"><p className="eyebrow">Availability</p><div>{(['active', 'limited', 'injured', 'away', 'inactive'] as PlayerStatus[]).map((status) => <button className={membership.status === status ? 'is-active' : ''} key={status} onClick={() => onUpdate({ status })} type="button">{statusLabel(status)}</button>)}</div></section>
     <section className="focus-note"><p className="eyebrow">Coach note</p><p>{membership.notes || player.notes || 'No notes added for this player.'}</p></section>
   </div>;
