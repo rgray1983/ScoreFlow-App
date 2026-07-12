@@ -17,6 +17,7 @@ import './practice.css';
 import './live-match.css';
 import './live-match-header.css';
 import './player-action-wheel.css';
+import './player-photo.css';
 
 registerSW({ immediate: true });
 
