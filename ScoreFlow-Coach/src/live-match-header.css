@@ -1,7 +1,10 @@
-.live-scorebar.is-simplified{grid-template-columns:44px minmax(160px,1fr) minmax(120px,.62fr) minmax(160px,1fr)}
-.live-scorebar.is-simplified .live-team-score{justify-content:center}
-.live-scorebar.is-simplified .score-controls,.live-scorebar.is-simplified .away .score-controls{margin:0}
+.live-scorebar.is-simplified{position:relative;display:flex;align-items:center;justify-content:center;min-height:72px;padding-inline:72px}
+.live-scorebar.is-simplified .live-home{position:absolute;left:12px;top:50%;transform:translateY(-50%)}
+.live-match-cluster{display:grid;grid-template-columns:auto auto auto;align-items:center;justify-content:center;gap:18px;width:max-content;max-width:calc(100vw - 160px)}
+.live-scorebar.is-simplified .live-team-score{display:block;min-width:0}
+.live-scorebar.is-simplified .score-controls,.live-scorebar.is-simplified .away .score-controls{margin:0;justify-content:center}
+.live-scorebar.is-simplified .live-match-center{min-width:112px}
 .home-court-label,.opponent-zone{font-size:.72rem;line-height:1;font-weight:950;letter-spacing:.1em;text-shadow:0 2px 8px rgba(0,0,0,.42)}
-@media(max-width:900px){.live-scorebar.is-simplified{grid-template-columns:40px minmax(0,1fr) 104px minmax(0,1fr)}.home-court-label,.opponent-zone{font-size:.6rem}}
-@media(max-width:700px) and (orientation:portrait){.live-scorebar.is-simplified{grid-template-columns:32px minmax(0,1fr) 76px minmax(0,1fr)}.home-court-label,.opponent-zone{font-size:.5rem}}
-@media(max-height:500px) and (orientation:landscape){.live-scorebar.is-simplified{grid-template-columns:32px minmax(0,1fr) 92px minmax(0,1fr)}.home-court-label,.opponent-zone{font-size:.52rem}}
+@media(max-width:900px){.live-scorebar.is-simplified{min-height:64px;padding-inline:52px}.live-scorebar.is-simplified .live-home{left:8px}.live-match-cluster{gap:10px;max-width:calc(100vw - 112px)}.live-scorebar.is-simplified .live-match-center{min-width:96px}.home-court-label,.opponent-zone{font-size:.6rem}}
+@media(max-width:700px) and (orientation:portrait){.live-scorebar.is-simplified{min-height:58px;padding-inline:40px}.live-scorebar.is-simplified .live-home{left:5px}.live-match-cluster{gap:5px;max-width:calc(100vw - 80px)}.live-scorebar.is-simplified .live-match-center{min-width:72px}.home-court-label,.opponent-zone{font-size:.5rem}}
+@media(max-height:500px) and (orientation:landscape){.live-scorebar.is-simplified{min-height:48px;padding-inline:40px}.live-scorebar.is-simplified .live-home{left:6px}.live-match-cluster{gap:8px;max-width:calc(100vw - 88px)}.live-scorebar.is-simplified .live-match-center{min-width:84px}.home-court-label,.opponent-zone{font-size:.52rem}}
