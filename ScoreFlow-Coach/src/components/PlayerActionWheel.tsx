@@ -2,7 +2,7 @@ import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 
 export type StatAction = 'Kill'|'Attack error'|'Ace'|'Serve error'|'Dig'|'Block touch'|'Solo block'|'Assist'|'Pass 0'|'Pass 1'|'Pass 2'|'Pass 3';
 
-type WheelPlayer = { number:string; name:string; position:string; libero:boolean };
+type WheelPlayer = { number:string; name:string; position:string; libero:boolean; photoUrl?:string };
 type Props = {
   player: WheelPlayer;
   actions: StatAction[];
@@ -52,11 +52,7 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
   return <div className={`stat-wheel-backdrop${closing?' is-closing':''}`} onPointerDown={()=>closeWheel()}>
     <div className={`radial-wheel-shell${closing?' is-closing':''}`} style={{left:`${safeX}%`,top:`${safeY}%`} as CSSProperties} onPointerDown={(event)=>event.stopPropagation()} role="dialog" aria-label={`Record a stat for ${player.name}`}>
       <svg className="radial-wheel-svg" viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} aria-hidden="true">
-        <defs>
-          <filter id="wheel-glass-shadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#020814" floodOpacity=".42" />
-          </filter>
-        </defs>
+        <defs><filter id="wheel-glass-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#020814" floodOpacity=".42" /></filter></defs>
         <circle className="radial-wheel-track" cx={CENTER} cy={CENTER} r={(OUTER_RADIUS+INNER_RADIUS)/2} />
         {actions.map((action,index)=>{
           const start=-90+(index*step)+(ANGULAR_GAP/2);
@@ -65,46 +61,23 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
           const labelPoint=polarPoint(CENTER,CENTER,(OUTER_RADIUS+INNER_RADIUS)/2,middle);
           const meta=actionMeta[action];
           const activate=()=>closeWheel(action);
-          const onKeyDown=(event:KeyboardEvent<SVGGElement>)=>{
-            if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}
-          };
+          const onKeyDown=(event:KeyboardEvent<SVGGElement>)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}};
           const segmentPath=annularSegmentPath(CENTER,CENTER,INNER_RADIUS,OUTER_RADIUS,start,end);
           return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={closing?-1:0} aria-label={action} onClick={activate} onKeyDown={onKeyDown} style={{'--segment-index':index} as CSSProperties}>
             <path className="radial-wheel-segment-base" d={segmentPath} filter="url(#wheel-glass-shadow)" />
             <path className="radial-wheel-segment-gloss" d={segmentPath} />
-            <text className="radial-wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
-              <tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.3em">{meta.icon}</tspan>
-              <tspan className="radial-wheel-name" x={labelPoint.x} dy="1.5em">{meta.shortLabel}</tspan>
-            </text>
+            <text className="radial-wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle"><tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.3em">{meta.icon}</tspan><tspan className="radial-wheel-name" x={labelPoint.x} dy="1.5em">{meta.shortLabel}</tspan></text>
           </g>;
         })}
       </svg>
-      <div className={`radial-wheel-player${player.libero?' is-libero':''}`}>
-        <b>#{player.number}</b>
-        <strong>{player.name.split(' ')[0]}</strong>
-        <small>{player.position}</small>
+      <div className={`radial-wheel-player${player.libero?' is-libero':''}${player.photoUrl?' has-photo':''}`}>
+        {player.photoUrl&&<img src={player.photoUrl} alt="" />}
+        <div className="radial-wheel-player-copy"><b>#{player.number}</b><strong>{player.name.split(' ')[0]}</strong><small>{player.position}</small></div>
       </div>
       <button className="radial-wheel-close" onClick={()=>closeWheel()} type="button" aria-label="Close stat wheel">×</button>
     </div>
   </div>;
 }
 
-function polarPoint(cx:number,cy:number,radius:number,angleDegrees:number){
-  const angle=(angleDegrees*Math.PI)/180;
-  return {x:cx+(radius*Math.cos(angle)),y:cy+(radius*Math.sin(angle))};
-}
-
-function annularSegmentPath(cx:number,cy:number,innerRadius:number,outerRadius:number,startAngle:number,endAngle:number){
-  const outerStart=polarPoint(cx,cy,outerRadius,startAngle);
-  const outerEnd=polarPoint(cx,cy,outerRadius,endAngle);
-  const innerEnd=polarPoint(cx,cy,innerRadius,endAngle);
-  const innerStart=polarPoint(cx,cy,innerRadius,startAngle);
-  const largeArc=endAngle-startAngle>180?1:0;
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
-    'Z'
-  ].join(' ');
-}
+function polarPoint(cx:number,cy:number,radius:number,angleDegrees:number){const angle=(angleDegrees*Math.PI)/180;return {x:cx+(radius*Math.cos(angle)),y:cy+(radius*Math.sin(angle))};}
+function annularSegmentPath(cx:number,cy:number,innerRadius:number,outerRadius:number,startAngle:number,endAngle:number){const outerStart=polarPoint(cx,cy,outerRadius,startAngle);const outerEnd=polarPoint(cx,cy,outerRadius,endAngle);const innerEnd=polarPoint(cx,cy,innerRadius,endAngle);const innerStart=polarPoint(cx,cy,innerRadius,startAngle);const largeArc=endAngle-startAngle>180?1:0;return [`M ${outerStart.x} ${outerStart.y}`,`A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,`L ${innerEnd.x} ${innerEnd.y}`,`A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,'Z'].join(' ');}
