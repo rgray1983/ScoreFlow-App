@@ -14,12 +14,24 @@ const seedWorkspace: WorkspaceData = {
   players: [
     { id: 'player-ava', organizationId: 'org-hartsville', firstName: 'Ava', lastName: 'Bennett', preferredName: '', graduationYear: '2027', height: '5′10″', dominantHand: 'right', primaryPosition: 'Outside Hitter', secondaryPosition: 'Defensive Specialist', notes: '', archived: false, createdAt: now },
     { id: 'player-mia', organizationId: 'org-hartsville', firstName: 'Mia', lastName: 'Coleman', preferredName: '', graduationYear: '2028', height: '5′8″', dominantHand: 'right', primaryPosition: 'Setter', secondaryPosition: '', notes: '', archived: false, createdAt: now },
-    { id: 'player-zoe', organizationId: 'org-hartsville', firstName: 'Zoe', lastName: 'Ramirez', preferredName: '', graduationYear: '2027', height: '5′6″', dominantHand: 'left', primaryPosition: 'Libero', secondaryPosition: 'Defensive Specialist', notes: '', archived: false, createdAt: now }
+    { id: 'player-zoe', organizationId: 'org-hartsville', firstName: 'Zoe', lastName: 'Ramirez', preferredName: '', graduationYear: '2027', height: '5′6″', dominantHand: 'left', primaryPosition: 'Libero', secondaryPosition: 'Defensive Specialist', notes: '', archived: false, createdAt: now },
+    { id: 'player-emma', organizationId: 'org-hartsville', firstName: 'Emma', lastName: 'Foster', preferredName: '', graduationYear: '2027', height: '6′0″', dominantHand: 'right', primaryPosition: 'Middle Blocker', secondaryPosition: '', notes: '', archived: false, createdAt: now },
+    { id: 'player-lily', organizationId: 'org-hartsville', firstName: 'Lily', lastName: 'Grant', preferredName: '', graduationYear: '2028', height: '5′11″', dominantHand: 'right', primaryPosition: 'Opposite', secondaryPosition: 'Middle Blocker', notes: '', archived: false, createdAt: now },
+    { id: 'player-sara', organizationId: 'org-hartsville', firstName: 'Sara', lastName: 'Mitchell', preferredName: '', graduationYear: '2029', height: '5′9″', dominantHand: 'right', primaryPosition: 'Outside Hitter', secondaryPosition: '', notes: '', archived: false, createdAt: now },
+    { id: 'player-nora', organizationId: 'org-hartsville', firstName: 'Nora', lastName: 'Price', preferredName: '', graduationYear: '2028', height: '5′7″', dominantHand: 'right', primaryPosition: 'Defensive Specialist', secondaryPosition: 'Libero', notes: '', archived: false, createdAt: now },
+    { id: 'player-kate', organizationId: 'org-hartsville', firstName: 'Kate', lastName: 'Turner', preferredName: '', graduationYear: '2029', height: '5′10″', dominantHand: 'left', primaryPosition: 'Setter', secondaryPosition: 'Opposite', notes: '', archived: false, createdAt: now },
+    { id: 'player-jade', organizationId: 'org-hartsville', firstName: 'Jade', lastName: 'Walker', preferredName: '', graduationYear: '2027', height: '6′1″', dominantHand: 'right', primaryPosition: 'Middle Blocker', secondaryPosition: 'Opposite', notes: '', archived: false, createdAt: now }
   ],
   rosterMemberships: [
     { id: 'roster-ava', playerId: 'player-ava', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '12', position: 'OH', status: 'active', captain: true, libero: false, starter: true, notes: '', createdAt: now },
     { id: 'roster-mia', playerId: 'player-mia', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '4', position: 'S', status: 'active', captain: false, libero: false, starter: true, notes: '', createdAt: now },
-    { id: 'roster-zoe', playerId: 'player-zoe', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '7', position: 'L', status: 'active', captain: false, libero: true, starter: true, notes: '', createdAt: now }
+    { id: 'roster-zoe', playerId: 'player-zoe', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '7', position: 'L', status: 'active', captain: false, libero: true, starter: false, notes: '', createdAt: now },
+    { id: 'roster-emma', playerId: 'player-emma', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '9', position: 'MB', status: 'active', captain: false, libero: false, starter: true, notes: '', createdAt: now },
+    { id: 'roster-lily', playerId: 'player-lily', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '15', position: 'OPP', status: 'active', captain: false, libero: false, starter: true, notes: '', createdAt: now },
+    { id: 'roster-sara', playerId: 'player-sara', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '18', position: 'OH', status: 'active', captain: false, libero: false, starter: true, notes: '', createdAt: now },
+    { id: 'roster-nora', playerId: 'player-nora', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '2', position: 'DS', status: 'active', captain: false, libero: false, starter: false, notes: '', createdAt: now },
+    { id: 'roster-kate', playerId: 'player-kate', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '10', position: 'S', status: 'active', captain: false, libero: false, starter: false, notes: '', createdAt: now },
+    { id: 'roster-jade', playerId: 'player-jade', teamId: 'team-varsity', seasonId: 'season-2026', jerseyNumber: '21', position: 'MB', status: 'active', captain: false, libero: false, starter: true, notes: '', createdAt: now }
   ],
   scheduleEvents: [
     { id: 'event-home-match', teamId: 'team-varsity', seasonId: 'season-2026', type: 'match', title: 'Home vs. Camden', date: '2026-08-20', startTime: '18:00', arrivalTime: '16:45', endTime: '', opponent: 'Camden Bulldogs', locationType: 'home', venue: 'Hartsville High School Gym', address: '', court: 'Main Court', travelNotes: '', notes: '', status: 'scheduled', createdAt: now, updatedAt: now },
@@ -40,6 +52,7 @@ type WorkspaceContextValue = WorkspaceData & {
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function mergeSeed<T extends {id:string}>(stored:T[]|undefined,seed:T[]){const current=stored??[];const ids=new Set(current.map((item)=>item.id));return[...current,...seed.filter((item)=>!ids.has(item.id))]}
 
 function readWorkspace(): WorkspaceData {
   try {
@@ -50,8 +63,8 @@ function readWorkspace(): WorkspaceData {
       organizations: parsed.organizations ?? seedWorkspace.organizations,
       teams: parsed.teams ?? seedWorkspace.teams,
       seasons: parsed.seasons ?? seedWorkspace.seasons,
-      players: parsed.players ?? seedWorkspace.players,
-      rosterMemberships: parsed.rosterMemberships ?? seedWorkspace.rosterMemberships,
+      players: mergeSeed(parsed.players,seedWorkspace.players),
+      rosterMemberships: mergeSeed(parsed.rosterMemberships,seedWorkspace.rosterMemberships),
       scheduleEvents: parsed.scheduleEvents ?? seedWorkspace.scheduleEvents
     };
   } catch { return seedWorkspace; }
