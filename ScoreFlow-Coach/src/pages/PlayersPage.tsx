@@ -21,7 +21,10 @@ export default function PlayersPage() {
   const [filter, setFilter] = useState<RosterFilter>('all');
   const selectedPlayer = workspace.players.find((player) => player.id === selectedPlayerId);
   const roster = workspace.rosterMemberships.filter((item) => item.teamId === workspace.activeTeamId && item.seasonId === workspace.activeSeasonId);
-  const rosterRows = useMemo(() => roster.map((membership) => ({ membership, player: workspace.players.find((player) => player.id === membership.playerId) })).filter((row): row is { membership: RosterMembership; player: Player } => Boolean(row.player) && !row.player.archived), [roster, workspace.players]);
+  const rosterRows = useMemo(() => roster
+    .map((membership) => ({ membership, player: workspace.players.find((player) => player.id === membership.playerId) }))
+    .filter((row): row is { membership: RosterMembership; player: Player } => row.player !== undefined)
+    .filter((row) => !row.player.archived), [roster, workspace.players]);
   const visibleRows = rosterRows.filter(({ player, membership }) => {
     const haystack = `${player.firstName} ${player.lastName} ${player.preferredName} ${membership.jerseyNumber} ${membership.position} ${player.primaryPosition}`.toLowerCase();
     const matchesQuery = haystack.includes(query.trim().toLowerCase());
