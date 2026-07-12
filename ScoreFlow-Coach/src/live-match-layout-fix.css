@@ -1,0 +1,55 @@
+.live-match-active .app-shell{
+  display:block!important;
+  grid-template-columns:none!important;
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+}
+
+.live-match-active .main-content{
+  display:block!important;
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+  margin:0!important;
+}
+
+.live-match-active .route-viewport{
+  display:block!important;
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+
+.live-match-mode{
+  width:100vw!important;
+  max-width:none!important;
+}
+
+.live-stage{
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+
+.live-court-wrap,
+.live-court,
+.stat-console{
+  min-width:0;
+  max-width:100%;
+}
+
+@media(max-width:700px) and (orientation:portrait){
+  .live-match-active .route-viewport,
+  .live-match-mode{
+    overflow:auto!important;
+  }
+
+  .live-stage{
+    width:100%;
+    overflow:visible;
+  }
+}
