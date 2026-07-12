@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEvent } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 
 export type StatAction = 'Kill'|'Attack error'|'Ace'|'Serve error'|'Dig'|'Block touch'|'Solo block'|'Assist'|'Pass 0'|'Pass 1'|'Pass 2'|'Pass 3';
 
@@ -32,15 +32,31 @@ const CENTER=VIEWBOX_SIZE/2;
 const OUTER_RADIUS=174;
 const INNER_RADIUS=104;
 const ANGULAR_GAP=1.6;
+const CLOSE_DURATION=180;
 
 export default function PlayerActionWheel({ player, actions, position, onSelect, onClose }:Props){
+  const [closing,setClosing]=useState(false);
   const safeX=Math.max(21,Math.min(40,position.x));
   const safeY=Math.max(30,Math.min(70,position.y));
   const step=360/actions.length;
 
-  return <div className="stat-wheel-backdrop" onPointerDown={onClose}>
-    <div className="radial-wheel-shell" style={{left:`${safeX}%`,top:`${safeY}%`} as CSSProperties} onPointerDown={(event)=>event.stopPropagation()} role="dialog" aria-label={`Record a stat for ${player.name}`}>
+  function closeWheel(action?:StatAction){
+    if(closing)return;
+    setClosing(true);
+    window.setTimeout(()=>{
+      if(action)onSelect(action);
+      else onClose();
+    },CLOSE_DURATION);
+  }
+
+  return <div className={`stat-wheel-backdrop${closing?' is-closing':''}`} onPointerDown={()=>closeWheel()}>
+    <div className={`radial-wheel-shell${closing?' is-closing':''}`} style={{left:`${safeX}%`,top:`${safeY}%`} as CSSProperties} onPointerDown={(event)=>event.stopPropagation()} role="dialog" aria-label={`Record a stat for ${player.name}`}>
       <svg className="radial-wheel-svg" viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} aria-hidden="true">
+        <defs>
+          <filter id="wheel-glass-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#020814" floodOpacity=".42" />
+          </filter>
+        </defs>
         <circle className="radial-wheel-track" cx={CENTER} cy={CENTER} r={(OUTER_RADIUS+INNER_RADIUS)/2} />
         {actions.map((action,index)=>{
           const start=-90+(index*step)+(ANGULAR_GAP/2);
@@ -48,12 +64,14 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
           const middle=(start+end)/2;
           const labelPoint=polarPoint(CENTER,CENTER,(OUTER_RADIUS+INNER_RADIUS)/2,middle);
           const meta=actionMeta[action];
-          const activate=()=>onSelect(action);
+          const activate=()=>closeWheel(action);
           const onKeyDown=(event:KeyboardEvent<SVGGElement>)=>{
             if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}
           };
-          return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={0} aria-label={action} onClick={activate} onKeyDown={onKeyDown}>
-            <path d={annularSegmentPath(CENTER,CENTER,INNER_RADIUS,OUTER_RADIUS,start,end)} />
+          const segmentPath=annularSegmentPath(CENTER,CENTER,INNER_RADIUS,OUTER_RADIUS,start,end);
+          return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={closing?-1:0} aria-label={action} onClick={activate} onKeyDown={onKeyDown}>
+            <path className="radial-wheel-segment-base" d={segmentPath} filter="url(#wheel-glass-shadow)" />
+            <path className="radial-wheel-segment-gloss" d={segmentPath} />
             <text className="radial-wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
               <tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.28em">{meta.icon}</tspan>
               <tspan className="radial-wheel-name" x={labelPoint.x} dy="1.55em">{meta.shortLabel}</tspan>
@@ -66,7 +84,7 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
         <strong>{player.name.split(' ')[0]}</strong>
         <small>{player.position}</small>
       </div>
-      <button className="radial-wheel-close" onClick={onClose} type="button" aria-label="Close stat wheel">×</button>
+      <button className="radial-wheel-close" onClick={()=>closeWheel()} type="button" aria-label="Close stat wheel">×</button>
     </div>
   </div>;
 }
