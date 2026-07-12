@@ -6,16 +6,8 @@ import type { Player, PlayerStatus, RosterMembership, RosterMembershipInput } fr
 
 type RosterView = 'players' | 'lineup' | 'stats';
 type RosterRow = { player: Player; membership: RosterMembership };
-type DropZone = 'starters' | 'bench';
-
-type Performance = {
-  kills: number;
-  aces: number;
-  digs: number;
-  blocks: number;
-  assists: number;
-  hitting: string;
-};
+type DropZone = 'starters' | 'libero' | 'bench';
+type Performance = { kills: number; aces: number; digs: number; blocks: number; assists: number; hitting: string };
 
 const seededPerformance: Record<string, Performance> = {
   'player-ava': { kills: 128, aces: 31, digs: 94, blocks: 18, assists: 7, hitting: '.284' },
@@ -56,25 +48,35 @@ export default function RosterPage() {
   const nextMatch = workspace.scheduleEvents
     .filter((event) => event.teamId === workspace.activeTeamId && event.seasonId === workspace.activeSeasonId && event.type === 'match' && event.date >= todayValue())
     .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))[0];
-  const teamStyle = {
-    '--team-primary': workspace.activeTeam?.primaryColor ?? '#ef3340',
-    '--team-secondary': workspace.activeTeam?.secondaryColor ?? '#5d9df5'
-  } as CSSProperties;
+  const teamStyle = { '--team-primary': workspace.activeTeam?.primaryColor ?? '#ef3340', '--team-secondary': workspace.activeTeam?.secondaryColor ?? '#5d9df5' } as CSSProperties;
 
   function updateMembership(membership: RosterMembership, patch: Partial<RosterMembershipInput>) {
-    workspace.updateRosterMembership(membership.id, {
-      playerId: membership.playerId,
-      teamId: membership.teamId,
-      seasonId: membership.seasonId,
-      jerseyNumber: membership.jerseyNumber,
-      position: membership.position,
-      status: membership.status,
-      captain: membership.captain,
-      libero: membership.libero,
-      starter: membership.starter,
-      notes: membership.notes,
-      ...patch
+    workspace.updateRosterMembership(membership.id, membershipInput(membership, patch));
+  }
+
+  function assignLibero(membership: RosterMembership, enabled: boolean) {
+    if (!enabled) {
+      updateMembership(membership, { libero: false, starter: false });
+      return;
+    }
+    rows.forEach((row) => {
+      if (row.membership.id !== membership.id && row.membership.libero) {
+        workspace.updateRosterMembership(row.membership.id, membershipInput(row.membership, { libero: false, starter: false }));
+      }
     });
+    workspace.updateRosterMembership(membership.id, membershipInput(membership, { libero: true, starter: false }));
+  }
+
+  function updateRosterRole(membership: RosterMembership, patch: Partial<RosterMembershipInput>) {
+    if (patch.libero === true) {
+      assignLibero(membership, true);
+      return;
+    }
+    if (patch.libero === false) {
+      assignLibero(membership, false);
+      return;
+    }
+    updateMembership(membership, patch);
   }
 
   function selectPlayer(id: string) {
@@ -93,14 +95,14 @@ export default function RosterPage() {
     <section className="team-hq-body">
       <div className="team-hq-main panel">
         {view === 'players' && <PlayerGrid rows={rows} selectedId={selected?.player.id} onSelect={selectPlayer} />}
-        {view === 'lineup' && <LineupView rows={rows} starters={starters} libero={libero} onSelect={selectPlayer} onUpdate={updateMembership} />}
+        {view === 'lineup' && <LineupView rows={rows} starters={starters} libero={libero} onSelect={selectPlayer} onUpdate={updateMembership} onAssignLibero={assignLibero} />}
         {view === 'stats' && <StatsView rows={rows} onSelect={selectPlayer} />}
       </div>
-      <aside className="player-focus panel">{selected ? <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} /> : <div className="team-hq-empty"><span>◇</span><p>Add players from the Players page to build this roster.</p></div>}</aside>
+      <aside className="player-focus panel">{selected ? <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateRosterRole(selected.membership, patch)} /> : <div className="team-hq-empty"><span>◇</span><p>Add players from the Players page to build this roster.</p></div>}</aside>
     </section>
 
     <SlideOver open={mobileFocusOpen && Boolean(selected)} title="Player details" onClose={() => setMobileFocusOpen(false)}>
-      {selected && <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} />}
+      {selected && <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateRosterRole(selected.membership, patch)} />}
     </SlideOver>
   </div>;
 }
@@ -117,13 +119,21 @@ function PlayerGrid({ rows, selectedId, onSelect }: { rows: RosterRow[]; selecte
   </div>;
 }
 
-function LineupView({ rows, starters, libero, onSelect, onUpdate }: { rows: RosterRow[]; starters: RosterRow[]; libero?: RosterRow; onSelect: (id: string) => void; onUpdate: (membership: RosterMembership, patch: Partial<RosterMembershipInput>) => void }) {
+function LineupView({ rows, starters, libero, onSelect, onUpdate, onAssignLibero }: { rows: RosterRow[]; starters: RosterRow[]; libero?: RosterRow; onSelect: (id: string) => void; onUpdate: (membership: RosterMembership, patch: Partial<RosterMembershipInput>) => void; onAssignLibero: (membership: RosterMembership, enabled: boolean) => void }) {
   const slots = Array.from({ length: 6 }, (_, index) => starters[index]);
   const reserves = rows.filter((row) => !row.membership.starter && !row.membership.libero);
   const [activeZone, setActiveZone] = useState<DropZone | null>(null);
 
   function movePlayer(row: RosterRow, zone: DropZone) {
-    if (zone === 'bench') { onUpdate(row.membership, { starter: false }); return; }
+    if (zone === 'bench') {
+      if (row.membership.libero) onAssignLibero(row.membership, false);
+      else onUpdate(row.membership, { starter: false });
+      return;
+    }
+    if (zone === 'libero') {
+      onAssignLibero(row.membership, true);
+      return;
+    }
     if (row.membership.starter || starters.length >= 6) return;
     onUpdate(row.membership, { starter: true, libero: false });
   }
@@ -134,17 +144,17 @@ function LineupView({ rows, starters, libero, onSelect, onUpdate }: { rows: Rost
       {slots.map((row, index) => row ? <TouchDragPlayer key={row.membership.id} row={row} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="lineup-slot is-filled"><span>{index + 1}</span><strong>#{row.membership.jerseyNumber} {row.player.preferredName || row.player.firstName}</strong><small>{row.membership.position || row.player.primaryPosition}</small></TouchDragPlayer> : <div className="lineup-slot" key={`open-${index}`}><span>{index + 1}</span><strong>Open position</strong><small>Drag a bench player here</small></div>)}
     </div>
     <div className="lineup-lower">
-      <section><p className="eyebrow">Libero</p>{libero ? <button className="lineup-person" onClick={() => onSelect(libero.player.id)} type="button"><b>#{libero.membership.jerseyNumber}</b><span><strong>{libero.player.preferredName || libero.player.firstName} {libero.player.lastName}</strong><small>{libero.membership.position || 'L'}</small></span></button> : <div className="lineup-placeholder">No libero assigned</div>}</section>
+      <section className={`drop-zone${activeZone === 'libero' ? ' is-drop-active' : ''}`} data-drop-zone="libero"><p className="eyebrow">Libero</p>{libero ? <TouchDragPlayer row={libero} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="lineup-person"><b>#{libero.membership.jerseyNumber}</b><span><strong>{libero.player.preferredName || libero.player.firstName} {libero.player.lastName}</strong><small>{libero.membership.position || 'L'}</small></span></TouchDragPlayer> : <div className="lineup-placeholder">Drag a player here to assign Libero</div>}</section>
       <section className={`drop-zone${activeZone === 'bench' ? ' is-drop-active' : ''}`} data-drop-zone="bench"><p className="eyebrow">Bench</p><div className="bench-list">{reserves.map((row) => <TouchDragPlayer key={row.membership.id} row={row} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="bench-player"><b>#{row.membership.jerseyNumber}</b><span>{row.player.preferredName || row.player.firstName} {row.player.lastName}</span><small>{row.membership.position}</small></TouchDragPlayer>)}</div></section>
     </div>
-    <p className="lineup-drag-help">Drag players between Match-Ready Six and Bench. Touch and move on iPad.</p>
+    <p className="lineup-drag-help">Drag players between Match-Ready Six, Libero, and Bench. Assigning a new Libero returns the previous Libero to Bench.</p>
   </div>;
 }
 
 function TouchDragPlayer({ row, onSelect, onDrop, onZoneChange, className, children }: { row: RosterRow; onSelect: (id: string) => void; onDrop: (row: RosterRow, zone: DropZone) => void; onZoneChange: (zone: DropZone | null) => void; className: string; children: ReactNode }) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
-  function zoneAt(x: number, y: number): DropZone | null { const value = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop-zone]')?.dataset.dropZone; return value === 'starters' || value === 'bench' ? value : null; }
+  function zoneAt(x: number, y: number): DropZone | null { const value = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop-zone]')?.dataset.dropZone; return value === 'starters' || value === 'libero' || value === 'bench' ? value : null; }
   function pointerDown(event: ReactPointerEvent<HTMLButtonElement>) { start.current = { x: event.clientX, y: event.clientY }; dragging.current = false; event.currentTarget.setPointerCapture(event.pointerId); }
   function pointerMove(event: ReactPointerEvent<HTMLButtonElement>) { if (!start.current) return; if (Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y) > 7) dragging.current = true; if (!dragging.current) return; event.preventDefault(); onZoneChange(zoneAt(event.clientX, event.clientY)); event.currentTarget.classList.add('is-dragging'); }
   function pointerUp(event: ReactPointerEvent<HTMLButtonElement>) { const wasDragging = dragging.current; const zone = wasDragging ? zoneAt(event.clientX, event.clientY) : null; event.currentTarget.classList.remove('is-dragging'); onZoneChange(null); start.current = null; dragging.current = false; if (wasDragging && zone) onDrop(row, zone); else if (!wasDragging) onSelect(row.player.id); }
@@ -163,12 +173,15 @@ function PlayerFocus({ row, performance, onUpdate }: { row: RosterRow; performan
     <div className="player-focus-hero"><span>#{membership.jerseyNumber || '—'}</span><div><p className="eyebrow">Player focus</p><h3>{player.preferredName || player.firstName} {player.lastName}</h3><small>{membership.position || player.primaryPosition || 'Position not set'} · Class of {player.graduationYear || '—'}</small></div></div>
     <div className="focus-badges">{membership.captain && <span className="role-captain">Captain</span>}{membership.libero && <span className="role-libero">Libero</span>}{membership.starter && <span className="role-starter">Starter</span>}<span className={`focus-status status-${membership.status}`}>{statusLabel(membership.status)}</span></div>
     <div className="focus-stat-grid"><div><span>Kills</span><strong>{performance.kills || '—'}</strong></div><div><span>Aces</span><strong>{performance.aces || '—'}</strong></div><div><span>Digs</span><strong>{performance.digs || '—'}</strong></div><div><span>Blocks</span><strong>{performance.blocks || '—'}</strong></div><div><span>Assists</span><strong>{performance.assists || '—'}</strong></div><div><span>Hitting</span><strong>{performance.hitting}</strong></div></div>
-    <section className="focus-actions"><p className="eyebrow">Lineup controls</p><div><button className={membership.starter ? 'is-active' : ''} onClick={() => onUpdate({ starter: !membership.starter })} type="button">{membership.starter ? 'Move to bench' : 'Move to six'}</button><button className={membership.libero ? 'is-active' : ''} onClick={() => onUpdate({ libero: !membership.libero })} type="button">{membership.libero ? 'Remove libero' : 'Set libero'}</button><button className={membership.captain ? 'is-active' : ''} onClick={() => onUpdate({ captain: !membership.captain })} type="button">{membership.captain ? 'Remove captain' : 'Set captain'}</button></div></section>
+    <section className="focus-actions"><p className="eyebrow">Lineup controls</p><div><button className={membership.starter ? 'is-active' : ''} onClick={() => onUpdate({ starter: !membership.starter })} type="button">{membership.starter ? 'Move to bench' : 'Move to six'}</button><button className={membership.libero ? 'is-active' : ''} onClick={() => onUpdate({ libero: !membership.libero })} type="button">{membership.libero ? 'Move to bench' : 'Set libero'}</button><button className={membership.captain ? 'is-active' : ''} onClick={() => onUpdate({ captain: !membership.captain })} type="button">{membership.captain ? 'Remove captain' : 'Set captain'}</button></div></section>
     <section className="focus-availability"><p className="eyebrow">Availability</p><div>{(['active', 'limited', 'injured', 'away', 'inactive'] as PlayerStatus[]).map((status) => <button className={membership.status === status ? 'is-active' : ''} key={status} onClick={() => onUpdate({ status })} type="button">{statusLabel(status)}</button>)}</div></section>
     <section className="focus-note"><p className="eyebrow">Coach note</p><p>{membership.notes || player.notes || 'No notes added for this player.'}</p></section>
   </div>;
 }
 
+function membershipInput(membership: RosterMembership, patch: Partial<RosterMembershipInput>): RosterMembershipInput {
+  return { playerId: membership.playerId, teamId: membership.teamId, seasonId: membership.seasonId, jerseyNumber: membership.jerseyNumber, position: membership.position, status: membership.status, captain: membership.captain, libero: membership.libero, starter: membership.starter, notes: membership.notes, ...patch };
+}
 function performanceFor(playerId: string): Performance { return seededPerformance[playerId] ?? { kills: 0, aces: 0, digs: 0, blocks: 0, assists: 0, hitting: '—' }; }
 function statusLabel(status: PlayerStatus) { return status === 'active' ? 'Available' : status[0].toUpperCase() + status.slice(1); }
 function todayValue() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; }
