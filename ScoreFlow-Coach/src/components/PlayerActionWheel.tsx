@@ -35,7 +35,7 @@ export default function PlayerActionWheel({ player, actions, position, onSelect,
       {actions.map((action,index)=>{
         const angle=index*(360/actions.length);
         const meta=actionMeta[action];
-        return <button className={`action-wheel-segment tone-${meta.tone}`} style={{'--segment-angle':`${angle}deg`,'--label-angle':'0deg'} as CSSProperties} key={action} onClick={()=>onSelect(action)} type="button">
+        return <button className={`action-wheel-segment tone-${meta.tone}`} style={{'--segment-angle':`${angle}deg`,'--label-angle':'0deg',clipPath:'polygon(50% 0, 100% 24%, 86% 100%, 14% 100%, 0 24%)'} as CSSProperties} key={action} onClick={()=>onSelect(action)} type="button">
           <span style={{transform:`rotate(${-angle}deg)`}}><b>{meta.icon}</b><small>{action}</small></span>
         </button>;
       })}
