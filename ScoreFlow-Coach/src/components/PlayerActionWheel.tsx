@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 
 export type StatAction = 'Kill'|'Attack error'|'Ace'|'Serve error'|'Dig'|'Block touch'|'Solo block'|'Assist'|'Pass 0'|'Pass 1'|'Pass 2'|'Pass 3';
 
@@ -11,40 +11,82 @@ type Props = {
   onClose: ()=>void;
 };
 
-const actionMeta:Record<StatAction,{icon:string;tone:'positive'|'error'|'defense'|'setting'|'passing'}> = {
-  'Kill': { icon:'K', tone:'positive' },
-  'Attack error': { icon:'AE', tone:'error' },
-  'Ace': { icon:'A', tone:'positive' },
-  'Serve error': { icon:'SE', tone:'error' },
-  'Dig': { icon:'D', tone:'defense' },
-  'Block touch': { icon:'BT', tone:'defense' },
-  'Solo block': { icon:'SB', tone:'defense' },
-  'Assist': { icon:'AS', tone:'setting' },
-  'Pass 0': { icon:'P0', tone:'passing' },
-  'Pass 1': { icon:'P1', tone:'passing' },
-  'Pass 2': { icon:'P2', tone:'passing' },
-  'Pass 3': { icon:'P3', tone:'passing' }
+type Tone = 'positive'|'error'|'defense'|'setting'|'passing';
+const actionMeta:Record<StatAction,{icon:string;shortLabel:string;tone:Tone}> = {
+  'Kill': { icon:'K', shortLabel:'Kill', tone:'positive' },
+  'Attack error': { icon:'AE', shortLabel:'Attack err', tone:'error' },
+  'Ace': { icon:'A', shortLabel:'Ace', tone:'positive' },
+  'Serve error': { icon:'SE', shortLabel:'Serve err', tone:'error' },
+  'Dig': { icon:'D', shortLabel:'Dig', tone:'defense' },
+  'Block touch': { icon:'BT', shortLabel:'Block touch', tone:'defense' },
+  'Solo block': { icon:'SB', shortLabel:'Solo block', tone:'defense' },
+  'Assist': { icon:'AS', shortLabel:'Assist', tone:'setting' },
+  'Pass 0': { icon:'P0', shortLabel:'Pass 0', tone:'passing' },
+  'Pass 1': { icon:'P1', shortLabel:'Pass 1', tone:'passing' },
+  'Pass 2': { icon:'P2', shortLabel:'Pass 2', tone:'passing' },
+  'Pass 3': { icon:'P3', shortLabel:'Pass 3', tone:'passing' }
 };
+
+const VIEWBOX_SIZE=400;
+const CENTER=VIEWBOX_SIZE/2;
+const OUTER_RADIUS=174;
+const INNER_RADIUS=104;
+const ANGULAR_GAP=1.6;
 
 export default function PlayerActionWheel({ player, actions, position, onSelect, onClose }:Props){
   const safeX=Math.max(21,Math.min(40,position.x));
   const safeY=Math.max(30,Math.min(70,position.y));
+  const step=360/actions.length;
+
   return <div className="stat-wheel-backdrop" onPointerDown={onClose}>
-    <div className="player-action-wheel" style={{left:`${safeX}%`,top:`${safeY}%`} as CSSProperties} onPointerDown={(event)=>event.stopPropagation()} role="dialog" aria-label={`Record a stat for ${player.name}`}>
-      <div className="action-wheel-ring" aria-hidden="true" />
-      {actions.map((action,index)=>{
-        const angle=index*(360/actions.length);
-        const meta=actionMeta[action];
-        return <button className={`action-wheel-segment tone-${meta.tone}`} style={{'--segment-angle':`${angle}deg`,'--label-angle':'0deg',clipPath:'polygon(50% 0, 100% 24%, 86% 100%, 14% 100%, 0 24%)'} as CSSProperties} key={action} onClick={()=>onSelect(action)} type="button">
-          <span style={{transform:`rotate(${-angle}deg)`}}><b>{meta.icon}</b><small>{action}</small></span>
-        </button>;
-      })}
-      <div className={`action-wheel-player${player.libero?' is-libero':''}`}>
+    <div className="radial-wheel-shell" style={{left:`${safeX}%`,top:`${safeY}%`} as CSSProperties} onPointerDown={(event)=>event.stopPropagation()} role="dialog" aria-label={`Record a stat for ${player.name}`}>
+      <svg className="radial-wheel-svg" viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} aria-hidden="true">
+        <circle className="radial-wheel-track" cx={CENTER} cy={CENTER} r={(OUTER_RADIUS+INNER_RADIUS)/2} />
+        {actions.map((action,index)=>{
+          const start=-90+(index*step)+(ANGULAR_GAP/2);
+          const end=-90+((index+1)*step)-(ANGULAR_GAP/2);
+          const middle=(start+end)/2;
+          const labelPoint=polarPoint(CENTER,CENTER,(OUTER_RADIUS+INNER_RADIUS)/2,middle);
+          const meta=actionMeta[action];
+          const activate=()=>onSelect(action);
+          const onKeyDown=(event:KeyboardEvent<SVGGElement>)=>{
+            if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}
+          };
+          return <g className={`radial-wheel-segment tone-${meta.tone}`} key={action} role="button" tabIndex={0} aria-label={action} onClick={activate} onKeyDown={onKeyDown}>
+            <path d={annularSegmentPath(CENTER,CENTER,INNER_RADIUS,OUTER_RADIUS,start,end)} />
+            <text className="radial-wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
+              <tspan className="radial-wheel-icon" x={labelPoint.x} dy="-.28em">{meta.icon}</tspan>
+              <tspan className="radial-wheel-name" x={labelPoint.x} dy="1.55em">{meta.shortLabel}</tspan>
+            </text>
+          </g>;
+        })}
+      </svg>
+      <div className={`radial-wheel-player${player.libero?' is-libero':''}`}>
         <b>#{player.number}</b>
         <strong>{player.name.split(' ')[0]}</strong>
         <small>{player.position}</small>
       </div>
-      <button className="action-wheel-close" onClick={onClose} type="button" aria-label="Close stat wheel">×</button>
+      <button className="radial-wheel-close" onClick={onClose} type="button" aria-label="Close stat wheel">×</button>
     </div>
   </div>;
+}
+
+function polarPoint(cx:number,cy:number,radius:number,angleDegrees:number){
+  const angle=(angleDegrees*Math.PI)/180;
+  return {x:cx+(radius*Math.cos(angle)),y:cy+(radius*Math.sin(angle))};
+}
+
+function annularSegmentPath(cx:number,cy:number,innerRadius:number,outerRadius:number,startAngle:number,endAngle:number){
+  const outerStart=polarPoint(cx,cy,outerRadius,startAngle);
+  const outerEnd=polarPoint(cx,cy,outerRadius,endAngle);
+  const innerEnd=polarPoint(cx,cy,innerRadius,endAngle);
+  const innerStart=polarPoint(cx,cy,innerRadius,startAngle);
+  const largeArc=endAngle-startAngle>180?1:0;
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
+    'Z'
+  ].join(' ');
 }
