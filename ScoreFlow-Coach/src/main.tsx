@@ -13,6 +13,7 @@ import './players.css';
 import './controls.css';
 import './schedule.css';
 import './roster.css';
+import './practice.css';
 
 registerSW({ immediate: true });
 
