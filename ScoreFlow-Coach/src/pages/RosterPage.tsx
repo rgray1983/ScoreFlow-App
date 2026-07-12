@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import ContextBar from '../components/ContextBar';
 import SlideOver from '../components/SlideOver';
 import { useWorkspace } from '../context/WorkspaceContext';
@@ -84,21 +84,10 @@ export default function RosterPage() {
 
   return <div className="team-hq" style={teamStyle}>
     <ContextBar label="Roster context" />
-
     <section className="team-hq-header panel">
-      <div>
-        <p className="eyebrow">Team HQ</p>
-        <h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2>
-        <p>{workspace.activeSeason?.name ?? 'Select a season'} · {rows.length} players · {available} available</p>
-      </div>
-      <div className="next-match-summary">
-        <span>Next match</span>
-        <strong>{nextMatch?.title ?? 'No match scheduled'}</strong>
-        <small>{nextMatch ? `${formatDate(nextMatch.date)} · ${formatTime(nextMatch.startTime)}` : 'Add one from Schedule'}</small>
-      </div>
-      <div className="roster-view-tabs" aria-label="Roster view">
-        {(['players', 'lineup', 'stats'] as const).map((item) => <button className={view === item ? 'is-active' : ''} key={item} onClick={() => setView(item)} type="button">{item}</button>)}
-      </div>
+      <div><p className="eyebrow">Team HQ</p><h2>{workspace.activeTeam?.name ?? 'Select a team'}</h2><p>{workspace.activeSeason?.name ?? 'Select a season'} · {rows.length} players · {available} available</p></div>
+      <div className="next-match-summary"><span>Next match</span><strong>{nextMatch?.title ?? 'No match scheduled'}</strong><small>{nextMatch ? `${formatDate(nextMatch.date)} · ${formatTime(nextMatch.startTime)}` : 'Add one from Schedule'}</small></div>
+      <div className="roster-view-tabs" aria-label="Roster view">{(['players', 'lineup', 'stats'] as const).map((item) => <button className={view === item ? 'is-active' : ''} key={item} onClick={() => setView(item)} type="button">{item}</button>)}</div>
     </section>
 
     <section className="team-hq-body">
@@ -107,10 +96,7 @@ export default function RosterPage() {
         {view === 'lineup' && <LineupView rows={rows} starters={starters} libero={libero} onSelect={selectPlayer} onUpdate={updateMembership} />}
         {view === 'stats' && <StatsView rows={rows} onSelect={selectPlayer} />}
       </div>
-
-      <aside className="player-focus panel">
-        {selected ? <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} /> : <div className="team-hq-empty"><span>◇</span><p>Add players from the Players page to build this roster.</p></div>}
-      </aside>
+      <aside className="player-focus panel">{selected ? <PlayerFocus row={selected} performance={performanceFor(selected.player.id)} onUpdate={(patch) => updateMembership(selected.membership, patch)} /> : <div className="team-hq-empty"><span>◇</span><p>Add players from the Players page to build this roster.</p></div>}</aside>
     </section>
 
     <SlideOver open={mobileFocusOpen && Boolean(selected)} title="Player details" onClose={() => setMobileFocusOpen(false)}>
@@ -121,15 +107,12 @@ export default function RosterPage() {
 
 function PlayerGrid({ rows, selectedId, onSelect }: { rows: RosterRow[]; selectedId?: string; onSelect: (id: string) => void }) {
   return <div className="hq-player-grid">
-    {rows.map((row) => {
-      const stats = performanceFor(row.player.id);
-      return <button className={`hq-player-card${selectedId === row.player.id ? ' is-selected' : ''}`} key={row.membership.id} onClick={() => onSelect(row.player.id)} type="button">
-        <span className="hq-player-number">#{row.membership.jerseyNumber || '—'}</span>
-        <span className="hq-player-card-copy"><strong>{row.player.preferredName || row.player.firstName} {row.player.lastName}</strong><small>{row.membership.position || row.player.primaryPosition || 'Position not set'}</small></span>
-        <span className="hq-card-stats"><em><b>{stats.kills || '—'}</b>Kills</em><em><b>{stats.digs || '—'}</b>Digs</em><em><b>{stats.aces || '—'}</b>Aces</em></span>
-        <span className="hq-card-footer"><span className={`availability-dot status-${row.membership.status}`} />{statusLabel(row.membership.status)}{row.membership.captain && <b>Captain</b>}{row.membership.libero && <b className="is-libero">Libero</b>}</span>
-      </button>;
-    })}
+    {rows.map((row) => { const stats = performanceFor(row.player.id); return <button className={`hq-player-card${selectedId === row.player.id ? ' is-selected' : ''}`} key={row.membership.id} onClick={() => onSelect(row.player.id)} type="button">
+      <span className="hq-player-number">#{row.membership.jerseyNumber || '—'}</span>
+      <span className="hq-player-card-copy"><strong>{row.player.preferredName || row.player.firstName} {row.player.lastName}</strong><small>{row.membership.position || row.player.primaryPosition || 'Position not set'}</small></span>
+      <span className="hq-card-stats"><em><b>{stats.kills || '—'}</b>Kills</em><em><b>{stats.digs || '—'}</b>Digs</em><em><b>{stats.aces || '—'}</b>Aces</em></span>
+      <span className="hq-card-footer"><span className={`availability-dot status-${row.membership.status}`} />{statusLabel(row.membership.status)}{row.membership.captain && <b>Captain</b>}{row.membership.libero && <b className="is-libero">Libero</b>}</span>
+    </button>; })}
     {rows.length === 0 && <div className="team-hq-empty"><span>◇</span><p>No players are assigned to this team and season.</p></div>}
   </div>;
 }
@@ -140,12 +123,8 @@ function LineupView({ rows, starters, libero, onSelect, onUpdate }: { rows: Rost
   const [activeZone, setActiveZone] = useState<DropZone | null>(null);
 
   function movePlayer(row: RosterRow, zone: DropZone) {
-    if (zone === 'bench') {
-      onUpdate(row.membership, { starter: false });
-      return;
-    }
-    if (row.membership.starter) return;
-    if (starters.length >= 6) return;
+    if (zone === 'bench') { onUpdate(row.membership, { starter: false }); return; }
+    if (row.membership.starter || starters.length >= 6) return;
     onUpdate(row.membership, { starter: true, libero: false });
   }
 
@@ -158,63 +137,24 @@ function LineupView({ rows, starters, libero, onSelect, onUpdate }: { rows: Rost
       <section><p className="eyebrow">Libero</p>{libero ? <button className="lineup-person" onClick={() => onSelect(libero.player.id)} type="button"><b>#{libero.membership.jerseyNumber}</b><span><strong>{libero.player.preferredName || libero.player.firstName} {libero.player.lastName}</strong><small>{libero.membership.position || 'L'}</small></span></button> : <div className="lineup-placeholder">No libero assigned</div>}</section>
       <section className={`drop-zone${activeZone === 'bench' ? ' is-drop-active' : ''}`} data-drop-zone="bench"><p className="eyebrow">Bench</p><div className="bench-list">{reserves.map((row) => <TouchDragPlayer key={row.membership.id} row={row} onSelect={onSelect} onDrop={movePlayer} onZoneChange={setActiveZone} className="bench-player"><b>#{row.membership.jerseyNumber}</b><span>{row.player.preferredName || row.player.firstName} {row.player.lastName}</span><small>{row.membership.position}</small></TouchDragPlayer>)}</div></section>
     </div>
-    <p className="lineup-drag-help">Drag players between Match-Ready Six and Bench. Touch and hold briefly on iPad, then move.</p>
+    <p className="lineup-drag-help">Drag players between Match-Ready Six and Bench. Touch and move on iPad.</p>
   </div>;
 }
 
-function TouchDragPlayer({ row, onSelect, onDrop, onZoneChange, className, children }: { row: RosterRow; onSelect: (id: string) => void; onDrop: (row: RosterRow, zone: DropZone) => void; onZoneChange: (zone: DropZone | null) => void; className: string; children: React.ReactNode }) {
+function TouchDragPlayer({ row, onSelect, onDrop, onZoneChange, className, children }: { row: RosterRow; onSelect: (id: string) => void; onDrop: (row: RosterRow, zone: DropZone) => void; onZoneChange: (zone: DropZone | null) => void; className: string; children: ReactNode }) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
-
-  function zoneAt(x: number, y: number): DropZone | null {
-    const target = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop-zone]');
-    const value = target?.dataset.dropZone;
-    return value === 'starters' || value === 'bench' ? value : null;
-  }
-
-  function pointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
-    start.current = { x: event.clientX, y: event.clientY };
-    dragging.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function pointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (!start.current) return;
-    const distance = Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y);
-    if (distance > 7) dragging.current = true;
-    if (!dragging.current) return;
-    event.preventDefault();
-    onZoneChange(zoneAt(event.clientX, event.clientY));
-    event.currentTarget.classList.add('is-dragging');
-  }
-
-  function pointerUp(event: ReactPointerEvent<HTMLButtonElement>) {
-    const wasDragging = dragging.current;
-    const zone = wasDragging ? zoneAt(event.clientX, event.clientY) : null;
-    event.currentTarget.classList.remove('is-dragging');
-    onZoneChange(null);
-    start.current = null;
-    dragging.current = false;
-    if (wasDragging && zone) onDrop(row, zone);
-    else if (!wasDragging) onSelect(row.player.id);
-  }
-
-  function pointerCancel(event: ReactPointerEvent<HTMLButtonElement>) {
-    event.currentTarget.classList.remove('is-dragging');
-    onZoneChange(null);
-    start.current = null;
-    dragging.current = false;
-  }
-
+  function zoneAt(x: number, y: number): DropZone | null { const value = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop-zone]')?.dataset.dropZone; return value === 'starters' || value === 'bench' ? value : null; }
+  function pointerDown(event: ReactPointerEvent<HTMLButtonElement>) { start.current = { x: event.clientX, y: event.clientY }; dragging.current = false; event.currentTarget.setPointerCapture(event.pointerId); }
+  function pointerMove(event: ReactPointerEvent<HTMLButtonElement>) { if (!start.current) return; if (Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y) > 7) dragging.current = true; if (!dragging.current) return; event.preventDefault(); onZoneChange(zoneAt(event.clientX, event.clientY)); event.currentTarget.classList.add('is-dragging'); }
+  function pointerUp(event: ReactPointerEvent<HTMLButtonElement>) { const wasDragging = dragging.current; const zone = wasDragging ? zoneAt(event.clientX, event.clientY) : null; event.currentTarget.classList.remove('is-dragging'); onZoneChange(null); start.current = null; dragging.current = false; if (wasDragging && zone) onDrop(row, zone); else if (!wasDragging) onSelect(row.player.id); }
+  function pointerCancel(event: ReactPointerEvent<HTMLButtonElement>) { event.currentTarget.classList.remove('is-dragging'); onZoneChange(null); start.current = null; dragging.current = false; }
   return <button className={`${className} touch-drag-player`} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel} type="button">{children}</button>;
 }
 
 function StatsView({ rows, onSelect }: { rows: RosterRow[]; onSelect: (id: string) => void }) {
   const categories: { key: keyof Performance; label: string }[] = [{ key: 'kills', label: 'Kills' }, { key: 'aces', label: 'Aces' }, { key: 'digs', label: 'Digs' }, { key: 'blocks', label: 'Blocks' }, { key: 'assists', label: 'Assists' }];
-  return <div className="leaderboard-grid">{categories.map(({ key, label }) => {
-    const ranked = [...rows].sort((a, b) => Number(performanceFor(b.player.id)[key]) - Number(performanceFor(a.player.id)[key])).slice(0, 5);
-    return <section className="leaderboard-card" key={key}><div><p className="eyebrow">Season leaders</p><h3>{label}</h3></div>{ranked.map((row, index) => <button key={row.membership.id} onClick={() => onSelect(row.player.id)} type="button"><span>{index + 1}</span><strong>{row.player.preferredName || row.player.firstName} {row.player.lastName}</strong><b>{performanceFor(row.player.id)[key] || '—'}</b></button>)}</section>;
-  })}</div>;
+  return <div className="leaderboard-grid">{categories.map(({ key, label }) => { const ranked = [...rows].sort((a, b) => Number(performanceFor(b.player.id)[key]) - Number(performanceFor(a.player.id)[key])).slice(0, 5); return <section className="leaderboard-card" key={key}><div><p className="eyebrow">Season leaders</p><h3>{label}</h3></div>{ranked.map((row, index) => <button key={row.membership.id} onClick={() => onSelect(row.player.id)} type="button"><span>{index + 1}</span><strong>{row.player.preferredName || row.player.firstName} {row.player.lastName}</strong><b>{performanceFor(row.player.id)[key] || '—'}</b></button>)}</section>; })}</div>;
 }
 
 function PlayerFocus({ row, performance, onUpdate }: { row: RosterRow; performance: Performance; onUpdate: (patch: Partial<RosterMembershipInput>) => void }) {
@@ -229,10 +169,7 @@ function PlayerFocus({ row, performance, onUpdate }: { row: RosterRow; performan
   </div>;
 }
 
-function performanceFor(playerId: string): Performance {
-  return seededPerformance[playerId] ?? { kills: 0, aces: 0, digs: 0, blocks: 0, assists: 0, hitting: '—' };
-}
-
+function performanceFor(playerId: string): Performance { return seededPerformance[playerId] ?? { kills: 0, aces: 0, digs: 0, blocks: 0, assists: 0, hitting: '—' }; }
 function statusLabel(status: PlayerStatus) { return status === 'active' ? 'Available' : status[0].toUpperCase() + status.slice(1); }
 function todayValue() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; }
 function formatDate(value: string) { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
