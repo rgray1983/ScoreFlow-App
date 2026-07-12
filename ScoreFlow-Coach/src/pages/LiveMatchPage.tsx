@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerE
 import { useNavigate } from 'react-router-dom';
 import PlayerActionWheel, { type StatAction } from '../components/PlayerActionWheel';
 import { useWorkspace } from '../context/WorkspaceContext';
+import type { Player, RosterMembership } from '../types/workspace';
 
 type Side = 'home' | 'away';
 type LiveEvent = { id:string; kind:'score'|'stat'|'rotation'|'sub'|'timeout'|'system'; label:string; at:string };
@@ -11,12 +12,16 @@ type CourtPlayer = { id:string; name:string; number:string; position:string; lib
 
 const STORAGE_KEY='scoreflow-live-match-v3';
 const statActions:StatAction[]=['Kill','Attack error','Ace','Serve error','Dig','Block touch','Solo block','Assist','Pass 0','Pass 1','Pass 2','Pass 3'];
-const defaultPoints:CourtPoint[]=[{x:13,y:27},{x:28,y:27},{x:43,y:27},{x:13,y:72},{x:28,y:72},{x:43,y:72}];
+const defaultPoints:CourtPoint[]=[{x:12,y:27},{x:27,y:27},{x:42,y:27},{x:12,y:72},{x:27,y:72},{x:42,y:72}];
 
 export default function LiveMatchPage(){
   const workspace=useWorkspace();
   const navigate=useNavigate();
-  const roster=useMemo(()=>workspace.rosterMemberships.filter((m)=>m.teamId===workspace.activeTeamId&&m.seasonId===workspace.activeSeasonId).map((membership)=>({membership,player:workspace.players.find((p)=>p.id===membership.playerId)})).filter((row):row is {membership:typeof workspace.rosterMemberships[number];player:typeof workspace.players[number]}=>Boolean(row.player&&!row.player.archived)),[workspace]);
+  const roster=useMemo(()=>workspace.rosterMemberships
+    .filter((membership)=>membership.teamId===workspace.activeTeamId&&membership.seasonId===workspace.activeSeasonId)
+    .map((membership)=>({membership,player:workspace.players.find((player)=>player.id===membership.playerId)}))
+    .filter((row):row is {membership:RosterMembership;player:Player}=>row.player!==undefined)
+    .filter((row)=>!row.player.archived),[workspace.activeTeamId,workspace.activeSeasonId,workspace.rosterMemberships,workspace.players]);
   const players=useMemo<CourtPlayer[]>(()=>roster.map(({membership,player})=>({id:player.id,name:`${player.preferredName||player.firstName} ${player.lastName}`,number:membership.jerseyNumber||'—',position:membership.position||player.primaryPosition||'—',libero:membership.libero})),[roster]);
   const scheduled=workspace.scheduleEvents.filter((event)=>event.teamId===workspace.activeTeamId&&event.seasonId===workspace.activeSeasonId&&event.type==='match').sort((a,b)=>`${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))[0];
   const [match,setMatch]=useState<MatchState>(()=>readState(players,scheduled?.opponent||'Opponent'));
@@ -27,11 +32,12 @@ export default function LiveMatchPage(){
   const [subOut,setSubOut]=useState('');
   const [flash,setFlash]=useState('');
   const dragMoved=useRef(false);
+  const dragOrigin=useRef<{x:number;y:number}|null>(null);
 
   useEffect(()=>localStorage.setItem(STORAGE_KEY,JSON.stringify(match)),[match]);
   useEffect(()=>{document.body.classList.add('live-match-active');return()=>document.body.classList.remove('live-match-active')},[]);
-  const court=match.courtIds.map((id)=>players.find((player)=>player.id===id)).filter(Boolean) as CourtPlayer[];
-  const bench=match.benchIds.map((id)=>players.find((player)=>player.id===id)).filter(Boolean) as CourtPlayer[];
+  const court=match.courtIds.map((id)=>players.find((player)=>player.id===id)).filter((player):player is CourtPlayer=>player!==undefined);
+  const bench=match.benchIds.map((id)=>players.find((player)=>player.id===id)).filter((player):player is CourtPlayer=>player!==undefined);
   const wheelPlayer=players.find((player)=>player.id===wheelPlayerId);
   const style={'--live-primary':workspace.activeTeam?.primaryColor??'#ef3340','--live-secondary':workspace.activeTeam?.secondaryColor??'#f4c95d'} as CSSProperties;
 
@@ -40,8 +46,8 @@ export default function LiveMatchPage(){
   function recordStat(action:StatAction){if(!wheelPlayer)return;addEvent('stat',`#${wheelPlayer.number} ${wheelPlayer.name} · ${action}`);setFlash(`${wheelPlayer.name}: ${action}`);setWheelPlayerId('');setTimeout(()=>setFlash(''),900)}
   function rotate(){setMatch((current)=>{const ids=current.courtIds.length?[current.courtIds[current.courtIds.length-1],...current.courtIds.slice(0,-1)]:current.courtIds;const positions={...current.positions};ids.forEach((id,index)=>{positions[id]=defaultPoints[index]});return{...current,rotation:current.rotation===6?1:current.rotation+1,courtIds:ids,positions}});addEvent('rotation',`Rotated to R${match.rotation===6?1:match.rotation+1}`)}
   function substitute(inId:string){if(!subOut||!inId)return;setMatch((current)=>{const slot=current.courtIds.indexOf(subOut);const positions={...current.positions,[inId]:current.positions[subOut]??defaultPoints[Math.max(0,slot)]};delete positions[subOut];return{...current,courtIds:current.courtIds.map((id)=>id===subOut?inId:id),benchIds:[...current.benchIds.filter((id)=>id!==inId),subOut],positions,selectedPlayerId:inId}});const outgoing=players.find((player)=>player.id===subOut);const incoming=players.find((player)=>player.id===inId);addEvent('sub',`#${incoming?.number} ${incoming?.name} in · #${outgoing?.number} ${outgoing?.name} out`);setSubOut('')}
-  function movePlayer(event:ReactPointerEvent<HTMLDivElement>){if(!draggingId)return;const rect=event.currentTarget.getBoundingClientRect();const x=Math.max(7,Math.min(46,((event.clientX-rect.left)/rect.width)*100));const y=Math.max(14,Math.min(86,((event.clientY-rect.top)/rect.height)*100));if(Math.abs(event.movementX)>1||Math.abs(event.movementY)>1)dragMoved.current=true;setMatch((current)=>({...current,positions:{...current.positions,[draggingId]:{x,y}}}))}
-  function finishDrag(){if(!draggingId)return;const playerId=draggingId;setDraggingId('');if(!dragMoved.current)setWheelPlayerId(playerId)}
+  function movePlayer(event:ReactPointerEvent<HTMLDivElement>){if(!draggingId)return;const rect=event.currentTarget.getBoundingClientRect();const x=Math.max(7,Math.min(46,((event.clientX-rect.left)/rect.width)*100));const y=Math.max(13,Math.min(87,((event.clientY-rect.top)/rect.height)*100));if(dragOrigin.current&&Math.hypot(event.clientX-dragOrigin.current.x,event.clientY-dragOrigin.current.y)>6)dragMoved.current=true;setMatch((current)=>({...current,positions:{...current.positions,[draggingId]:{x,y}}}))}
+  function finishDrag(){if(!draggingId)return;const playerId=draggingId;setDraggingId('');dragOrigin.current=null;if(!dragMoved.current)setWheelPlayerId(playerId)}
   function undo(){setMatch((current)=>({...current,events:current.events.slice(1)}));setFlash('Last timeline event removed');setTimeout(()=>setFlash(''),900)}
   async function enterFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch{/* browser may block */}}
   function saveExit(){if(document.fullscreenElement)void document.exitFullscreen();navigate('/')}
@@ -59,8 +65,8 @@ export default function LiveMatchPage(){
     <main className="live-stage">
       <section className="live-court-wrap">
         <div className="live-court" onPointerMove={movePlayer} onPointerUp={finishDrag} onPointerCancel={finishDrag}>
-          <div className="opponent-zone"><span>{match.opponent}</span></div><div className="court-net"><span>NET</span></div>
-          {court.slice(0,6).map((player,index)=>{const point=match.positions[player.id]??defaultPoints[index];return <button className={`court-player${match.selectedPlayerId===player.id?' is-selected':''}${player.libero?' is-libero':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} key={player.id} onPointerDown={(event)=>{event.currentTarget.setPointerCapture(event.pointerId);dragMoved.current=false;setDraggingId(player.id);setMatch((current)=>({...current,selectedPlayerId:player.id}))}} type="button"><b>#{player.number}</b><strong>{player.name.split(' ')[0]}</strong><small>{player.position}</small></button>})}
+          <div className="home-court-label"><span>{workspace.activeTeam?.name??'Home team'}</span></div><div className="opponent-zone"><span>{match.opponent}</span></div><div className="court-net"><span>NET</span></div>
+          {court.slice(0,6).map((player,index)=>{const point=match.positions[player.id]??defaultPoints[index];return <button className={`court-player${match.selectedPlayerId===player.id?' is-selected':''}${player.libero?' is-libero':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} key={player.id} onPointerDown={(event)=>{event.currentTarget.setPointerCapture(event.pointerId);dragMoved.current=false;dragOrigin.current={x:event.clientX,y:event.clientY};setDraggingId(player.id);setMatch((current)=>({...current,selectedPlayerId:player.id}))}} type="button"><b>#{player.number}</b><strong>{player.name.split(' ')[0]}</strong><small>{player.position}</small></button>})}
           {wheelPlayer&&match.positions[wheelPlayer.id]&&<PlayerActionWheel player={wheelPlayer} actions={statActions} position={match.positions[wheelPlayer.id]} onSelect={recordStat} onClose={()=>setWheelPlayerId('')} />}
         </div>
         <div className="live-bench"><span>Bench</span>{bench.map((player)=><button key={player.id} onClick={()=>setMatch((current)=>({...current,selectedPlayerId:player.id}))} type="button"><b>#{player.number}</b><small>{player.name.split(' ')[0]}</small></button>)}</div>
