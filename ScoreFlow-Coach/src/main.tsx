@@ -15,7 +15,6 @@ import './schedule.css';
 import './roster.css';
 import './practice.css';
 import './live-match.css';
-import './live-match-layout-fix.css';
 
 registerSW({ immediate: true });
 
