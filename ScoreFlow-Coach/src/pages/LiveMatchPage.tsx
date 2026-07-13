@@ -9,7 +9,7 @@ type Side = 'home' | 'away';
 type LiveEvent = { id:string; kind:'score'|'stat'|'rotation'|'sub'|'timeout'|'system'; label:string; at:string };
 type CourtPoint = { x:number; y:number };
 type MatchState = { homeScore:number; awayScore:number; set:number; homeSets:number; awaySets:number; serving:Side; rotation:number; courtIds:string[]; benchIds:string[]; positions:Record<string,CourtPoint>; selectedPlayerId:string; events:LiveEvent[]; homeTimeouts:number; awayTimeouts:number; opponent:string; started:boolean };
-type CourtPlayer = { id:string; name:string; number:string; position:string; libero:boolean; starter:boolean; photoUrl?:string };
+type CourtPlayer = { id:string; name:string; number:string; position:string; libero:boolean; captain:boolean; starter:boolean; photoUrl?:string };
 
 const STORAGE_KEY='scoreflow-live-match-v3';
 const statActions:StatAction[]=['Kill','Attack error','Ace','Serve error','Dig','Block touch','Solo block','Assist','Pass 0','Pass 1','Pass 2','Pass 3'];
@@ -23,7 +23,7 @@ export default function LiveMatchPage(){
     .map((membership)=>({membership,player:workspace.players.find((player)=>player.id===membership.playerId)}))
     .filter((row):row is {membership:RosterMembership;player:Player}=>row.player!==undefined)
     .filter((row)=>!row.player.archived),[workspace.activeTeamId,workspace.activeSeasonId,workspace.rosterMemberships,workspace.players]);
-  const players=useMemo<CourtPlayer[]>(()=>roster.map(({membership,player})=>({id:player.id,name:`${player.preferredName||player.firstName} ${player.lastName}`,number:membership.jerseyNumber||'—',position:membership.position||player.primaryPosition||'—',libero:membership.libero,starter:membership.starter,photoUrl:player.photoUrl||undefined})),[roster]);
+  const players=useMemo<CourtPlayer[]>(()=>roster.map(({membership,player})=>({id:player.id,name:`${player.preferredName||player.firstName} ${player.lastName}`,number:membership.jerseyNumber||'—',position:membership.position||player.primaryPosition||'—',libero:membership.libero,captain:membership.captain,starter:membership.starter,photoUrl:player.photoUrl||undefined})),[roster]);
   const scheduledEvents=workspace.scheduleEvents.filter((event)=>event.teamId===workspace.activeTeamId&&event.seasonId===workspace.activeSeasonId);
   const scheduled=scheduledEvents.filter((event)=>event.type==='match').sort((a,b)=>`${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))[0];
   const activeRecord=workspace.matches.find((record)=>record.teamId===workspace.activeTeamId&&record.seasonId===workspace.activeSeasonId&&record.status==='live');
