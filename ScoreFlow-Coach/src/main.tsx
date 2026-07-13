@@ -19,6 +19,7 @@ import './live-match-header.css';
 import './player-action-wheel.css';
 import './player-photo.css';
 import './match-setup.css';
+import './app-scrollbars.css';
 
 registerSW({ immediate: true });
 
