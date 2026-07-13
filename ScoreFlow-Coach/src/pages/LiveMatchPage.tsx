@@ -33,6 +33,8 @@ export default function LiveMatchPage(){
   const [showExit,setShowExit]=useState(false);
   const [wheelPlayerId,setWheelPlayerId]=useState('');
   const [draggingId,setDraggingId]=useState('');
+  const [benchDraggingId,setBenchDraggingId]=useState('');
+  const [benchDropTargetId,setBenchDropTargetId]=useState('');
   const [subOut,setSubOut]=useState('');
   const [flash,setFlash]=useState('');
   const dragMoved=useRef(false);
@@ -53,26 +55,112 @@ export default function LiveMatchPage(){
     setWheelPlayerId('');
     setSetupVisible(false);
   }
-  function addEvent(kind:LiveEvent['kind'],label:string){setMatch((current)=>({...current,events:[{id:`event-${Date.now()}-${Math.random()}`,kind,label,at:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})},...current.events].slice(0,120)}))}
-  function score(side:Side,delta:number){setMatch((current)=>({...current,[side==='home'?'homeScore':'awayScore']:Math.max(0,current[side==='home'?'homeScore':'awayScore']+delta),serving:delta>0?side:current.serving}));addEvent('score',`${side==='home'?workspace.activeTeam?.name||'Home':match.opponent} ${delta>0?'+1':'-1'}`)}
-  function recordStat(action:StatAction){if(!wheelPlayer)return;addEvent('stat',`#${wheelPlayer.number} ${wheelPlayer.name} · ${action}`);setFlash(`${wheelPlayer.name}: ${action}`);setWheelPlayerId('');setTimeout(()=>setFlash(''),900)}
-  function rotate(){setMatch((current)=>{const ids=current.courtIds.length?[current.courtIds[current.courtIds.length-1],...current.courtIds.slice(0,-1)]:current.courtIds;const positions={...current.positions};ids.forEach((id,index)=>{positions[id]=defaultPoints[index]});return{...current,rotation:current.rotation===6?1:current.rotation+1,courtIds:ids,positions}});addEvent('rotation',`Rotated to R${match.rotation===6?1:match.rotation+1}`)}
-  function substitute(inId:string){if(!subOut||!inId)return;setMatch((current)=>{const slot=current.courtIds.indexOf(subOut);const positions={...current.positions,[inId]:current.positions[subOut]??defaultPoints[Math.max(0,slot)]};delete positions[subOut];return{...current,courtIds:current.courtIds.map((id)=>id===subOut?inId:id),benchIds:[...current.benchIds.filter((id)=>id!==inId),subOut],positions,selectedPlayerId:inId}});const outgoing=players.find((player)=>player.id===subOut);const incoming=players.find((player)=>player.id===inId);addEvent('sub',`#${incoming?.number} ${incoming?.name} in · #${outgoing?.number} ${outgoing?.name} out`);setSubOut('')}
-  function movePlayer(event:ReactPointerEvent<HTMLDivElement>){if(!draggingId)return;const rect=event.currentTarget.getBoundingClientRect();const x=Math.max(7,Math.min(46,((event.clientX-rect.left)/rect.width)*100));const y=Math.max(13,Math.min(87,((event.clientY-rect.top)/rect.height)*100));if(dragOrigin.current&&Math.hypot(event.clientX-dragOrigin.current.x,event.clientY-dragOrigin.current.y)>6)dragMoved.current=true;setMatch((current)=>({...current,positions:{...current.positions,[draggingId]:{x,y}}}))}
-  function finishDrag(){if(!draggingId)return;const playerId=draggingId;setDraggingId('');dragOrigin.current=null;if(!dragMoved.current)setWheelPlayerId(playerId)}
+
+  function addEvent(kind:LiveEvent['kind'],label:string){
+    setMatch((current)=>({...current,events:[{id:`event-${Date.now()}-${Math.random()}`,kind,label,at:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})},...current.events].slice(0,120)}));
+  }
+
+  function score(side:Side,delta:number){
+    setMatch((current)=>({...current,[side==='home'?'homeScore':'awayScore']:Math.max(0,current[side==='home'?'homeScore':'awayScore']+delta),serving:delta>0?side:current.serving}));
+    addEvent('score',`${side==='home'?workspace.activeTeam?.name||'Home':match.opponent} ${delta>0?'+1':'-1'}`);
+  }
+
+  function recordStat(action:StatAction){
+    if(!wheelPlayer)return;
+    addEvent('stat',`#${wheelPlayer.number} ${wheelPlayer.name} · ${action}`);
+    setFlash(`${wheelPlayer.name}: ${action}`);
+    setWheelPlayerId('');
+    setTimeout(()=>setFlash(''),900);
+  }
+
+  function rotate(){
+    setMatch((current)=>{
+      const ids=current.courtIds.length?[current.courtIds[current.courtIds.length-1],...current.courtIds.slice(0,-1)]:current.courtIds;
+      const positions={...current.positions};
+      ids.forEach((id,index)=>{positions[id]=defaultPoints[index]});
+      return{...current,rotation:current.rotation===6?1:current.rotation+1,courtIds:ids,positions};
+    });
+    addEvent('rotation',`Rotated to R${match.rotation===6?1:match.rotation+1}`);
+  }
+
+  function performSubstitution(outId:string,inId:string){
+    if(!outId||!inId||outId===inId)return;
+    const outgoing=players.find((player)=>player.id===outId);
+    const incoming=players.find((player)=>player.id===inId);
+    if(!outgoing||!incoming)return;
+    setMatch((current)=>{
+      const slot=current.courtIds.indexOf(outId);
+      if(slot<0||!current.benchIds.includes(inId))return current;
+      const positions={...current.positions,[inId]:current.positions[outId]??defaultPoints[slot]};
+      delete positions[outId];
+      return{...current,courtIds:current.courtIds.map((id)=>id===outId?inId:id),benchIds:[...current.benchIds.filter((id)=>id!==inId),outId],positions,selectedPlayerId:inId};
+    });
+    addEvent('sub',`#${incoming.number} ${incoming.name} IN · #${outgoing.number} ${outgoing.name} OUT`);
+    setFlash(`${incoming.name} in · ${outgoing.name} out`);
+    setTimeout(()=>setFlash(''),1100);
+    setSubOut('');
+  }
+
+  function substitute(inId:string){performSubstitution(subOut,inId)}
+
+  function movePlayer(event:ReactPointerEvent<HTMLDivElement>){
+    if(!draggingId)return;
+    const rect=event.currentTarget.getBoundingClientRect();
+    const x=Math.max(7,Math.min(46,((event.clientX-rect.left)/rect.width)*100));
+    const y=Math.max(13,Math.min(87,((event.clientY-rect.top)/rect.height)*100));
+    if(dragOrigin.current&&Math.hypot(event.clientX-dragOrigin.current.x,event.clientY-dragOrigin.current.y)>6)dragMoved.current=true;
+    setMatch((current)=>({...current,positions:{...current.positions,[draggingId]:{x,y}}}));
+  }
+
+  function finishDrag(){
+    if(!draggingId)return;
+    const playerId=draggingId;
+    setDraggingId('');
+    dragOrigin.current=null;
+    if(!dragMoved.current)setWheelPlayerId(playerId);
+  }
+
+  function updateBenchDropTarget(clientX:number,clientY:number){
+    const target=document.elementFromPoint(clientX,clientY)?.closest<HTMLElement>('[data-court-player-id]');
+    setBenchDropTargetId(target?.dataset.courtPlayerId??'');
+  }
+
+  function beginBenchDrag(event:ReactPointerEvent<HTMLButtonElement>,playerId:string){
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setBenchDraggingId(playerId);
+    setBenchDropTargetId('');
+    setWheelPlayerId('');
+  }
+
+  function moveBenchDrag(event:ReactPointerEvent<HTMLButtonElement>){
+    if(!benchDraggingId)return;
+    updateBenchDropTarget(event.clientX,event.clientY);
+  }
+
+  function finishBenchDrag(event:ReactPointerEvent<HTMLButtonElement>){
+    if(!benchDraggingId)return;
+    const target=document.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('[data-court-player-id]');
+    const outId=target?.dataset.courtPlayerId??benchDropTargetId;
+    const inId=benchDraggingId;
+    setBenchDraggingId('');
+    setBenchDropTargetId('');
+    if(outId)performSubstitution(outId,inId);
+  }
+
+  function cancelBenchDrag(){setBenchDraggingId('');setBenchDropTargetId('')}
   function undo(){setMatch((current)=>({...current,events:current.events.slice(1)}));setFlash('Last timeline event removed');setTimeout(()=>setFlash(''),900)}
   function saveExit(){navigate('/')}
   function newMatch(){localStorage.removeItem(STORAGE_KEY);setWheelPlayerId('');setShowExit(false);setSetupVisible(true)}
 
   if(setupVisible)return <div style={style}><MatchSetupScreen teamName={workspace.activeTeam?.name??'Home team'} events={scheduledEvents} players={players.map((player)=>({...player,photoUrl:player.photoUrl??''}))} onCancel={()=>navigate('/')} onStart={startConfiguredMatch} /></div>;
 
-  return <div className="live-match-mode" style={style}>
+  return <div className={`live-match-mode${benchDraggingId?' is-sub-dragging':''}`} style={style}>
     <header className="live-scorebar is-simplified"><button className="live-home" onClick={()=>setShowExit(true)} type="button" aria-label="Leave match">⌂</button><div className="live-match-cluster"><div className="live-team-score home"><div className="score-controls"><button onClick={()=>score('home',-1)} type="button">−</button><strong>{match.homeScore}</strong><button onClick={()=>score('home',1)} type="button">+1</button></div></div><div className="live-match-center"><small>SET {match.set} · R{match.rotation}</small><b>{match.homeSets} — {match.awaySets}</b><button className={`serve-pill ${match.serving}`} onClick={()=>setMatch((current)=>({...current,serving:current.serving==='home'?'away':'home'}))} type="button">{match.serving==='home'?'HOME':'AWAY'} SERVE</button></div><div className="live-team-score away"><div className="score-controls"><button onClick={()=>score('away',-1)} type="button">−</button><strong>{match.awayScore}</strong><button onClick={()=>score('away',1)} type="button">+1</button></div></div></div></header>
 
     <main className="live-stage"><section className="live-court-wrap"><div className="live-court" onPointerMove={movePlayer} onPointerUp={finishDrag} onPointerCancel={finishDrag}><div className="home-court-label"><span>{workspace.activeTeam?.name??'Home team'}</span></div><div className="opponent-zone"><span>{match.opponent}</span></div><div className="court-net"><span>NET</span></div>
-      {court.slice(0,6).map((player,index)=>{const point=match.positions[player.id]??defaultPoints[index];return <button className={`court-player${match.selectedPlayerId===player.id?' is-selected':''}${player.libero?' is-libero':''}${player.photoUrl?' has-photo':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} key={player.id} onPointerDown={(event)=>{event.currentTarget.setPointerCapture(event.pointerId);dragMoved.current=false;dragOrigin.current={x:event.clientX,y:event.clientY};setDraggingId(player.id);setMatch((current)=>({...current,selectedPlayerId:player.id}))}} type="button">{player.photoUrl&&<img src={player.photoUrl} alt="" />}<span className="court-player-copy"><b>#{player.number}</b><strong>{player.name.split(' ')[0]}</strong><small>{player.position}</small></span></button>})}
+      {court.slice(0,6).map((player,index)=>{const point=match.positions[player.id]??defaultPoints[index];return <button className={`court-player${match.selectedPlayerId===player.id?' is-selected':''}${player.libero?' is-libero':''}${player.photoUrl?' has-photo':''}${benchDropTargetId===player.id?' is-sub-target':''}`} data-court-player-id={player.id} style={{left:`${point.x}%`,top:`${point.y}%`}} key={player.id} onPointerDown={(event)=>{if(benchDraggingId)return;event.currentTarget.setPointerCapture(event.pointerId);dragMoved.current=false;dragOrigin.current={x:event.clientX,y:event.clientY};setDraggingId(player.id);setMatch((current)=>({...current,selectedPlayerId:player.id}))}} type="button">{player.photoUrl&&<img src={player.photoUrl} alt="" />}<span className="court-player-copy"><b>#{player.number}</b><strong>{player.name.split(' ')[0]}</strong><small>{player.position}</small></span></button>})}
       {wheelPlayer&&match.positions[wheelPlayer.id]&&<PlayerActionWheel player={wheelPlayer} actions={statActions} position={match.positions[wheelPlayer.id]} onSelect={recordStat} onClose={()=>setWheelPlayerId('')} />}</div>
-      <div className="live-bench"><span>Bench</span>{bench.map((player)=><button className={player.photoUrl?'has-photo':''} key={player.id} onClick={()=>setMatch((current)=>({...current,selectedPlayerId:player.id}))} type="button">{player.photoUrl&&<img src={player.photoUrl} alt="" />}<span><b>#{player.number}</b><small>{player.name.split(' ')[0]}</small></span></button>)}</div></section>
+      <div className="live-bench"><span>Bench</span>{bench.map((player)=><button className={`${player.photoUrl?'has-photo ':''}${benchDraggingId===player.id?'is-dragging':''}`} key={player.id} onClick={()=>setMatch((current)=>({...current,selectedPlayerId:player.id}))} onPointerDown={(event)=>beginBenchDrag(event,player.id)} onPointerMove={moveBenchDrag} onPointerUp={finishBenchDrag} onPointerCancel={cancelBenchDrag} type="button">{player.photoUrl&&<img src={player.photoUrl} alt="" />}<span><b>#{player.number}</b><small>{player.name.split(' ')[0]}</small></span></button>)}{benchDraggingId&&<em className="sub-drag-hint">Drop on the player coming out</em>}</div></section>
       <footer className="live-command-bar"><button onClick={rotate} type="button">↻ Rotate</button><button onClick={()=>{setMatch((current)=>({...current,homeTimeouts:current.homeTimeouts+1}));addEvent('timeout','Home timeout')}} type="button">Timeout {match.homeTimeouts}</button><button onClick={undo} type="button">↶ Undo event</button><button onClick={()=>setShowTimeline(true)} type="button">☷ Timeline</button><div className="sub-console"><select value={subOut} onChange={(event)=>setSubOut(event.target.value)}><option value="">Player out</option>{court.map((player)=><option key={player.id} value={player.id}>#{player.number} {player.name}</option>)}</select><select onChange={(event)=>substitute(event.target.value)} value=""><option value="">Player in</option>{bench.map((player)=><option key={player.id} value={player.id}>#{player.number} {player.name}</option>)}</select></div></footer></main>
 
     {flash&&<div className="live-flash">{flash}</div>}
