@@ -20,6 +20,7 @@ import './player-action-wheel.css';
 import './player-photo.css';
 import './match-setup.css';
 import './app-scrollbars.css';
+import './live-substitutions.css';
 
 registerSW({ immediate: true });
 
