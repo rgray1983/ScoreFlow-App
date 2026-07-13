@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { MatchFormat, MatchSide, ScheduleEvent, ScheduleLocationType } from '../types/workspace';
 
-type SetupPlayer = { id:string; name:string; number:string; position:string; libero:boolean; starter:boolean; photoUrl:string };
+type SetupPlayer = { id:string; name:string; number:string; position:string; libero:boolean; captain:boolean; starter:boolean; photoUrl:string };
 export type MatchSetupValue = {
   scheduleEventId:string;
   opponent:string;
@@ -35,16 +35,23 @@ export default function MatchSetupScreen({teamName,events,players,onCancel,onSta
   const [decidingTarget,setDecidingTarget]=useState(15);
   const [winByTwo,setWinByTwo]=useState(true);
   const [serve,setServe]=useState<MatchSide>('home');
-  const defaultStarters=players.filter((player)=>player.starter&&!player.libero).slice(0,6).map((player)=>player.id);
-  const [starters,setStarters]=useState<string[]>(defaultStarters.length===6?defaultStarters:players.filter((player)=>!player.libero).slice(0,6).map((player)=>player.id));
   const defaultLibero=players.find((player)=>player.libero)?.id??'';
   const [liberoId,setLiberoId]=useState(defaultLibero);
+  const defaultStarters=players.filter((player)=>player.starter&&player.id!==defaultLibero).slice(0,6).map((player)=>player.id);
+  const [starters,setStarters]=useState<string[]>(defaultStarters.length===6?defaultStarters:players.filter((player)=>player.id!==defaultLibero).slice(0,6).map((player)=>player.id));
   const [rotation,setRotation]=useState(1);
   const opponent=selectedEvent?.opponent??quickOpponent.trim();
   const locationType=selectedEvent?.locationType??quickLocation;
   const canStart=Boolean(opponent&&starters.length===6);
 
-  function toggleStarter(id:string){setStarters((current)=>current.includes(id)?current.filter((item)=>item!==id):current.length<6?[...current,id]:current)}
+  function toggleStarter(id:string){
+    if(id===liberoId)return;
+    setStarters((current)=>current.includes(id)?current.filter((item)=>item!==id):current.length<6?[...current,id]:current);
+  }
+  function changeLibero(id:string){
+    setLiberoId(id);
+    if(id)setStarters((current)=>current.filter((playerId)=>playerId!==id));
+  }
   function submit(){if(!canStart)return;onStart({scheduleEventId:selectedEvent?.id??'',opponent,locationType,format,regularSetTarget:regularTarget,decidingSetTarget:decidingTarget,winByTwo,initialServe:serve,startingPlayerIds:starters,liberoPlayerId:liberoId,rotation})}
 
   return <div className="match-setup-screen">
@@ -65,8 +72,16 @@ export default function MatchSetupScreen({teamName,events,players,onCancel,onSta
 
       <section className="match-setup-panel setup-lineup-card">
         <div className="setup-heading"><div><p className="eyebrow">Lineup</p><h2>Starting six</h2></div><strong>{starters.length}/6 selected</strong></div>
-        <div className="setup-player-grid">{players.filter((player)=>!player.libero).map((player)=><button className={starters.includes(player.id)?'is-selected':''} key={player.id} onClick={()=>toggleStarter(player.id)} type="button">{player.photoUrl?<img src={player.photoUrl} alt="" />:<span>#{player.number}</span>}<strong>{player.name}</strong><small>{player.position}</small></button>)}</div>
-        <div className="lineup-footer"><label><span>Libero</span><select value={liberoId} onChange={(event)=>setLiberoId(event.target.value)}><option value="">No Libero</option>{players.map((player)=><option key={player.id} value={player.id}>#{player.number} {player.name}</option>)}</select></label><label><span>Initial rotation</span><select value={rotation} onChange={(event)=>setRotation(Number(event.target.value))}>{[1,2,3,4,5,6].map((value)=><option key={value} value={value}>Rotation {value}</option>)}</select></label></div>
+        <div className="setup-player-grid">{players.map((player)=>{
+          const isLibero=player.id===liberoId;
+          const selected=starters.includes(player.id);
+          return <button className={`${selected?'is-selected':''}${isLibero?' is-libero-card':''}`} key={player.id} onClick={()=>toggleStarter(player.id)} type="button" aria-pressed={selected} aria-disabled={isLibero}>
+            <span className="setup-player-badges">{player.captain&&<em className="setup-badge captain">Captain</em>}{isLibero&&<em className="setup-badge libero">Libero</em>}</span>
+            {player.photoUrl?<img src={player.photoUrl} alt="" />:<span className="setup-player-number">#{player.number}</span>}
+            <strong>{player.name}</strong><small>{player.position}</small>
+          </button>;
+        })}</div>
+        <div className="lineup-footer"><label><span>Libero</span><select value={liberoId} onChange={(event)=>changeLibero(event.target.value)}><option value="">No Libero</option>{players.map((player)=><option key={player.id} value={player.id}>#{player.number} {player.name}</option>)}</select></label><label><span>Initial rotation</span><select value={rotation} onChange={(event)=>setRotation(Number(event.target.value))}>{[1,2,3,4,5,6].map((value)=><option key={value} value={value}>Rotation {value}</option>)}</select></label></div>
       </section>
 
       <footer className="match-setup-actions"><div><strong>{opponent?`${teamName} vs. ${opponent}`:'Choose or enter an opponent'}</strong><small>{format==='best-of-5'?'First to 3 sets':'First to 2 sets'} · {regularTarget} points · deciding set to {decidingTarget}</small></div><button className="button button-quiet" onClick={onCancel} type="button">Cancel</button><button className="button button-primary" disabled={!canStart} onClick={submit} type="button">Start Match</button></footer>
