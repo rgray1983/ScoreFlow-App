@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
 import type { Player, RosterMembership } from '../types/workspace';
 
@@ -36,6 +37,7 @@ const rotationPoints: Point[] = [
 
 export default function RotationPage() {
   const workspace = useWorkspace();
+  const navigate = useNavigate();
   const courtRef = useRef<HTMLDivElement>(null);
 
   const roster = useMemo(
@@ -99,7 +101,6 @@ export default function RotationPage() {
   } as CSSProperties;
 
   const planKey = (playerId: string) => `${rotation}:${phase}:${playerId}`;
-
   const pathFor = (playerId: string, index: number): PlayerPath =>
     plans[planKey(playerId)] ?? {
       start: rotationPoints[(index + rotation - 1) % 6],
@@ -128,15 +129,18 @@ export default function RotationPage() {
 
   function changeRotation(next: number) {
     setRotation(next < 1 ? 6 : next > 6 ? 1 : next);
-    setSelectedId('');
-    setEditMode(null);
-    setIsRunning(false);
+    closeEditor();
   }
 
   function changePhase(next: Phase) {
     setPhase(next);
+    closeEditor();
+  }
+
+  function closeEditor() {
     setSelectedId('');
     setEditMode(null);
+    setDragging(false);
     setIsRunning(false);
   }
 
@@ -152,11 +156,12 @@ export default function RotationPage() {
     if (mode === 'move') {
       const path = pathFor(playerId, index);
       if (!path.move) {
-        const move = {
-          x: Math.min(56, path.start.x + 10),
-          y: Math.min(88, path.start.y + 8),
-        };
-        updatePath(playerId, index, { move });
+        updatePath(playerId, index, {
+          move: {
+            x: Math.min(56, path.start.x + 10),
+            y: Math.min(88, path.start.y + 8),
+          },
+        });
       }
       showFlash('Position 2 created — drag the ghost player', 1500);
       return;
@@ -192,10 +197,9 @@ export default function RotationPage() {
   }
 
   function clearPath(playerId: string, index: number) {
-    const key = planKey(playerId);
     savePlans({
       ...plans,
-      [key]: {
+      [planKey(playerId)]: {
         start: rotationPoints[(index + rotation - 1) % 6],
       },
     });
@@ -245,6 +249,20 @@ export default function RotationPage() {
     showFlash('Position saved');
   }
 
+  function runMovement() {
+    if (isRunning) {
+      setIsRunning(false);
+      return;
+    }
+
+    setSelectedId('');
+    setEditMode(null);
+    setIsRunning(false);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setIsRunning(true));
+    });
+  }
+
   function exportRotation() {
     window.print();
   }
@@ -269,38 +287,30 @@ export default function RotationPage() {
         showFlash('Rotation copied');
       }
     } catch {
-      // The user cancelled the native share sheet.
+      // User cancelled the native share sheet.
     }
   }
 
   return (
     <div className="rotation-studio" style={style}>
-      <section className="rotation-toolbar panel">
-        <div>
+      <header className="rotation-toolbar">
+        <button className="rotation-exit" type="button" onClick={() => navigate('/')} aria-label="Exit Rotation Studio">⌂</button>
+        <div className="rotation-title">
           <p className="eyebrow">Rotation Studio</p>
           <h2>{workspace.activeTeam?.name ?? 'Active team'}</h2>
           <span>{workspace.activeSeason?.name ?? 'Season not selected'}</span>
         </div>
         <div className="rotation-toolbar-actions">
-          <button className="button button-quiet" type="button" onClick={exportRotation}>
-            Export
-          </button>
-          <button className="button button-primary" type="button" onClick={shareRotation}>
-            Send to team
-          </button>
+          <button className="button button-quiet" type="button" onClick={exportRotation}>Export</button>
+          <button className="button button-primary" type="button" onClick={shareRotation}>Send to team</button>
         </div>
-      </section>
+      </header>
 
       <div className="rotation-workspace">
         <section className="rotation-court-card panel">
           <div className="rotation-court-heading">
-            <div>
-              <p className="eyebrow">{phase} plan</p>
-              <h3>Rotation {rotation}</h3>
-            </div>
-            <span className="rotation-status">
-              <i /> Tap a player to edit
-            </span>
+            <div><p className="eyebrow">{phase} plan</p><h3>Rotation {rotation}</h3></div>
+            <span className="rotation-status"><i /> Tap a player to edit</span>
           </div>
 
           <div
@@ -309,9 +319,7 @@ export default function RotationPage() {
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
-            <div className="rotation-home-label">
-              {workspace.activeTeam?.name ?? 'Home team'}
-            </div>
+            <div className="rotation-home-label">{workspace.activeTeam?.name ?? 'Home team'}</div>
             <div className="rotation-opponent-label">Opponent</div>
             <div className="rotation-net"><span>NET</span></div>
             <div className="rotation-attack-line" />
@@ -333,19 +341,15 @@ export default function RotationPage() {
                       style={{
                         left: `${path.start.x}%`,
                         top: `${path.start.y}%`,
-                        width: `${length}%`,
+                        width: `max(12px, calc(${length}% - 48px))`,
                         transform: `rotate(${angle}deg)`,
                       }}
-                    >
-                      <i />
-                    </span>
+                    ><i /></span>
                   )}
 
                   {path.move && !isRunning && (
                     <button
-                      className={`rotation-player ghost${
-                        isSelected && editMode === 'move' ? ' is-editing' : ''
-                      }`}
+                      className={`rotation-player ghost${isSelected && editMode === 'move' ? ' is-editing' : ''}`}
                       style={{ left: `${path.move.x}%`, top: `${path.move.y}%` }}
                       onPointerDown={(event) => beginDrag(event, player.id, 'move')}
                       onPointerMove={(event) => drag(event, player.id, index, 'move')}
@@ -358,9 +362,7 @@ export default function RotationPage() {
                   )}
 
                   <button
-                    className={`rotation-player solid${isSelected ? ' is-selected' : ''}${
-                      path.server ? ' is-server' : ''
-                    }`}
+                    className={`rotation-player solid${isSelected ? ' is-selected' : ''}${path.server ? ' is-server' : ''}`}
                     style={{ left: `${current.x}%`, top: `${current.y}%` }}
                     onClick={() => {
                       if (!dragging) {
@@ -381,26 +383,11 @@ export default function RotationPage() {
                   </button>
 
                   {isSelected && !dragging && (
-                    <div
-                      className="rotation-radial"
-                      style={{ left: `${path.start.x}%`, top: `${path.start.y}%` }}
-                    >
-                      <button onClick={() => chooseTool('start', player.id, index)} type="button">
-                        Set Start
-                      </button>
-                      <button onClick={() => chooseTool('move', player.id, index)} type="button">
-                        Set Move
-                      </button>
-                      <button
-                        className={path.server ? 'is-active' : ''}
-                        onClick={() => toggleServer(player.id, index)}
-                        type="button"
-                      >
-                        Server
-                      </button>
-                      <button onClick={() => clearPath(player.id, index)} type="button">
-                        Clear
-                      </button>
+                    <div className="rotation-radial" style={{ left: `${path.start.x}%`, top: `${path.start.y}%` }}>
+                      <button onClick={() => chooseTool('start', player.id, index)} type="button">Set Start</button>
+                      <button onClick={() => chooseTool('move', player.id, index)} type="button">Set Move</button>
+                      <button className={path.server ? 'is-active' : ''} onClick={() => toggleServer(player.id, index)} type="button">Server</button>
+                      <button onClick={() => clearPath(player.id, index)} type="button">Clear</button>
                     </div>
                   )}
                 </div>
@@ -410,60 +397,29 @@ export default function RotationPage() {
         </section>
 
         <aside className="rotation-controls panel">
-          <div className="rotation-control-heading">
-            <div>
-              <p className="eyebrow">Controls</p>
-              <h3>Rotation Studio</h3>
-            </div>
-            <strong>R{rotation}</strong>
-          </div>
-
+          <div className="rotation-control-heading"><div><p className="eyebrow">Controls</p><h3>Rotation Studio</h3></div><strong>R{rotation}</strong></div>
           <div className="phase-toggle">
             <button className={phase === 'serve' ? 'is-active' : ''} onClick={() => changePhase('serve')} type="button">Serve</button>
             <button className={phase === 'receive' ? 'is-active' : ''} onClick={() => changePhase('receive')} type="button">Receive</button>
           </div>
-
           <div className="rotation-stepper">
             <button type="button" onClick={() => changeRotation(rotation - 1)}>‹</button>
-            <div>
-              {[1, 2, 3, 4, 5, 6].map((value) => (
-                <button className={rotation === value ? 'is-active' : ''} key={value} onClick={() => changeRotation(value)} type="button">R{value}</button>
-              ))}
-            </div>
+            <div>{[1, 2, 3, 4, 5, 6].map((value) => <button className={rotation === value ? 'is-active' : ''} key={value} onClick={() => changeRotation(value)} type="button">R{value}</button>)}</div>
             <button type="button" onClick={() => changeRotation(rotation + 1)}>›</button>
           </div>
-
           <div className="rotation-playback">
-            <button className={isRunning ? 'is-active' : ''} onClick={() => setIsRunning((current) => !current)} type="button">{isRunning ? 'Reset to Start' : 'Run Movement'}</button>
+            <button className={isRunning ? 'is-active' : ''} onClick={runMovement} type="button">{isRunning ? 'Reset to Start' : 'Run Movement'}</button>
             <button className={showPaths ? 'is-active' : ''} onClick={() => setShowPaths((current) => !current)} type="button">{showPaths ? 'Hide Paths' : 'Show Paths'}</button>
           </div>
-
           <section className="rotation-lineup-list">
             <header><span>{phase} assignments</span><small>Start → Move</small></header>
             {lineup.map((player, index) => {
               const path = pathFor(player.id, index);
-              return (
-                <article key={player.id}>
-                  <span>P{((index + rotation - 1) % 6) + 1}</span>
-                  <div>
-                    <strong>#{player.number} {player.name}</strong>
-                    <small>{path.move ? 'Movement saved' : 'Start only'}{path.server ? ' · Server' : ''}</small>
-                  </div>
-                  {player.captain && <em>Captain</em>}
-                </article>
-              );
+              return <article key={player.id}><span>P{((index + rotation - 1) % 6) + 1}</span><div><strong>#{player.number} {player.name}</strong><small>{path.move ? 'Movement saved' : 'Start only'}{path.server ? ' · Server' : ''}</small></div>{player.captain && <em>Captain</em>}</article>;
             })}
           </section>
-
-          <label className="rotation-note">
-            <span>Coach note</span>
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
-          </label>
-
-          <div className="rotation-share-actions">
-            <button type="button" onClick={exportRotation}>Export plan</button>
-            <button type="button" onClick={shareRotation}>Send to team</button>
-          </div>
+          <label className="rotation-note"><span>Coach note</span><textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} /></label>
+          <div className="rotation-share-actions"><button type="button" onClick={exportRotation}>Export plan</button><button type="button" onClick={shareRotation}>Send to team</button></div>
         </aside>
       </div>
 
@@ -476,26 +432,13 @@ function PlayerCopy({ player }: { player: RotationPlayer }) {
   return (
     <>
       {player.photoUrl && <img src={player.photoUrl} alt="" />}
-      <span className="rotation-player-copy">
-        <b>#{player.number}</b>
-        <strong>{player.name}</strong>
-        <small>{player.position}</small>
-      </span>
-      <span className="rotation-player-badges">
-        {player.captain && <i className="captain">C</i>}
-        {player.libero && <i className="libero">L</i>}
-      </span>
+      <span className="rotation-player-copy"><b>#{player.number}</b><strong>{player.name}</strong><small>{player.position}</small></span>
+      <span className="rotation-player-badges">{player.captain && <i className="captain">C</i>}{player.libero && <i className="libero">L</i>}</span>
     </>
   );
 }
 
-function toRotationPlayer({
-  membership,
-  player,
-}: {
-  membership: RosterMembership;
-  player: Player;
-}): RotationPlayer {
+function toRotationPlayer({ membership, player }: { membership: RosterMembership; player: Player }): RotationPlayer {
   return {
     id: player.id,
     name: player.preferredName || player.firstName,
