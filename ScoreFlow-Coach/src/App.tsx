@@ -15,7 +15,7 @@ const navigationItems = [
   { path: '/practice', label: 'Practice', icon: '◇' },
   { path: '/rosters', label: 'Roster', icon: '≡' },
   { path: '/live-match', label: 'Live', icon: '▶' },
-  { path: '/rotations', label: 'Rotate', icon: '↻' },
+  { path: '/rotations', label: 'Rotation Studio', icon: '↻' },
   { path: '/reports', label: 'Reports', icon: '▥' },
   { path: '/teams', label: 'Teams', icon: '◆' },
   { path: '/players', label: 'Players', icon: '●' },
@@ -41,7 +41,6 @@ function HomePage() {
   const starters = roster.filter((item) => item.starter).length;
   const upcomingEvents = scheduleEvents.filter((item) => item.teamId === activeTeam?.id && item.seasonId === activeSeason?.id && item.date >= todayValue()).sort((a, b) => a.date.localeCompare(b.date));
   const nextEvent = upcomingEvents[0];
-
   return <div className="dashboard-grid">
     <section className="hero-card panel"><div className="hero-copy"><div className="status-line"><span className="live-dot" /><span>Coach workspace · {activeSeason?.name ?? 'Season not selected'}</span></div><p className="eyebrow">{teamLabel}</p><h2>{nextEvent ? nextEvent.title : activeTeam ? 'Ready for the next point.' : 'Build your volleyball program.'}</h2><p className="hero-summary">{nextEvent ? `${formatDate(nextEvent.date)}${nextEvent.startTime ? ` at ${formatTime(nextEvent.startTime)}` : ''} · ${nextEvent.venue || 'Location not set'}` : activeTeam ? `Working inside ${activeOrganization?.name ?? 'your program'}. Schedules, practices, rosters, matches, and reports use this active team and season.` : 'Create an organization, team, and season to establish the shared context for every Coach tool.'}</p><div className="hero-actions"><NavLink className="button button-primary" to={nextEvent?.type === 'match' ? '/live-match' : nextEvent?.type === 'practice' ? '/practice' : '/schedule'}>{nextEvent?.type === 'match' ? 'Enter Match Mode' : nextEvent?.type === 'practice' ? 'Open practice plan' : nextEvent ? 'View schedule' : 'Add schedule event'}</NavLink><NavLink className="button button-quiet" to="/rosters">Open Team HQ</NavLink></div></div><div className="match-preview" aria-label="Active team preview"><span className="card-kicker">Active context</span><div className="match-teams"><div><span className="team-badge" style={{ background: activeTeam ? `linear-gradient(145deg, ${activeTeam.primaryColor}, #6f101c)` : undefined }}>{initials}</span><strong>{activeTeam?.name ?? 'Your team'}</strong></div><span className="versus">›</span><div><span className="team-badge opponent">{available || '—'}</span><strong>{available ? `${available} available` : 'Build roster'}</strong></div></div><div className="match-meta"><span>{activeOrganization?.type ?? 'Program'}</span><strong>{activeTeam?.level ?? 'Team'}</strong><span>{roster.length} players</span></div></div></section>
     <section className="quick-panel panel"><div className="panel-heading"><div><p className="eyebrow">Quick access</p><h3>Coach tools</h3></div><span className="sync-pill"><span /> Saved on device</span></div><div className="quick-grid">{quickActions.map((action) => <NavLink className={`quick-card tone-${action.tone}`} key={action.path} to={action.path}><span className="quick-icon" aria-hidden="true">{navigationItems.find((item) => item.path === action.path)?.icon}</span><span><strong>{action.label}</strong><small>{action.detail}</small></span><span className="arrow" aria-hidden="true">›</span></NavLink>)}</div></section>
@@ -58,7 +57,6 @@ function App() {
   const currentItem = navigationItems.find((item) => item.path === location.pathname) ?? navigationItems[0];
   const isLiveMatch = location.pathname === '/live-match';
   useEffect(() => setIsMenuOpen(false), [location.pathname]);
-
   return <div className={`app-shell${isLiveMatch ? ' is-live-match' : ''}`}>
     <aside className={`sidebar${isMenuOpen ? ' is-open' : ''}`} aria-label="Primary navigation"><div className="brand"><div className="brand-mark" aria-hidden="true"><span>S</span></div><div className="brand-copy"><strong>ScoreFlow</strong><span>Coach</span></div></div><nav className="nav-list">{navigationItems.map((item) => <NavLink className={({ isActive }) => `nav-item${isActive ? ' is-active' : ''}`} end={item.path === '/'} key={item.path} to={item.path} title={item.label}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span className="nav-label">{item.label}</span></NavLink>)}</nav><div className="sidebar-footer"><span className="avatar">RG</span><div><strong>Richie</strong><small>Head Coach</small></div></div></aside>
     {isMenuOpen && <button className="menu-backdrop" type="button" aria-label="Close navigation" onClick={() => setIsMenuOpen(false)} />}
