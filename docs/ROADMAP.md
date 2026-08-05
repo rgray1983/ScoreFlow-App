@@ -1,79 +1,78 @@
 # ScoreFlow Coach Roadmap
 
-This roadmap defines the planned implementation order. Individual PR numbers may shift as testing and architecture discoveries require smaller focused changes.
+Updated after the 2026-08-05 audit of `agent/pr-010-match-lifecycle`.  
+See `docs/AUDIT_2026-08-05.md` for the full status matrix.
 
-## Phase 1 — Product Foundation
+## Active priority order
 
-1. PR workflow and repository rules
-2. React, TypeScript, Vite, and PWA foundation
-3. Mobile/iPad-first design system and Coach Hub
-4. Living product, architecture, UI, and feature documentation
+1. Stabilize the current PR-010 branch
+2. Rebuild Rotation Studio as a formation-sequence creator
+3. Complete remaining PR-010 match lifecycle pieces
+4. Finish match persistence and full state-snapshot Undo
+5. Build Match Summary
+6. Build Reports from permanent match events
+7. Add Tryouts
+8. Finish Settings and administration
+9. Add team-sharing / player-view workflows
+10. Final PWA polish, offline behavior, accessibility, and release readiness
 
-## Phase 2 — Team Management
+## Phase status
 
-5. Organizations and Teams
-6. Seasons
-7. Player Profiles
-8. Rosters and roster memberships
-9. Basic player cards
+### Done — Product foundation and daily coach tools
 
-## Phase 3 — Scheduling and Practice Operations
+- PR workflow and repository rules
+- React / TypeScript / Vite / PWA foundation
+- Mobile/iPad-first design system and Coach Hub
+- Organizations, Teams, Seasons
+- Players, Rosters, Team HQ
+- Schedule foundation
+- Practice planner
+- Live Match court, score, radial stat wheel, timeline shell
+- Match Setup UI and drag substitutions (PR-010 partial)
 
-10. Schedule foundation: agenda, calendar, and event management
-11. Match, practice, scrimmage, tournament, and team-event details
-12. Recurring practices and Practice Planner
-13. Tournament support, court assignments, and multiple matches per day
-14. Availability and attendance
-15. Calendar sync, reminders, and schedule import
+### In progress — Rotation Studio pivot
 
-## Phase 4 — Match Preparation and Live Match
+Replace the experimental ghost-path editor with:
 
-16. Pre-match preparation and starting lineup
-17. Live Match Hub and scoreboard integration
-18. Two-touch stat tracking
-19. Match timeline, undo, and corrections
-20. Current rotation, substitutions, timeouts, and notes
+- Rotation Plan + system type
+- Real roster role assignments
+- Per-rotation formation states (Home, Receive, Attack, Serve, Defense, Left, Right)
+- Perspective court with logical coordinates
+- Ball position per formation
+- Preview transitions between saved formations
+- Versioned persistence integrated with team/season context
 
-## Phase 5 — Offline Synchronization
+### Next — Complete PR-010 match lifecycle
 
-21. Local-first database
-22. Sync queue and connectivity states
-23. Conflict handling and correction logs
-24. Recovery and data integrity testing
+- Real set and match completion rules
+- Set Complete overlay and next-set transition
+- Deciding set behavior
+- Set-by-set and match result persistence
+- Full snapshot Undo
+- Serve-aware rotation
+- Libero replacement workflow
+- Schedule event completion
+- Reopen completed matches
+- Match summary
+- Permanent event records for Reports
 
-## Phase 6 — Reports and Sharing
+### Later
 
-25. Match reports
-26. Team and season statistics
-27. Player statistics and development trends
-28. Rotation analysis
-29. Shareable result and player graphics
-30. PDF and spreadsheet exports
+- Reports and season analytics
+- Tryouts (QR signup → evaluation → convert to player)
+- Settings / branding / defaults
+- Team portal sharing
+- Offline sync engine
+- Advanced analytics and AI assists
 
-## Phase 7 — Rotation Creator
+## Design constraints that stay fixed
 
-31. Touch-first court board
-32. Drag-and-drop players
-33. Movement arrows and saved steps
-34. Animation and share/export
-35. Rotation-to-stat connections
-
-## Phase 8 — Team Portal
-
-36. Parent and player authentication
-37. Team schedule and results
-38. Read-only player and team statistics
-39. Coach-shared rotations and practice content
-40. Privacy and visibility controls
-
-## Phase 9 — Advanced Platform
-
-41. Heat maps and shot charts
-42. Opponent scouting
-43. Video synchronization
-44. AI-assisted insights and summaries
-45. Multi-team club dashboards
-46. Branded pages, sponsor tools, and advanced integrations
+- Mobile and iPad first; preferred viewport `1180×820`
+- Dark premium frosted-glass ScoreFlow identity
+- Score and stats remain independent in Live Match
+- Players page owns profiles; Roster owns lineup/roles
+- Do not prematurely redesign as generic SaaS
+- Keep build green after every major change
 
 ## Planning rule
 

@@ -1,626 +1,674 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
+  type PointerEvent as ReactPointerEvent
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
 import type { Player, RosterMembership } from '../types/workspace';
+import {
+  FORMATION_SEQUENCE,
+  SYSTEM_OPTIONS,
+  createRotationPlan,
+  depthScale,
+  discardLegacyGhostPlans,
+  ensureFormationSequence,
+  formationByType,
+  logicalToScreen,
+  overlapWarnings,
+  plansForContext,
+  pointerToLogical,
+  readRotationStore,
+  rebuildPlanFormations,
+  roleLabel,
+  rolesForSystem,
+  suggestRoleAssignments,
+  updateBallPoint,
+  updatePlayerPoint,
+  upsertPlan,
+  writeRotationStore,
+  type Formation,
+  type FormationType,
+  type RotationPlan,
+  type RotationSystem,
+  type StudioPlayer,
+  type SystemRole
+} from '../features/rotation-studio';
 
-type RotationPlayer = {
-  id: string;
-  name: string;
-  number: string;
-  position: string;
-  captain: boolean;
-  libero: boolean;
-  photoUrl?: string;
-};
+type DragTarget =
+  | { kind: 'player'; playerId: string }
+  | { kind: 'ball' }
+  | null;
 
-type Point = { x: number; y: number };
-type Phase = 'serve' | 'receive';
-type PlayerPath = { start: Point; move?: Point; server?: boolean };
-type RotationPlans = Record<string, PlayerPath>;
-type EditMode = 'start' | 'move' | null;
-type PlaybackState = 'edit' | 'start' | 'move';
-
-const STORAGE_KEY = 'scoreflow-rotation-studio-v2';
-const rotationPoints: Point[] = [
-  { x: 18, y: 24 },
-  { x: 36, y: 24 },
-  { x: 36, y: 72 },
-  { x: 18, y: 72 },
-  { x: 8, y: 72 },
-  { x: 8, y: 24 },
-];
+type PreviewState = {
+  from: FormationType;
+  to: FormationType;
+  progress: number;
+} | null;
 
 export default function RotationPage() {
   const workspace = useWorkspace();
   const navigate = useNavigate();
   const courtRef = useRef<HTMLDivElement>(null);
 
-  const roster = useMemo(
-    () =>
-      workspace.rosterMemberships
-        .filter(
-          (membership) =>
-            membership.teamId === workspace.activeTeamId &&
-            membership.seasonId === workspace.activeSeasonId,
-        )
-        .map((membership) => ({
-          membership,
-          player: workspace.players.find((player) => player.id === membership.playerId),
-        }))
-        .filter(
-          (row): row is { membership: RosterMembership; player: Player } =>
-            row.player !== undefined,
-        )
-        .filter((row) => !row.player.archived && row.membership.status === 'active'),
-    [
-      workspace.activeSeasonId,
-      workspace.activeTeamId,
-      workspace.players,
-      workspace.rosterMemberships,
-    ],
+  const roster = useMemo(() => {
+    return workspace.rosterMemberships
+      .filter((membership) => membership.teamId === workspace.activeTeamId && membership.seasonId === workspace.activeSeasonId)
+      .map((membership) => ({
+        membership,
+        player: workspace.players.find((player) => player.id === membership.playerId)
+      }))
+      .filter((row): row is { membership: RosterMembership; player: Player } => Boolean(row.player) && !row.player!.archived && row.membership.status === 'active')
+      .map(({ membership, player }) => toStudioPlayer(membership, player));
+  }, [workspace.activeSeasonId, workspace.activeTeamId, workspace.players, workspace.rosterMemberships]);
+
+  const [store, setStore] = useState(() => {
+    discardLegacyGhostPlans();
+    return readRotationStore();
+  });
+  const contextPlans = useMemo(
+    () => plansForContext(store, workspace.activeTeamId, workspace.activeSeasonId),
+    [store, workspace.activeSeasonId, workspace.activeTeamId]
   );
 
-  const preferred = useMemo<RotationPlayer[]>(
-    () =>
-      roster
-        .filter(({ membership }) => membership.starter && !membership.libero)
-        .slice(0, 6)
-        .map(toRotationPlayer),
-    [roster],
-  );
-
-  const fallback = useMemo<RotationPlayer[]>(
-    () =>
-      roster
-        .filter(({ membership }) => !membership.libero)
-        .slice(0, 6)
-        .map(toRotationPlayer),
-    [roster],
-  );
-
-  const lineup = preferred.length === 6 ? preferred : fallback;
-  const [rotation, setRotation] = useState(1);
-  const [phase, setPhase] = useState<Phase>('receive');
-  const [plans, setPlans] = useState<RotationPlans>(() => readPlans(lineup));
+  const [plan, setPlan] = useState<RotationPlan | null>(null);
+  const [rotationNumber, setRotationNumber] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [formationType, setFormationType] = useState<FormationType>('home');
   const [selectedId, setSelectedId] = useState('');
-  const [editMode, setEditMode] = useState<EditMode>(null);
-  const [dragging, setDragging] = useState(false);
-  const [showPaths, setShowPaths] = useState(true);
-  const [playback, setPlayback] = useState<PlaybackState>('edit');
-  const [note, setNote] = useState('Base serve-receive alignment.');
+  const [dragTarget, setDragTarget] = useState<DragTarget>(null);
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [flash, setFlash] = useState('');
+  const [draftSystem, setDraftSystem] = useState<RotationSystem>('5-1');
+  const [draftName, setDraftName] = useState('Varsity Rotation Plan');
+  const [draftAssignments, setDraftAssignments] = useState<RotationPlan['roleAssignments']>({});
+  const planRef = useRef<RotationPlan | null>(null);
+
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+
+  useEffect(() => {
+    if (!workspace.activeTeamId || !workspace.activeSeasonId) {
+      setPlan(null);
+      return;
+    }
+    const active = contextPlans.find((item) => item.id === store.activePlanId) ?? contextPlans[0] ?? null;
+    if (active) {
+      setPlan(ensureFormationSequence(active));
+      setSetupOpen(false);
+    } else {
+      setPlan(null);
+      setSetupOpen(true);
+      const suggested = suggestRoleAssignments(
+        '5-1',
+        roster.map((player) => ({
+          id: player.id,
+          position: player.position,
+          primaryPosition: player.primaryPosition,
+          libero: player.libero,
+          starter: player.starter
+        }))
+      );
+      setDraftAssignments(suggested);
+      setDraftSystem('5-1');
+      setDraftName(`${workspace.activeTeam?.name ?? 'Team'} Rotation Plan`);
+    }
+  }, [contextPlans, roster, store.activePlanId, workspace.activeSeasonId, workspace.activeTeam, workspace.activeTeamId]);
 
   const style = {
     '--rotation-primary': workspace.activeTeam?.primaryColor ?? '#ef3340',
-    '--rotation-secondary': workspace.activeTeam?.secondaryColor ?? '#f4c95d',
+    '--rotation-secondary': workspace.activeTeam?.secondaryColor ?? '#f4c95d'
   } as CSSProperties;
 
-  const planKey = (playerId: string) => `${rotation}:${phase}:${playerId}`;
-  const pathFor = (playerId: string, index: number): PlayerPath =>
-    plans[planKey(playerId)] ?? {
-      start: rotationPoints[(index + rotation - 1) % 6],
-    };
+  const formation = plan ? formationByType(plan, rotationNumber, formationType) : undefined;
+  const fromFormation = preview && plan ? formationByType(plan, rotationNumber, preview.from) : undefined;
+  const toFormation = preview && plan ? formationByType(plan, rotationNumber, preview.to) : undefined;
+  const warnings = formation ? overlapWarnings(formation.playerPositions.filter((item) => item.playerId)) : [];
 
-  function showFlash(message: string, duration = 1000) {
+  function showFlash(message: string, duration = 1200) {
     setFlash(message);
     window.setTimeout(() => setFlash(''), duration);
   }
 
-  function savePlans(next: RotationPlans) {
-    setPlans(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  function persist(nextPlan: RotationPlan) {
+    const stamped = { ...nextPlan, updatedAt: new Date().toISOString() };
+    const nextStore = upsertPlan(store, stamped);
+    setStore(nextStore);
+    writeRotationStore(nextStore);
+    setPlan(stamped);
   }
 
-  function updatePath(playerId: string, index: number, patch: Partial<PlayerPath>) {
-    const key = planKey(playerId);
-    savePlans({
-      ...plans,
-      [key]: {
-        ...pathFor(playerId, index),
-        ...patch,
-      },
+  function patchFormation(mutator: (current: Formation) => Formation, options?: { persist?: boolean }) {
+    const currentPlan = planRef.current ?? plan;
+    if (!currentPlan) return;
+    const currentFormation = formationByType(currentPlan, rotationNumber, formationType);
+    if (!currentFormation) return;
+    const nextRotations = currentPlan.rotations.map((rotation) => {
+      if (rotation.number !== rotationNumber) return rotation;
+      return {
+        ...rotation,
+        formations: rotation.formations.map((item) => (item.type === formationType ? mutator(item) : item))
+      };
     });
+    const nextPlan = { ...currentPlan, rotations: nextRotations, updatedAt: new Date().toISOString() };
+    planRef.current = nextPlan;
+    setPlan(nextPlan);
+    if (options?.persist === false) return;
+    const nextStore = upsertPlan(store, nextPlan);
+    setStore(nextStore);
+    writeRotationStore(nextStore);
   }
 
-  function closeEditor() {
-    setSelectedId('');
-    setEditMode(null);
-    setDragging(false);
-    setPlayback('edit');
-  }
-
-  function changeRotation(next: number) {
-    setRotation(next < 1 ? 6 : next > 6 ? 1 : next);
-    closeEditor();
-  }
-
-  function changePhase(next: Phase) {
-    setPhase(next);
-    closeEditor();
-  }
-
-  function chooseTool(
-    mode: Exclude<EditMode, null>,
-    playerId: string,
-    index: number,
-  ) {
-    const path = pathFor(playerId, index);
-    setSelectedId(playerId);
-    setEditMode(mode);
-    setPlayback('edit');
-
-    if (mode === 'move') {
-      if (!path.move) {
-        updatePath(playerId, index, {
-          move: {
-            x: Math.min(56, path.start.x + 10),
-            y: Math.min(88, path.start.y + 8),
-          },
-        });
-      }
-      showFlash('Position 1 stays ghosted — drag the real player to Position 2', 1700);
+  function createPlan() {
+    if (!workspace.activeOrganizationId || !workspace.activeTeamId || !workspace.activeSeasonId) {
+      showFlash('Select a team and season first.');
       return;
     }
-
-    showFlash('Drag the ghost starting token to adjust Position 1', 1500);
-  }
-
-  function toggleServer(playerId: string, index: number) {
-    const servePrefix = `${rotation}:serve:`;
-    const currentServePath =
-      plans[`${rotation}:serve:${playerId}`] ?? {
-        start: rotationPoints[(index + rotation - 1) % 6],
-      };
-    const next: RotationPlans = { ...plans };
-
-    Object.keys(next)
-      .filter((key) => key.startsWith(servePrefix))
-      .forEach((key) => {
-        next[key] = { ...next[key], server: false };
-      });
-
-    next[`${rotation}:serve:${playerId}`] = {
-      ...currentServePath,
-      server: !currentServePath.server,
-    };
-
-    savePlans(next);
-    setPhase('serve');
-    setSelectedId('');
-    setEditMode(null);
-    setPlayback('edit');
-    showFlash(currentServePath.server ? 'Server cleared' : 'Server assigned');
-  }
-
-  function clearPath(playerId: string, index: number) {
-    savePlans({
-      ...plans,
-      [planKey(playerId)]: {
-        start: rotationPoints[(index + rotation - 1) % 6],
-      },
+    const next = createRotationPlan({
+      organizationId: workspace.activeOrganizationId,
+      teamId: workspace.activeTeamId,
+      seasonId: workspace.activeSeasonId,
+      name: draftName.trim() || 'Rotation Plan',
+      system: draftSystem,
+      roleAssignments: draftAssignments
     });
-    setSelectedId('');
-    setEditMode(null);
-    setPlayback('edit');
-    showFlash('Player path cleared');
+    persist(next);
+    setSetupOpen(false);
+    setFormationType('home');
+    setRotationNumber(1);
+    showFlash('Formation plan created.');
   }
 
-  function pointFromEvent(event: ReactPointerEvent): Point {
-    const rect = courtRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 18, y: 24 };
-
-    return {
-      x: Math.max(4, Math.min(58, ((event.clientX - rect.left) / rect.width) * 100)),
-      y: Math.max(9, Math.min(91, ((event.clientY - rect.top) / rect.height) * 100)),
-    };
+  function rebuildFromRoles() {
+    if (!plan) return;
+    const next = rebuildPlanFormations({ ...plan, system: draftSystem, roleAssignments: draftAssignments, name: draftName.trim() || plan.name });
+    persist(next);
+    setSetupOpen(false);
+    showFlash('Templates rebuilt from role assignments.');
   }
 
-  function beginDrag(
-    event: ReactPointerEvent<HTMLButtonElement>,
-    playerId: string,
-    mode: Exclude<EditMode, null>,
-  ) {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setSelectedId(playerId);
-    setEditMode(mode);
-    setDragging(true);
-    setPlayback('edit');
+  function openSetup(edit = false) {
+    if (plan && edit) {
+      setDraftSystem(plan.system);
+      setDraftName(plan.name);
+      setDraftAssignments(plan.roleAssignments);
+    } else {
+      setDraftSystem('5-1');
+      setDraftAssignments(
+        suggestRoleAssignments(
+          '5-1',
+          roster.map((player) => ({
+            id: player.id,
+            position: player.position,
+            primaryPosition: player.primaryPosition,
+            libero: player.libero,
+            starter: player.starter
+          }))
+        )
+      );
+    }
+    setSetupOpen(true);
   }
 
-  function drag(
-    event: ReactPointerEvent<HTMLButtonElement>,
-    playerId: string,
-    index: number,
-    mode: Exclude<EditMode, null>,
-  ) {
-    if (!dragging || selectedId !== playerId || editMode !== mode) return;
-    const point = pointFromEvent(event);
-    updatePath(playerId, index, mode === 'start' ? { start: point } : { move: point });
+  function onCourtPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!dragTarget || !courtRef.current || preview) return;
+    const point = pointerToLogical(event.clientX, event.clientY, courtRef.current.getBoundingClientRect());
+    if (dragTarget.kind === 'ball') {
+      patchFormation((current) => updateBallPoint(current, point), { persist: false });
+      return;
+    }
+    patchFormation((current) => updatePlayerPoint(current, dragTarget.playerId, point), { persist: false });
   }
 
   function endDrag() {
-    if (!dragging) return;
-    setDragging(false);
-    setEditMode(null);
-    showFlash('Position saved');
+    const latest = planRef.current;
+    if (dragTarget && latest) {
+      const nextStore = upsertPlan(store, latest);
+      setStore(nextStore);
+      writeRotationStore(nextStore);
+    }
+    setDragTarget(null);
   }
 
-  function runMovement() {
-    if (playback === 'move') {
-      setPlayback('start');
-      return;
-    }
-
+  function markServer(playerId: string) {
+    patchFormation((current) => ({ ...current, serverPlayerId: playerId }));
     setSelectedId('');
-    setEditMode(null);
-    setPlayback('start');
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => setPlayback('move'));
-    });
+    showFlash('Server marked.');
   }
 
-  function exportRotation() {
-    window.print();
+  function resetPlayer(playerId: string) {
+    if (!plan) return;
+    const template = createRotationPlan({
+      organizationId: plan.organizationId,
+      teamId: plan.teamId,
+      seasonId: plan.seasonId,
+      name: plan.name,
+      system: plan.system,
+      roleAssignments: plan.roleAssignments
+    });
+    const templateFormation = formationByType(template, rotationNumber, formationType);
+    const point = templateFormation?.playerPositions.find((item) => item.playerId === playerId)?.point;
+    if (!point) return;
+    patchFormation((current) => updatePlayerPoint(current, playerId, point));
+    setSelectedId('');
   }
 
-  async function shareRotation() {
-    const rows = lineup.map((player, index) => {
-      const path = pathFor(player.id, index);
-      const movement = path.move
-        ? ` → (${Math.round(path.move.x)},${Math.round(path.move.y)})`
-        : '';
-      return `#${player.number} ${player.name}: (${Math.round(path.start.x)},${Math.round(path.start.y)})${movement}${path.server ? ' · SERVER' : ''}`;
-    });
-
-    const text = `${workspace.activeTeam?.name ?? 'Team'} · Rotation ${rotation} · ${phase.toUpperCase()}\n${rows.join('\n')}\n\n${note}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: `Rotation Studio · R${rotation}`, text });
-        showFlash('Rotation shared');
-      } else {
-        await navigator.clipboard.writeText(text);
-        showFlash('Rotation copied');
+  function previewTransition() {
+    if (!plan || preview) return;
+    const index = FORMATION_SEQUENCE.findIndex((item) => item.type === formationType);
+    const next = FORMATION_SEQUENCE[(index + 1) % FORMATION_SEQUENCE.length];
+    const from = formationType;
+    setPreview({ from, to: next.type, progress: 0 });
+    const started = performance.now();
+    const duration = 1100;
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration);
+      setPreview({ from, to: next.type, progress });
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+        return;
       }
-    } catch {
-      // User cancelled the native share sheet.
-    }
+      setFormationType(next.type);
+      setPreview(null);
+      showFlash(`${FORMATION_SEQUENCE[index].short} → ${next.short}`);
+    };
+    requestAnimationFrame(tick);
   }
+
+  function playSequence() {
+    if (!plan || preview) return;
+    let index = FORMATION_SEQUENCE.findIndex((item) => item.type === formationType);
+    const run = () => {
+      const from = FORMATION_SEQUENCE[index];
+      const to = FORMATION_SEQUENCE[(index + 1) % FORMATION_SEQUENCE.length];
+      setPreview({ from: from.type, to: to.type, progress: 0 });
+      const started = performance.now();
+      const duration = 900;
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - started) / duration);
+        setPreview({ from: from.type, to: to.type, progress });
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+          return;
+        }
+        setFormationType(to.type);
+        index = (index + 1) % FORMATION_SEQUENCE.length;
+        if (index === 0) {
+          setPreview(null);
+          showFlash('Sequence complete.');
+          return;
+        }
+        window.setTimeout(run, 180);
+      };
+      requestAnimationFrame(tick);
+    };
+    run();
+  }
+
+  const visiblePositions = useMemo(() => {
+    if (preview && fromFormation && toFormation) {
+      return toFormation.playerPositions.map((dest) => {
+        const start = fromFormation.playerPositions.find((item) => item.playerId === dest.playerId) ?? dest;
+        return {
+          ...dest,
+          point: {
+            x: start.point.x + (dest.point.x - start.point.x) * preview.progress,
+            y: start.point.y + (dest.point.y - start.point.y) * preview.progress
+          },
+          ghost: start.point,
+          showGhost: preview.progress < 1
+        };
+      });
+    }
+    return (formation?.playerPositions ?? []).map((item) => ({ ...item, ghost: item.point, showGhost: false }));
+  }, [formation, fromFormation, preview, toFormation]);
+
+  const ballPoint = useMemo(() => {
+    if (preview && fromFormation && toFormation) {
+      return {
+        x: fromFormation.ballPosition.x + (toFormation.ballPosition.x - fromFormation.ballPosition.x) * preview.progress,
+        y: fromFormation.ballPosition.y + (toFormation.ballPosition.y - fromFormation.ballPosition.y) * preview.progress
+      };
+    }
+    return formation?.ballPosition ?? { x: 0.5, y: 0.5 };
+  }, [formation, fromFormation, preview, toFormation]);
+
+  const playerMap = useMemo(() => new Map(roster.map((player) => [player.id, player])), [roster]);
 
   return (
     <div className="rotation-studio" style={style}>
       <header className="rotation-toolbar">
-        <button
-          className="rotation-exit"
-          type="button"
-          onClick={() => navigate('/')}
-          aria-label="Exit Rotation Studio"
-        >
-          ⌂
-        </button>
+        <button className="rotation-exit" type="button" aria-label="Exit Rotation Studio" onClick={() => navigate('/')}>⌂</button>
         <div className="rotation-title">
-          <p className="eyebrow">Rotation Studio</p>
-          <h2>{workspace.activeTeam?.name ?? 'Active team'}</h2>
-          <span>{workspace.activeSeason?.name ?? 'Season not selected'}</span>
+          <span>Rotation Studio · Formation Sequences</span>
+          <h2>{plan?.name ?? 'Create a rotation plan'}</h2>
+          <p>{workspace.activeTeam?.name ?? 'No team'} · {workspace.activeSeason?.name ?? 'No season'} · {plan ? SYSTEM_OPTIONS.find((item) => item.id === plan.system)?.label : 'Setup'}</p>
         </div>
         <div className="rotation-toolbar-actions">
-          <button className="button button-quiet" type="button" onClick={exportRotation}>
-            Export
-          </button>
-          <button className="button button-primary" type="button" onClick={shareRotation}>
-            Send to team
-          </button>
+          <button type="button" onClick={() => openSetup(Boolean(plan))}>{plan ? 'Edit Plan' : 'New Plan'}</button>
+          <button type="button" onClick={previewTransition} disabled={!plan || Boolean(preview)}>Preview</button>
+          <button type="button" onClick={playSequence} disabled={!plan || Boolean(preview)}>Play Sequence</button>
         </div>
       </header>
 
       <div className="rotation-workspace">
-        <section className="rotation-court-card panel">
+        <section className="panel rotation-court-card">
           <div className="rotation-court-heading">
             <div>
-              <p className="eyebrow">{phase} plan</p>
-              <h3>Rotation {rotation}</h3>
+              <p className="eyebrow">Perspective court</p>
+              <h3>R{rotationNumber} · {FORMATION_SEQUENCE.find((item) => item.type === formationType)?.name}</h3>
             </div>
-            <span className="rotation-status">
-              <i /> Tap a player to edit
-            </span>
+            <span className="rotation-status"><i /> {preview ? 'Previewing movement' : 'Editing formations'}</span>
           </div>
 
           <div
-            className={`rotation-court${showPaths ? ' show-paths' : ''}${playback === 'move' ? ' is-running' : ''}`}
+            className={`rotation-court perspective-court${preview ? ' is-running' : ''}`}
             ref={courtRef}
+            onPointerMove={onCourtPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
+            onPointerLeave={endDrag}
           >
-            <div className="rotation-home-label">
-              {workspace.activeTeam?.name ?? 'Home team'}
-            </div>
-            <div className="rotation-opponent-label">Opponent</div>
-            <div className="rotation-net">
-              <span>NET</span>
-            </div>
-            <div className="rotation-attack-line" />
+            <div className="court-floor" aria-hidden="true" />
+            <div className="court-grid" aria-hidden="true" />
+            <div className="rotation-net"><span>NET</span></div>
+            <div className="rotation-attack-line" aria-hidden="true" />
+            <div className="rotation-home-label">{workspace.activeTeam?.abbreviation ?? 'HOME'}</div>
+            <div className="rotation-opponent-label">OPP</div>
 
-            {lineup.map((player, index) => {
-              const path = pathFor(player.id, index);
-              const destination = path.move ?? path.start;
-              const realPoint = playback === 'start' ? path.start : destination;
-              const dx = destination.x - path.start.x;
-              const dy = destination.y - path.start.y;
+            {preview && fromFormation && toFormation && fromFormation.playerPositions.map((start) => {
+              const dest = toFormation.playerPositions.find((item) => item.playerId === start.playerId);
+              if (!dest) return null;
+              const a = logicalToScreen(start.point);
+              const b = logicalToScreen(dest.point);
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const length = Math.sqrt(dx * dx + dy * dy);
+              if (length < 1) return null;
+              const shorten = Math.min(8, length * 0.18);
+              const ratio = (length - shorten) / length;
               const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-              const length = Math.hypot(dx, dy);
-              const isSelected = selectedId === player.id;
-              const hasMovement = path.move !== undefined;
+              return (
+                <span
+                  key={`path-${start.playerId}`}
+                  className="studio-path is-preview"
+                  style={{ left: `${a.x}%`, top: `${a.y}%`, width: `${length * ratio}%`, transform: `rotate(${angle}deg)` }}
+                >
+                  <i />
+                </span>
+              );
+            })}
 
+            {visiblePositions.map((position) => {
+              if (!position.playerId) return null;
+              const player = playerMap.get(position.playerId);
+              if (!player) return null;
+              const screen = logicalToScreen(position.point);
+              const scale = depthScale(position.point.y);
+              const selected = selectedId === player.id;
               return (
                 <div key={player.id}>
-                  {showPaths && hasMovement && (
-                    <span
-                      className={`studio-path${isSelected ? ' is-selected' : ''}`}
-                      style={{
-                        left: `${path.start.x}%`,
-                        top: `${path.start.y}%`,
-                        width: `max(12px, calc(${length}% - 48px))`,
-                        transform: `rotate(${angle}deg)`,
-                      }}
-                    >
-                      <i />
-                    </span>
-                  )}
-
-                  {hasMovement && (
+                  {position.showGhost && (
                     <button
-                      className={`rotation-player ghost${
-                        isSelected && editMode === 'start' ? ' is-editing' : ''
-                      }`}
-                      style={{ left: `${path.start.x}%`, top: `${path.start.y}%` }}
-                      onPointerDown={(event) => {
-                        if (editMode === 'start') beginDrag(event, player.id, 'start');
-                      }}
-                      onPointerMove={(event) => drag(event, player.id, index, 'start')}
                       type="button"
-                      aria-label={`Starting position for ${player.name}`}
+                      className="rotation-player ghost"
+                      style={{ left: `${logicalToScreen(position.ghost).x}%`, top: `${logicalToScreen(position.ghost).y}%`, transform: `translate(-50%, -50%) scale(${depthScale(position.ghost.y) * 0.92})` }}
+                      tabIndex={-1}
+                      aria-hidden="true"
                     >
-                      <PlayerCopy player={player} />
-                      <em>1</em>
+                      <PlayerCopy player={player} zone={position.zone} />
                     </button>
                   )}
-
                   <button
-                    className={`rotation-player solid${isSelected ? ' is-selected' : ''}${
-                      path.server ? ' is-server' : ''
-                    }`}
-                    style={{ left: `${realPoint.x}%`, top: `${realPoint.y}%` }}
-                    onClick={() => {
-                      if (!dragging) {
-                        setSelectedId(isSelected ? '' : player.id);
-                        setEditMode(null);
-                        setPlayback('edit');
-                      }
-                    }}
-                    onPointerDown={(event) => {
-                      if (editMode === 'move') beginDrag(event, player.id, 'move');
-                      if (editMode === 'start' && !hasMovement) {
-                        beginDrag(event, player.id, 'start');
-                      }
-                    }}
-                    onPointerMove={(event) => {
-                      if (editMode === 'move') drag(event, player.id, index, 'move');
-                      if (editMode === 'start' && !hasMovement) {
-                        drag(event, player.id, index, 'start');
-                      }
-                    }}
                     type="button"
-                    aria-label={`Player position for ${player.name}`}
+                    className={`rotation-player solid${selected ? ' is-selected' : ''}${formation?.serverPlayerId === player.id ? ' is-server' : ''}`}
+                    style={{ left: `${screen.x}%`, top: `${screen.y}%`, transform: `translate(-50%, -50%) scale(${scale})`, zIndex: Math.round(20 + position.point.y * 20) }}
+                    onClick={() => setSelectedId((current) => (current === player.id ? '' : player.id))}
+                    onPointerDown={(event) => {
+                      if (preview) return;
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      setSelectedId(player.id);
+                      setDragTarget({ kind: 'player', playerId: player.id });
+                    }}
                   >
-                    <PlayerCopy player={player} />
-                    <em>{hasMovement ? '2' : '1'}</em>
-                    {path.server && <b className="server-badge">SERVER</b>}
+                    {player.photoUrl ? <img src={player.photoUrl} alt="" /> : null}
+                    <PlayerCopy player={player} zone={position.zone} role={position.role} />
+                    {(player.captain || player.libero) && (
+                      <span className="rotation-player-badges">
+                        {player.captain && <i className="captain">C</i>}
+                        {player.libero && <i className="libero">L</i>}
+                      </span>
+                    )}
+                    <em>#{player.number || '—'}</em>
+                    {formation?.serverPlayerId === player.id && <span className="server-badge">SERVER</span>}
                   </button>
-
-                  {isSelected && !dragging && (
-                    <div
-                      className="rotation-radial"
-                      style={{ left: `${realPoint.x}%`, top: `${realPoint.y}%` }}
-                    >
-                      <button
-                        onClick={() => chooseTool('start', player.id, index)}
-                        type="button"
-                      >
-                        Set Start
-                      </button>
-                      <button
-                        onClick={() => chooseTool('move', player.id, index)}
-                        type="button"
-                      >
-                        Set Move
-                      </button>
-                      <button
-                        className={path.server ? 'is-active' : ''}
-                        onClick={() => toggleServer(player.id, index)}
-                        type="button"
-                      >
-                        Server
-                      </button>
-                      <button onClick={() => clearPath(player.id, index)} type="button">
-                        Clear
-                      </button>
+                  {selected && !preview && (
+                    <div className="rotation-radial" style={{ left: `${screen.x}%`, top: `${screen.y}%` }}>
+                      <button type="button" onClick={() => markServer(player.id)}>Mark Server</button>
+                      <button type="button" onClick={() => showFlash('Libero replace comes in Phase B.')}>Libero Replace</button>
+                      <button type="button" onClick={() => resetPlayer(player.id)}>Reset Position</button>
+                      <button type="button" onClick={() => setSelectedId('')}>Close</button>
                     </div>
                   )}
                 </div>
               );
             })}
+
+            <button
+              type="button"
+              className="rotation-ball"
+              aria-label="Move ball"
+              style={{ left: `${logicalToScreen(ballPoint).x}%`, top: `${logicalToScreen(ballPoint).y}%`, transform: `translate(-50%, -50%) scale(${depthScale(ballPoint.y)})` }}
+              onPointerDown={(event) => {
+                if (preview) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                setDragTarget({ kind: 'ball' });
+              }}
+            />
           </div>
         </section>
 
-        <aside className="rotation-controls panel">
+        <aside className="panel rotation-controls">
           <div className="rotation-control-heading">
             <div>
-              <p className="eyebrow">Controls</p>
-              <h3>Rotation Studio</h3>
+              <p className="eyebrow">Sequence</p>
+              <h3>Formations</h3>
             </div>
-            <strong>R{rotation}</strong>
+            <strong>R{rotationNumber}</strong>
           </div>
 
-          <div className="phase-toggle">
-            <button
-              className={phase === 'serve' ? 'is-active' : ''}
-              onClick={() => changePhase('serve')}
-              type="button"
-            >
-              Serve
-            </button>
-            <button
-              className={phase === 'receive' ? 'is-active' : ''}
-              onClick={() => changePhase('receive')}
-              type="button"
-            >
-              Receive
-            </button>
+          <div className="formation-tabs" role="tablist" aria-label="Formation sequence">
+            {FORMATION_SEQUENCE.map((item) => (
+              <button
+                key={item.type}
+                type="button"
+                role="tab"
+                aria-selected={formationType === item.type}
+                className={formationType === item.type ? 'is-active' : undefined}
+                onClick={() => {
+                  if (preview) return;
+                  setFormationType(item.type);
+                  setSelectedId('');
+                }}
+              >
+                {item.short}
+              </button>
+            ))}
+          </div>
+
+          <div className="formation-nav">
+            <button type="button" onClick={() => stepFormation(-1)} disabled={Boolean(preview)}>Prev</button>
+            <button type="button" onClick={() => stepFormation(1)} disabled={Boolean(preview)}>Next</button>
           </div>
 
           <div className="rotation-stepper">
-            <button type="button" onClick={() => changeRotation(rotation - 1)}>
-              ‹
-            </button>
+            <button type="button" aria-label="Previous rotation" onClick={() => changeRotation(rotationNumber - 1)}>‹</button>
             <div>
-              {[1, 2, 3, 4, 5, 6].map((value) => (
-                <button
-                  className={rotation === value ? 'is-active' : ''}
-                  key={value}
-                  onClick={() => changeRotation(value)}
-                  type="button"
-                >
+              {([1, 2, 3, 4, 5, 6] as const).map((value) => (
+                <button key={value} type="button" className={rotationNumber === value ? 'is-active' : undefined} onClick={() => changeRotation(value)}>
                   R{value}
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => changeRotation(rotation + 1)}>
-              ›
-            </button>
+            <button type="button" aria-label="Next rotation" onClick={() => changeRotation(rotationNumber + 1)}>›</button>
           </div>
 
-          <div className="rotation-playback">
-            <button
-              className={playback === 'move' ? 'is-active' : ''}
-              onClick={runMovement}
-              type="button"
-            >
-              {playback === 'move' ? 'Reset to Start' : 'Run Movement'}
-            </button>
-            <button
-              className={showPaths ? 'is-active' : ''}
-              onClick={() => setShowPaths((current) => !current)}
-              type="button"
-            >
-              {showPaths ? 'Hide Paths' : 'Show Paths'}
-            </button>
-          </div>
-
-          <section className="rotation-lineup-list">
+          <div className="rotation-lineup-list">
             <header>
-              <span>{phase} assignments</span>
-              <small>Ghost start → Real move</small>
+              <span>Role assignments</span>
+              <small>{plan ? SYSTEM_OPTIONS.find((item) => item.id === plan.system)?.label : 'No plan'}</small>
             </header>
-            {lineup.map((player, index) => {
-              const path = pathFor(player.id, index);
+            {(plan ? rolesForSystem(plan.system) : []).map((role) => {
+              const playerId = plan?.roleAssignments[role] ?? '';
+              const player = playerMap.get(playerId);
               return (
-                <article key={player.id}>
-                  <span>P{((index + rotation - 1) % 6) + 1}</span>
+                <article key={role}>
+                  <span>{roleLabel(role).slice(0, 2).toUpperCase()}</span>
                   <div>
-                    <strong>
-                      #{player.number} {player.name}
-                    </strong>
-                    <small>
-                      {path.move ? 'Movement saved' : 'Start only'}
-                      {path.server ? ' · Server' : ''}
-                    </small>
+                    <strong>{player ? displayName(player) : 'Unassigned'}</strong>
+                    <small>{roleLabel(role)}{player?.number ? ` · #${player.number}` : ''}</small>
                   </div>
-                  {player.captain && <em>Captain</em>}
+                  <em>{player?.position || '—'}</em>
                 </article>
               );
             })}
-          </section>
+          </div>
 
-          <label className="rotation-note">
-            <span>Coach note</span>
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
-          </label>
+          <div className="rotation-note">
+            <span>Formation notes</span>
+            <textarea
+              value={formation?.notes ?? ''}
+              placeholder="Coach notes for this formation"
+              onChange={(event) => patchFormation((current) => ({ ...current, notes: event.target.value }))}
+              disabled={!formation || Boolean(preview)}
+            />
+          </div>
+
+          {warnings.length > 0 && <p className="rotation-warning">{warnings[0]}</p>}
 
           <div className="rotation-share-actions">
-            <button type="button" onClick={exportRotation}>
-              Export plan
-            </button>
-            <button type="button" onClick={shareRotation}>
-              Send to team
-            </button>
+            <button type="button" onClick={() => window.print()} disabled={!plan}>Export</button>
+            <button type="button" onClick={() => openSetup(true)} disabled={!plan}>Roles</button>
           </div>
         </aside>
       </div>
 
+      {setupOpen && (
+        <div className="rotation-setup-overlay" role="dialog" aria-modal="true" aria-label="Rotation plan setup">
+          <div className="rotation-setup-card panel">
+            <div className="rotation-control-heading">
+              <div>
+                <p className="eyebrow">Rotation plan</p>
+                <h3>{plan ? 'Edit plan & roles' : 'Create formation plan'}</h3>
+              </div>
+              {plan && <button type="button" onClick={() => setSetupOpen(false)}>Close</button>}
+            </div>
+            <label className="rotation-note">
+              <span>Plan name</span>
+              <input value={draftName} onChange={(event) => setDraftName(event.target.value)} />
+            </label>
+            <label className="rotation-note">
+              <span>System</span>
+              <select
+                value={draftSystem}
+                onChange={(event) => {
+                  const system = event.target.value as RotationSystem;
+                  setDraftSystem(system);
+                  setDraftAssignments(
+                    suggestRoleAssignments(
+                      system,
+                      roster.map((player) => ({
+                        id: player.id,
+                        position: player.position,
+                        primaryPosition: player.primaryPosition,
+                        libero: player.libero,
+                        starter: player.starter
+                      }))
+                    )
+                  );
+                }}
+              >
+                {SYSTEM_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <div className="rotation-role-grid">
+              {rolesForSystem(draftSystem).map((role) => (
+                <label key={role} className="rotation-note">
+                  <span>{roleLabel(role)}</span>
+                  <select
+                    value={draftAssignments[role] ?? ''}
+                    onChange={(event) => setDraftAssignments((current) => ({ ...current, [role]: event.target.value }))}
+                  >
+                    <option value="">Unassigned</option>
+                    {roster.map((player) => (
+                      <option key={player.id} value={player.id}>
+                        #{player.number || '—'} {displayName(player)} · {player.position}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <div className="rotation-share-actions">
+              {plan ? (
+                <button type="button" onClick={rebuildFromRoles}>Rebuild formations</button>
+              ) : (
+                <button type="button" onClick={createPlan}>Create plan</button>
+              )}
+              <button type="button" onClick={() => setSetupOpen(false)} disabled={!plan}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {flash && <div className="rotation-flash">{flash}</div>}
     </div>
   );
+
+  function changeRotation(next: number) {
+    const value = (next < 1 ? 6 : next > 6 ? 1 : next) as 1 | 2 | 3 | 4 | 5 | 6;
+    setRotationNumber(value);
+    setSelectedId('');
+  }
+
+  function stepFormation(delta: number) {
+    const index = FORMATION_SEQUENCE.findIndex((item) => item.type === formationType);
+    const next = FORMATION_SEQUENCE[(index + delta + FORMATION_SEQUENCE.length) % FORMATION_SEQUENCE.length];
+    setFormationType(next.type);
+    setSelectedId('');
+  }
 }
 
-function PlayerCopy({ player }: { player: RotationPlayer }) {
-  return (
-    <>
-      {player.photoUrl && <img src={player.photoUrl} alt="" />}
-      <span className="rotation-player-copy">
-        <b>#{player.number}</b>
-        <strong>{player.name}</strong>
-        <small>{player.position}</small>
-      </span>
-      <span className="rotation-player-badges">
-        {player.captain && <i className="captain">C</i>}
-        {player.libero && <i className="libero">L</i>}
-      </span>
-    </>
-  );
-}
-
-function toRotationPlayer({
-  membership,
-  player,
-}: {
-  membership: RosterMembership;
-  player: Player;
-}): RotationPlayer {
+function toStudioPlayer(membership: RosterMembership, player: Player): StudioPlayer {
   return {
     id: player.id,
     name: player.preferredName || player.firstName,
-    number: membership.jerseyNumber || '—',
-    position: membership.position || player.primaryPosition || '—',
+    number: membership.jerseyNumber,
+    position: membership.position || player.primaryPosition,
     captain: membership.captain,
     libero: membership.libero,
-    photoUrl: player.photoUrl || undefined,
+    photoUrl: player.photoUrl,
+    primaryPosition: player.primaryPosition,
+    starter: membership.starter
   };
 }
 
-function readPlans(lineup: RotationPlayer[]): RotationPlans {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as RotationPlans;
-    if (Object.keys(saved).length) return saved;
-  } catch {
-    // Use fresh defaults when saved data is invalid.
-  }
+function displayName(player: StudioPlayer) {
+  return player.name;
+}
 
-  const defaults: RotationPlans = {};
-  for (let rotation = 1; rotation <= 6; rotation += 1) {
-    for (const phase of ['serve', 'receive'] as Phase[]) {
-      lineup.forEach((player, index) => {
-        defaults[`${rotation}:${phase}:${player.id}`] = {
-          start: rotationPoints[(index + rotation - 1) % 6],
-        };
-      });
-    }
-  }
-  return defaults;
+function PlayerCopy({ player, zone, role }: { player: StudioPlayer; zone: number; role?: SystemRole | 'custom' }) {
+  return (
+    <span className="rotation-player-copy">
+      <b>{zone}</b>
+      <strong>{player.name}</strong>
+      <small>{role ? roleLabel(role) : player.position}</small>
+    </span>
+  );
 }
