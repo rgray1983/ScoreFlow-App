@@ -639,14 +639,17 @@ async function endRecoveredLiveMatch() {
     liveGameId = recovery.gameId;
     if (db) {
       try {
-        await setDoc(liveDocRef(), {
-          ...liveOwnerFields(),
+        await ensureFirebaseAuth();
+        const payload = liveOwnerPatch({
           ended: true,
           endedAt: serverTimestamp(),
           endedAtMs: Date.now(),
           updatedAt: serverTimestamp(),
           updatedAtMs: Date.now()
-        }, { merge: true });
+        });
+        if (payload) {
+          await setDoc(liveDocRef(), payload, { merge: true });
+        }
       } catch (error) {
         console.warn("Recovered live match end failed", error);
       }
@@ -686,14 +689,16 @@ async function endLiveMatch() {
 
   try {
     if (db) {
-      await setDoc(liveDocRef(), {
-        ...liveOwnerFields(),
+      await ensureFirebaseAuth();
+      const payload = liveOwnerPatch({
         ended: true,
         endedAt: serverTimestamp(),
         endedAtMs: Date.now(),
         updatedAt: serverTimestamp(),
         updatedAtMs: Date.now()
-      }, { merge: true });
+      });
+      if (!payload) throw new Error(guestSessionErrorMessage());
+      await setDoc(liveDocRef(), payload, { merge: true });
     }
     unsubscribeLive?.();
     unsubscribeLive = null;
@@ -1342,12 +1347,20 @@ function watchAuth() {
 
 async function ensureFirebaseAuth() {
   if (!auth) return null;
-  if (currentUser) return currentUser;
+  if (typeof auth.authStateReady === "function") {
+    await auth.authStateReady();
+  } else if (firstAuthState) {
+    await firstAuthState;
+  }
 
-  const initialUser = auth.currentUser || (firstAuthState ? await firstAuthState : null);
-  if (initialUser) {
-    currentUser = initialUser;
+  if (auth.currentUser) {
+    currentUser = auth.currentUser;
     lastAuthError = null;
+    try {
+      await currentUser.getIdToken();
+    } catch (error) {
+      console.warn("ScoreFlow auth token refresh failed", error);
+    }
     return currentUser;
   }
 
@@ -1355,9 +1368,11 @@ async function ensureFirebaseAuth() {
     const credential = await signInAnonymously(auth);
     currentUser = credential.user;
     lastAuthError = null;
+    await currentUser.getIdToken();
     return currentUser;
   } catch (error) {
     lastAuthError = error;
+    currentUser = null;
     console.warn("ScoreFlow guest session failed", error);
     return null;
   }
@@ -2444,9 +2459,24 @@ function liveDocRef() {
   return doc(db, "volleyballGames", liveGameId);
 }
 
-function liveOwnerFields() {
-  if (!currentUser) return {};
-  return { ownerId: currentUser.uid };
+function liveOwnerUid() {
+  return auth?.currentUser?.uid || currentUser?.uid || "";
+}
+
+function liveWritePayload(includeBranding = true, extra = {}) {
+  const ownerId = liveOwnerUid();
+  if (!ownerId) return null;
+  return {
+    ...publicState(includeBranding),
+    ownerId,
+    ...extra
+  };
+}
+
+function liveOwnerPatch(extra = {}) {
+  const ownerId = liveOwnerUid();
+  if (!ownerId) return null;
+  return { ownerId, ...extra };
 }
 
 function buildViewerLink(gameId = liveGameId) {
@@ -2459,7 +2489,7 @@ function buildScorerLink(gameId = liveGameId) {
   return `${cleanUrl}?game=${encodeURIComponent(gameId)}&mode=scorer`;
 }
 
-async function createLiveGame() {
+async function createLiveGame({ forceNew = false } = {}) {
   if (!db) {
     els.firebaseNote.textContent = "Live sharing needs Firebase connected first. Fill in firebase-config.js, then push again.";
     toast("Firebase config needed", true);
@@ -2467,25 +2497,36 @@ async function createLiveGame() {
   }
 
   await ensureFirebaseAuth();
-  if (!currentUser) {
+  if (!liveOwnerUid()) {
     els.firebaseNote.textContent = guestSessionErrorMessage();
     toast(guestSessionErrorMessage(), true);
     return;
   }
 
-  if (!liveGameId || liveEnded) {
+  if (forceNew || !liveGameId || liveEnded) {
     liveGameId = `game-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   }
   liveEnded = false;
 
-  await setDoc(liveDocRef(), {
-    ...publicState(),
-    ...liveOwnerFields(),
+  const payload = liveWritePayload(true, {
     ended: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     updatedAtMs: Date.now()
-  }, { merge: true });
+  });
+  if (!payload) {
+    toast(guestSessionErrorMessage(), true);
+    return;
+  }
+
+  try {
+    await setDoc(liveDocRef(), payload, { merge: !forceNew });
+  } catch (error) {
+    console.error(error);
+    setConnectionStatus("error", "Sync Error");
+    toast("Live game could not be created. Refresh and start a new live match.", true);
+    return;
+  }
 
   els.viewerLink.value = buildViewerLink();
   updateShareExtras();
@@ -2518,19 +2559,18 @@ function queueRemoteBrandingUpdate() {
 async function pushRemoteUpdate() {
   if (!db || !liveGameId || isViewer || applyingRemote) return;
   await ensureFirebaseAuth();
-  if (!currentUser) {
+  const payload = liveWritePayload(false, {
+    ended: false,
+    updatedAt: serverTimestamp(),
+    updatedAtMs: Date.now()
+  });
+  if (!payload) {
     setConnectionStatus("error", "Sync Error");
     toast(guestSessionErrorMessage(), true);
     return;
   }
   try {
-    await setDoc(liveDocRef(), {
-      ...publicState(false),
-      ...liveOwnerFields(),
-      ended: false,
-      updatedAt: serverTimestamp(),
-      updatedAtMs: Date.now()
-    }, { merge: true });
+    await setDoc(liveDocRef(), payload, { merge: true });
     saveActiveLiveMatch();
     liveReady = true;
     setConnectionStatus("online", "Online");
@@ -2544,19 +2584,18 @@ async function pushRemoteUpdate() {
 async function pushRemoteBrandingUpdate() {
   if (!db || !liveGameId || isViewer || applyingRemote) return;
   await ensureFirebaseAuth();
-  if (!currentUser) {
+  const payload = liveWritePayload(true, {
+    ended: false,
+    updatedAt: serverTimestamp(),
+    updatedAtMs: Date.now()
+  });
+  if (!payload) {
     setConnectionStatus("error", "Sync Error");
     toast(guestSessionErrorMessage(), true);
     return;
   }
   try {
-    await setDoc(liveDocRef(), {
-      ...publicState(true),
-      ...liveOwnerFields(),
-      ended: false,
-      updatedAt: serverTimestamp(),
-      updatedAtMs: Date.now()
-    }, { merge: true });
+    await setDoc(liveDocRef(), payload, { merge: true });
     saveActiveLiveMatch();
     liveReady = true;
     setConnectionStatus("online", "Online");
@@ -2584,13 +2623,23 @@ async function startLiveListener() {
         toast("Game link not found", true);
         return;
       }
-      if (!currentUser) {
+      if (!liveOwnerUid()) {
         setConnectionStatus("error", "Sync Error");
         toast(guestSessionErrorMessage(), true);
         return;
       }
-      await setDoc(ref, { ...publicState(), ...liveOwnerFields(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    } else if (!isViewer && !currentUser) {
+      const payload = liveWritePayload(true, {
+        ended: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      if (!payload) {
+        setConnectionStatus("error", "Sync Error");
+        toast(guestSessionErrorMessage(), true);
+        return;
+      }
+      await setDoc(ref, payload);
+    } else if (!isViewer && !liveOwnerUid()) {
       setConnectionStatus("error", "Sync Error");
       toast(guestSessionErrorMessage(), true);
     }
@@ -2599,7 +2648,7 @@ async function startLiveListener() {
     els.viewerLink.value = buildViewerLink();
     updateShareExtras();
     liveReady = true;
-    setConnectionStatus(!isViewer && !currentUser ? "error" : "online", !isViewer && !currentUser ? "Sync Error" : "Online");
+    setConnectionStatus(!isViewer && !liveOwnerUid() ? "error" : "online", !isViewer && !liveOwnerUid() ? "Sync Error" : "Online");
     document.body.classList.toggle("viewer-mode", isViewer);
     if (isViewer) document.body.classList.add("scoreboard-active");
     await startFanZoneListeners();
@@ -2618,7 +2667,7 @@ async function startLiveListener() {
       applyingRemote = false;
       if (!isViewer) saveActiveLiveMatch();
       liveReady = true;
-      setConnectionStatus(!isViewer && !currentUser ? "error" : "online", !isViewer && !currentUser ? "Sync Error" : "Online");
+      setConnectionStatus(!isViewer && !liveOwnerUid() ? "error" : "online", !isViewer && !liveOwnerUid() ? "Sync Error" : "Online");
     }, (error) => {
       console.error(error);
       setConnectionStatus("error", "Sync Error");
@@ -3025,11 +3074,18 @@ async function startMatchFromSetup(startLive = false) {
   if (isViewer) return;
   const saved = saveSettings({ silent: true });
   if (!saved) return;
+  if (startLive) {
+    unsubscribeLive?.();
+    unsubscribeLive = null;
+    liveGameId = "";
+    liveEnded = false;
+    liveReady = false;
+  }
   resetMatchState(false);
   openScoreboardFromHome(false);
   toast(startLive ? "Live match ready" : "Match ready");
   if (startLive) {
-    await createLiveGame();
+    await createLiveGame({ forceNew: true });
     openShare();
   }
 }
