@@ -1,13 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 import { ChevronIcon, SettingsIcon } from "../ui/icons";
 import { LogoMark } from "../ui/LogoMark";
 import { StackedText } from "../ui/StackedText";
+import { useLiveSession } from "../state/liveSession";
 import { useWorkspace } from "../state/workspace";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
+  const navigate = useNavigate();
   const homeTeam = useWorkspace((state) => state.homeTeam);
+  const recovery = useLiveSession((state) => state.recovery);
+  const endLive = useLiveSession((state) => state.endLive);
 
   return (
     <div className={styles.page}>
@@ -70,6 +75,18 @@ export function HomePage() {
           <ChevronIcon className={styles.chevron} />
         </Link>
       </main>
+      <Dialog
+        open={Boolean(recovery)}
+        title="Live match still open"
+        copy={recovery?.summary || "A live viewer link is still running from this phone."}
+        onCancel={() => undefined}
+        actions={
+          <>
+            <Button tone="gold" onClick={() => navigate("/match")}>Resume Match</Button>
+            <Button tone="quiet" onClick={() => void endLive()}>End Match</Button>
+          </>
+        }
+      />
     </div>
   );
 }

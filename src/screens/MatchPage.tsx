@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   canUndo,
   isMatchOver,
@@ -9,8 +9,10 @@ import {
 import { matchFormatLabel } from "../storage/matchSetup";
 import { matchHasProgress } from "../storage/matchEngine";
 import { useWorkspace } from "../state/workspace";
+import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
+import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
@@ -30,9 +32,11 @@ function useScorePop(score: number) {
 }
 
 export function MatchPage() {
+  const navigate = useNavigate();
   const draft = useWorkspace((state) => state.draft);
   const engine = useWorkspace((state) => state.engine);
   const dispatch = useWorkspace((state) => state.dispatch);
+  const live = useLiveSession();
   const match = engine.match;
   const over = isMatchOver(match);
   const banner = matchBanner(match);
@@ -40,6 +44,7 @@ export function MatchPage() {
   const homePop = useScorePop(match.homeScore);
   const awayPop = useScorePop(match.awayScore);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
   const [setFlash, setSetFlash] = useState("");
   const previousSets = useRef(match.completedSets.length);
@@ -61,6 +66,12 @@ export function MatchPage() {
     previousSets.current = count;
     return undefined;
   }, [match.completedSets, match.winner, match.homeName, match.awayName]);
+
+  useEffect(() => {
+    if (live.recovery?.gameId && live.status !== "live") {
+      void live.resumeLive(match, draft);
+    }
+  }, []);
 
   function score(side: Side) {
     dispatch({ type: "point", side });
@@ -85,6 +96,22 @@ export function MatchPage() {
     setConfirmOpen(true);
   }
 
+  function requestHome() {
+    if (live.status === "live" || live.gameId) {
+      setLeaveOpen(true);
+      return;
+    }
+    navigate("/");
+  }
+
+  async function requestShare() {
+    if (live.status === "live" && live.gameId) {
+      live.openShare();
+      return;
+    }
+    await live.goLive(match, draft);
+  }
+
   return (
     <div
       className={styles.page}
@@ -92,15 +119,15 @@ export function MatchPage() {
     >
       <header className={styles.topBar}>
         <div className={styles.left}>
-          <Link className={styles.iconButton} to="/" aria-label="Home">
+          <button className={styles.iconButton} type="button" aria-label="Home" onClick={requestHome}>
             <HomeIcon className={styles.icon} />
-          </Link>
+          </button>
           <Link className={styles.setupLink} to="/setup">Setup</Link>
         </div>
         <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
         <div className={styles.status}>
-          <span className={styles.viewers}>Viewers 0</span>
-          <LivePill status="offline" />
+          <span className={styles.viewers}>Viewers {live.viewerCount}</span>
+          <LivePill status={live.status} />
         </div>
       </header>
 
@@ -193,9 +220,9 @@ export function MatchPage() {
         <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
           New Match
         </Button>
-        <Button tone="gold" disabled>
+        <Button tone="gold" onClick={() => void requestShare()}>
           <ShareIcon className={styles.controlIcon} />
-          Share Live
+          {live.status === "error" ? "Retry Live" : "Share Live"}
         </Button>
       </footer>
 
@@ -214,6 +241,10 @@ export function MatchPage() {
               ))}
             </ul>
             <div className={styles.winnerActions}>
+              <Button tone="gold" onClick={() => void requestShare()}>
+                <ShareIcon className={styles.controlIcon} />
+                Share Live
+              </Button>
               <Button onClick={startNewMatch}>New Match</Button>
               <Button tone="quiet" disabled={!canUndo(engine)} onClick={() => dispatch({ type: "undo" })}>
                 Undo last point
@@ -231,6 +262,43 @@ export function MatchPage() {
         onConfirm={startNewMatch}
         onCancel={() => setConfirmOpen(false)}
       />
+      <Dialog
+        open={leaveOpen}
+        title="Leave this live match?"
+        copy="Keep the viewer link running, or end it for families on the link."
+        onCancel={() => setLeaveOpen(false)}
+        actions={
+          <>
+            <Button
+              tone="gold"
+              onClick={() => {
+                setLeaveOpen(false);
+                navigate("/");
+              }}
+            >
+              Keep Live
+            </Button>
+            <Button
+              tone="quiet"
+              onClick={() => {
+                void live.endLive().then(() => navigate("/"));
+              }}
+            >
+              End Match
+            </Button>
+            <Button tone="quiet" onClick={() => setLeaveOpen(false)}>Stay</Button>
+          </>
+        }
+      />
+      <Dialog
+        open={Boolean(live.error) && live.status === "error" && !live.shareOpen}
+        title="Live share needs a moment"
+        copy={live.error}
+        confirmLabel="Try Again"
+        onConfirm={() => void requestShare()}
+        onCancel={() => useLiveSession.setState({ error: "" })}
+      />
+      <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
     </div>
   );
 }

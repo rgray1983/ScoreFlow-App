@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 4 match scoring is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can score a local club or high-school match through `src/scoring`, including Undo.
+Phase 5 live share is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can create a live game, share `/g/:gameId`, and show viewer counts. Chat is still Phase 6.
 
 ## Why rebuild
 
@@ -312,7 +312,7 @@ First code phase.
 - Recovery prompt if a live game is still open on this device
 - Storage for logos, not data URLs in the game doc
 
-**Done when:** A second phone on a viewer link tracks points in realtime, including set and match end.
+**Done when:** A second phone on a viewer link tracks points in realtime, including set and match end. Richie has merged this phase.
 
 ### Phase 6 — Fan zone
 
@@ -373,4 +373,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 5: live share + viewer. Do not start Phase 5 until this phase is merged.
+Phase 6: fan zone chat and reactions. Do not start Phase 6 until this phase is merged.

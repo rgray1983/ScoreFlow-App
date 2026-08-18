@@ -1,0 +1,94 @@
+.shade {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.card {
+  width: min(92vw, 420px);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 20px;
+  background: rgba(13, 20, 34, 0.96);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.head h2,
+.card p {
+  margin: 0;
+}
+
+.head h2 {
+  font-size: clamp(28px, 7vw, 40px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.card p {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.qr,
+.qrSlot {
+  width: 220px;
+  height: 220px;
+  margin: 16px auto 0;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.qr {
+  padding: 12px;
+}
+
+.link {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  text-align: center;
+  font-size: 13px;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.actions :global(button) {
+  width: 100%;
+}
