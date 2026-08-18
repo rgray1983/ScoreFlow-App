@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isTimestampMs(value) {
+      return value is int || value is float;
+    }
+
+    function isNonEmptyString(value, maxChars) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= maxChars;
+    }
+
+    function liveGamePath(gameId) {
+      return /databases/$(database)/documents/volleyballGames/$(gameId);
+    }
+
+    function liveGameExists(gameId) {
+      return exists(liveGamePath(gameId));
+    }
+
+    function liveGameData(gameId) {
+      return get(liveGamePath(gameId)).data;
+    }
+
+    function isLiveGameOwner(gameId) {
+      return isSignedIn()
+        && liveGameExists(gameId)
+        && liveGameData(gameId).ownerId == request.auth.uid;
+    }
+
+    function canClaimLegacyLiveGame() {
+      return isSignedIn()
+        && !('ownerId' in resource.data)
+        && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    function keepsLiveGameOwner() {
+      return request.resource.data.ownerId == resource.data.ownerId
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    function isAllowedReactionEmoji(value) {
+      return value in ['❤️', '🔥', '👏', '🎉', '🏐', '💪'];
+    }
+
+    function isValidChatMessage(gameId) {
+      let data = request.resource.data;
+      let role = data.role;
+      return data.keys().hasOnly(['text', 'name', 'role', 'sessionId', 'uid', 'createdAt', 'createdAtMs'])
+        && isNonEmptyString(data.text, 60)
+        && isNonEmptyString(data.name, 24)
+        && isNonEmptyString(data.sessionId, 80)
+        && data.uid == request.auth.uid
+        && data.createdAt == request.time
+        && isTimestampMs(data.createdAtMs)
+        && role in ['viewer', 'scorer']
+        && (role == 'viewer' || isLiveGameOwner(gameId) || !('ownerId' in liveGameData(gameId)));
+    }
+
+    function isValidReaction() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['emoji', 'uid', 'createdAt', 'createdAtMs'])
+        && isAllowedReactionEmoji(data.emoji)
+        && data.uid == request.auth.uid
+        && data.createdAt == request.time
+        && isTimestampMs(data.createdAtMs);
+    }
+
+    function isValidPresence(presenceId) {
+      let data = request.resource.data;
+      return presenceId == request.auth.uid
+        && data.keys().hasOnly(['role', 'uid', 'updatedAt', 'updatedAtMs'])
+        && data.role in ['viewer', 'scorer']
+        && data.uid == request.auth.uid
+        && data.updatedAt == request.time
+        && isTimestampMs(data.updatedAtMs);
+    }
+
+    // Default deny: unmatched paths cannot be read or written.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Signed-in account data. Teams, matches, and settings live under the
+    // authenticated user's UID and are never public.
+    match /users/{userId} {
+      allow read, write: if isUser(userId);
+
+      match /{document=**} {
+        allow read, write: if isUser(userId);
+      }
+    }
+
+    // Live scoreboard documents are share-by-link. Anyone with the game ID
+    // can read a single game, but listing the collection is denied.
+    // Only the creating scorer can create, update, or delete the game.
+    match /volleyballGames/{gameId} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && (keepsLiveGameOwner() || canClaimLegacyLiveGame());
+
+      allow delete: if isLiveGameOwner(gameId);
+
+      match /chat/{messageId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && liveGameExists(gameId)
+          && isValidChatMessage(gameId);
+        allow update, delete: if false;
+      }
+
+      match /reactions/{reactionId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && liveGameExists(gameId)
+          && isValidReaction();
+        allow update, delete: if false;
+      }
+
+      match /presence/{presenceId} {
+        allow read: if true;
+        allow create, update: if isSignedIn()
+          && liveGameExists(gameId)
+          && isValidPresence(presenceId);
+        allow delete: if isSignedIn() && request.auth.uid == presenceId;
+      }
+    }
+  }
+}
