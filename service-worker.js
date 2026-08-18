@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2.6.0-firestore-rules";
+const SCORE_FLOW_CACHE = "scoreflow-v2.6.1-live-auth";
 
 const CORE_ASSETS = [
   "./",
