@@ -47,3 +47,15 @@ export function isMatchPoint(match: MatchState, side: Side): boolean {
 export function canUndo(engine: MatchEngine): boolean {
   return engine.history.length > 0;
 }
+
+export function matchBanner(match: MatchState): string {
+  if (isMatchOver(match) && (match.winner === "home" || match.winner === "away")) {
+    const winnerName = match.winner === "home" ? match.homeName : match.awayName;
+    return `MATCH WON — ${winnerName}`;
+  }
+  if (isMatchPoint(match, "home")) return `MATCH POINT — ${match.homeName}`;
+  if (isMatchPoint(match, "away")) return `MATCH POINT — ${match.awayName}`;
+  if (isSetPoint(match, "home")) return `SET POINT — ${match.homeName}`;
+  if (isSetPoint(match, "away")) return `SET POINT — ${match.awayName}`;
+  return `FIRST TO ${pointsToWin(match)}`;
+}

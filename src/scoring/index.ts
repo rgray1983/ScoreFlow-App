@@ -20,6 +20,7 @@ export {
   isMatchOver,
   isMatchPoint,
   isSetPoint,
+  matchBanner,
   otherSide,
   pointsToWin,
   scoreOf,

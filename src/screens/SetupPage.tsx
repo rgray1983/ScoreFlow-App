@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 import { Field, SelectInput, TextInput } from "../ui/Field";
 import { Swatches } from "../ui/Swatches";
 import { InnerScreen } from "./InnerScreen";
+import { matchHasProgress } from "../storage/matchEngine";
 import { useWorkspace } from "../state/workspace";
 import styles from "./InnerScreen.module.css";
 import setupStyles from "./SetupPage.module.css";
@@ -11,13 +13,21 @@ import setupStyles from "./SetupPage.module.css";
 export function SetupPage() {
   const navigate = useNavigate();
   const draft = useWorkspace((state) => state.draft);
+  const engine = useWorkspace((state) => state.engine);
   const updateDraft = useWorkspace((state) => state.updateDraft);
   const applyHomeTeamToDraft = useWorkspace((state) => state.applyHomeTeamToDraft);
   const startMatch = useWorkspace((state) => state.startMatch);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     applyHomeTeamToDraft();
   }, [applyHomeTeamToDraft]);
+
+  function beginMatch() {
+    startMatch();
+    setConfirmOpen(false);
+    navigate("/match");
+  }
 
   return (
     <InnerScreen
@@ -62,14 +72,23 @@ export function SetupPage() {
       <div className={styles.actions}>
         <Button
           onClick={() => {
-            startMatch();
-            navigate("/match");
+            if (matchHasProgress(engine)) setConfirmOpen(true);
+            else beginMatch();
           }}
         >
           Start Scoreboard
         </Button>
         <Button to="/" tone="quiet">Back Home</Button>
       </div>
+
+      <Dialog
+        open={confirmOpen}
+        title="Replace the current match?"
+        copy="Scores and sets on the board will be cleared. Names and colors from this screen will be used."
+        confirmLabel="Start Scoreboard"
+        onConfirm={beginMatch}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </InnerScreen>
   );
 }
