@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2.6.1-live-auth";
+const SCORE_FLOW_CACHE = "scoreflow-v2.6.2-firebase-key";
 
 const CORE_ASSETS = [
   "./",
