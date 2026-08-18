@@ -95,8 +95,16 @@
   box-shadow: inset 0 0 40px color-mix(in srgb, var(--away) 28%, transparent);
 }
 
+.teamLogo {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
 .teamName {
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .sets {

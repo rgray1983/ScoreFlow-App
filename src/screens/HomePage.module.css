@@ -120,17 +120,41 @@
   font-weight: 800;
 }
 
+.teamAction :global(a) {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.homeTeamCard {
+  border-color: color-mix(in srgb, var(--home-team-card-color), #ffffff 28%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--home-team-card-color), #101827 32%), rgba(16, 24, 39, 0.92));
+}
+
+.teamRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.teamRow strong,
+.teamRow span {
+  display: block;
+}
+
+.teamRow span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .navCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.navCard small {
-  display: block;
-  margin-top: 4px;
-  font-weight: 600;
 }
 
 .chevron {

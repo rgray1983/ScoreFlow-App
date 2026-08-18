@@ -1,0 +1,28 @@
+.mark {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.mark img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hasLogo img {
+  display: block;
+}
+
+.hasLogo span {
+  display: none;
+}

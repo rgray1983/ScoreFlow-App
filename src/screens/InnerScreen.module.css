@@ -51,8 +51,18 @@
   color: var(--muted);
 }
 
+.form {
+  display: grid;
+  gap: 14px;
+}
+
 .actions {
   display: grid;
   gap: 10px;
   padding-top: 4px;
+}
+
+.actions :global(a),
+.actions :global(button) {
+  width: 100%;
 }

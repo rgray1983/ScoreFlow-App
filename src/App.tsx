@@ -4,12 +4,14 @@ import { SetupPage } from "./screens/SetupPage";
 import { MatchPage } from "./screens/MatchPage";
 import { ViewerPage } from "./screens/ViewerPage";
 import { HistoryPage } from "./screens/HistoryPage";
+import { TeamPage } from "./screens/TeamPage";
 import { SettingsGraphicsPage, SettingsPage, SettingsThemesPage } from "./screens/SettingsPages";
 
 export function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/team" element={<TeamPage />} />
       <Route path="/setup" element={<SetupPage />} />
       <Route path="/match" element={<MatchPage />} />
       <Route path="/g/:gameId" element={<ViewerPage />} />

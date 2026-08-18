@@ -1,0 +1,19 @@
+.field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.control {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 14px 15px;
+  outline: none;
+}
+
+.control:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+}
