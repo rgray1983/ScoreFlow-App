@@ -19,16 +19,22 @@ import {
   type LiveRecovery
 } from "../live";
 
-export type LiveStatus = "offline" | "live" | "error";
+export type LiveStatus = "offline" | "connecting" | "live" | "error";
+
+type GoLiveOptions = {
+  reuseId?: boolean;
+};
 
 type LiveSessionState = {
   status: LiveStatus;
+  active: boolean;
+  epoch: number;
   gameId: string;
   viewerCount: number;
   error: string;
   shareOpen: boolean;
   recovery: LiveRecovery | null;
-  goLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
+  goLive: (match: MatchState, draft: MatchDraft, options?: GoLiveOptions) => Promise<void>;
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
   publishScore: (match: MatchState) => void;
@@ -43,13 +49,32 @@ let presenceTimer = 0;
 let stopViewerCount: (() => void) | null = null;
 
 function stopPresence(): void {
-  window.clearInterval(presenceTimer);
+  if (typeof window !== "undefined") {
+    window.clearInterval(presenceTimer);
+  }
   stopViewerCount?.();
   stopViewerCount = null;
 }
 
+function clearScoreTimer(): void {
+  if (typeof window !== "undefined") {
+    window.clearTimeout(scoreTimer);
+  }
+  scoreTimer = 0;
+}
+
+function sessionStillOpen(
+  epoch: number,
+  gameId: string,
+  state: { active: boolean; epoch: number; gameId: string }
+): boolean {
+  return state.active && state.epoch === epoch && state.gameId === gameId;
+}
+
 export const useLiveSession = create<LiveSessionState>((set, get) => ({
   status: "offline",
+  active: false,
+  epoch: 0,
   gameId: "",
   viewerCount: 0,
   error: "",
@@ -64,18 +89,30 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   dismissRecovery() {
     set({ recovery: null });
   },
-  async goLive(match, draft) {
+  async goLive(match, draft, options) {
     if (!firebaseReady()) {
-      set({ status: "error", error: "Firebase config is missing." });
+      set({ status: "error", error: "Firebase config is missing.", active: false });
+      throw new Error("Firebase config is missing.");
+    }
+    if (get().status === "connecting") return;
+    if (get().active && get().gameId && !options?.reuseId) {
+      set({ shareOpen: true, status: "live", error: "" });
       return;
     }
-    const existingId = get().gameId || get().recovery?.gameId || "";
-    const gameId = existingId || createGameId();
-    set({ status: "offline", error: "", gameId });
+
+    const reuseId = options?.reuseId === true;
+    const gameId = reuseId
+      ? get().gameId || get().recovery?.gameId || createGameId()
+      : createGameId();
+    const epoch = get().epoch + 1;
+    set({ status: "connecting", error: "", gameId, active: false, epoch });
     stopPresence();
+    clearScoreTimer();
     try {
       const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+      if (get().epoch !== epoch) return;
       await createLiveGame(gameId, match, logos);
+      if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
         active: true,
@@ -83,27 +120,54 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         summary: liveRecoverySummary(match)
       });
       await writePresence(gameId, "scorer");
+      if (get().epoch !== epoch) return;
       presenceTimer = window.setInterval(() => {
-        void writePresence(gameId, "scorer");
+        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
       }, 15000);
-      stopViewerCount = listenViewerCount(gameId, (viewerCount) => set({ viewerCount }));
-      set({ status: "live", gameId, error: "", shareOpen: true, recovery: loadLiveRecovery() });
+      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
+        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
+      });
+      set({
+        status: "live",
+        active: true,
+        gameId,
+        error: "",
+        shareOpen: true,
+        recovery: loadLiveRecovery()
+      });
     } catch (error) {
+      if (get().epoch !== epoch) return;
       set({
         status: "error",
+        active: false,
+        gameId: reuseId ? gameId : "",
         error: error instanceof Error ? error.message : "Live game could not be created."
       });
+      throw error;
     }
   },
   async resumeLive(match, draft) {
     const gameId = get().recovery?.gameId || get().gameId;
     if (!gameId) return;
     set({ gameId });
-    await get().goLive(match, draft);
+    await get().goLive(match, draft, { reuseId: true });
   },
   async endLive() {
     const gameId = get().gameId || get().recovery?.gameId;
+    const epoch = get().epoch + 1;
+    clearScoreTimer();
     stopPresence();
+    clearLiveRecovery();
+    set({
+      status: "offline",
+      active: false,
+      epoch,
+      gameId: "",
+      viewerCount: 0,
+      error: "",
+      shareOpen: false,
+      recovery: null
+    });
     if (gameId) {
       try {
         await endLiveGame(gameId);
@@ -111,25 +175,28 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         // Local end still clears recovery so the scorer can leave the gym.
       }
     }
-    clearLiveRecovery();
-    set({ status: "offline", gameId: "", viewerCount: 0, error: "", shareOpen: false, recovery: null });
   },
   publishScore(match) {
-    const { gameId, status } = get();
-    if (!gameId || status === "offline") return;
-    window.clearTimeout(scoreTimer);
+    const { gameId, active, epoch } = get();
+    if (!gameId || !active) return;
+    clearScoreTimer();
+    const startedEpoch = epoch;
+    const startedId = gameId;
     scoreTimer = window.setTimeout(() => {
-      void updateLiveScore(gameId, match)
+      if (!sessionStillOpen(startedEpoch, startedId, get())) return;
+      void updateLiveScore(startedId, match)
         .then(() => {
+          if (!sessionStillOpen(startedEpoch, startedId, get())) return;
           saveLiveRecovery({
-            gameId,
+            gameId: startedId,
             active: true,
             savedAtMs: Date.now(),
             summary: liveRecoverySummary(match)
           });
-          set({ status: "live", error: "" });
+          set({ status: "live", error: "", recovery: loadLiveRecovery() });
         })
         .catch((error: unknown) => {
+          if (!sessionStillOpen(startedEpoch, startedId, get())) return;
           set({
             status: "error",
             error: error instanceof Error ? error.message : "Live update failed."
@@ -138,14 +205,19 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     }, 120);
   },
   publishBranding(match, draft) {
-    const { gameId, status } = get();
-    if (!gameId || status === "offline") return;
+    const { gameId, active, epoch } = get();
+    if (!gameId || !active) return;
+    const startedEpoch = epoch;
+    const startedId = gameId;
     void (async () => {
       try {
-        const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-        await updateLiveBranding(gameId, match, logos);
+        const logos = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
+        await updateLiveBranding(startedId, match, logos);
+        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({ status: "live", error: "" });
       } catch (error) {
+        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({
           status: "error",
           error: error instanceof Error ? error.message : "Live branding update failed."

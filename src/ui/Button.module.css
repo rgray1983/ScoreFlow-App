@@ -27,6 +27,11 @@
   border: 1px solid var(--line);
 }
 
+.button:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .icon {
   width: 36px;
   min-height: 36px;

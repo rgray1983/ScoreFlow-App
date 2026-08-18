@@ -20,6 +20,15 @@
   background: var(--muted-2);
 }
 
+.connecting {
+  color: var(--text);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.connecting .dot {
+  background: #fbbf24;
+}
+
 .live {
   color: var(--text);
   border-color: rgba(34, 197, 94, 0.35);

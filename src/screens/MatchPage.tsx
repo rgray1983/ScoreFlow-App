@@ -68,7 +68,7 @@ export function MatchPage() {
   }, [match.completedSets, match.winner, match.homeName, match.awayName]);
 
   useEffect(() => {
-    if (live.recovery?.gameId && live.status !== "live") {
+    if (live.recovery?.gameId && !live.active && live.status !== "connecting") {
       void live.resumeLive(match, draft);
     }
   }, []);
@@ -97,7 +97,7 @@ export function MatchPage() {
   }
 
   function requestHome() {
-    if (live.status === "live" || live.gameId) {
+    if (live.active) {
       setLeaveOpen(true);
       return;
     }
@@ -105,12 +105,23 @@ export function MatchPage() {
   }
 
   async function requestShare() {
-    if (live.status === "live" && live.gameId) {
+    if (live.status === "connecting") return;
+    if (live.active && live.gameId) {
       live.openShare();
       return;
     }
-    await live.goLive(match, draft);
+    try {
+      await live.goLive(match, draft);
+    } catch {
+      // Error dialog is driven by live.error.
+    }
   }
+
+  const shareLabel = live.status === "connecting"
+    ? "Starting…"
+    : live.status === "error"
+      ? "Retry Live"
+      : "Share Live";
 
   return (
     <div
@@ -220,9 +231,9 @@ export function MatchPage() {
         <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
           New Match
         </Button>
-        <Button tone="gold" onClick={() => void requestShare()}>
+        <Button tone="gold" disabled={live.status === "connecting"} onClick={() => void requestShare()}>
           <ShareIcon className={styles.controlIcon} />
-          {live.status === "error" ? "Retry Live" : "Share Live"}
+          {shareLabel}
         </Button>
       </footer>
 
@@ -241,9 +252,9 @@ export function MatchPage() {
               ))}
             </ul>
             <div className={styles.winnerActions}>
-              <Button tone="gold" onClick={() => void requestShare()}>
+              <Button tone="gold" disabled={live.status === "connecting"} onClick={() => void requestShare()}>
                 <ShareIcon className={styles.controlIcon} />
-                Share Live
+                {shareLabel}
               </Button>
               <Button onClick={startNewMatch}>New Match</Button>
               <Button tone="quiet" disabled={!canUndo(engine)} onClick={() => dispatch({ type: "undo" })}>
