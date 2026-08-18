@@ -1,17 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createMatch, point } from "./scoring";
+import { BrowserRouter } from "react-router-dom";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/inter/800.css";
+import "@fontsource/inter/900.css";
+import "@fontsource/anton/400.css";
+import "./ui/base.css";
+import { App } from "./App";
+import { registerPwa } from "./pwa/register";
 
-const demo = point(createMatch(), "home");
+registerPwa();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <main>
-      <h1>ScoreFlow rebuild</h1>
-      <p>Phase 1 scoring kernel is running. Match UI arrives in Phase 2.</p>
-      <p>
-        Kernel check: {demo.match.homeName} {demo.match.homeScore}–{demo.match.awayScore} {demo.match.awayName}
-      </p>
-    </main>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>
 );

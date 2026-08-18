@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 1 scoring kernel is in review. The current `index.html` / `app.js` / `style.css` app remains the live product. Vite lives under `src/` on port 5173 and does not replace the gym app.
+Phase 2 app shell is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild is a navigable ScoreFlow shell on port 5173 with no scoring wired yet.
 
 ## Why rebuild
 
@@ -277,7 +277,7 @@ First code phase.
 - Compressed icons
 - Service worker for the new shell only
 
-**Done when:** `npm run dev` shows a ScoreFlow shell with working navigation and no scoring yet.
+**Done when:** `npm run dev` shows a ScoreFlow shell with working navigation and no scoring yet. Richie has merged this phase.
 
 ### Phase 3 — Home, home team, match setup
 
@@ -369,4 +369,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 2: app shell, router, tokens, PWA plugin, empty screens. Scoring stays in `src/scoring`. The gym `index.html` app stays in the repo until Cutover.
+Phase 3: Home Team setup and Match Setup, persisted locally, then continue into `/match`.

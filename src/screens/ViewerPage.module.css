@@ -1,0 +1,63 @@
+.page {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: max(14px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.top,
+.scoreRow,
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logo {
+  width: min(48vw, 158px);
+}
+
+.board {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  border-radius: 28px;
+  background: #05070c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.eyebrow,
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.board h1 {
+  margin: 0;
+  font-family: var(--font-score);
+  font-size: clamp(32px, 8vw, 52px);
+  text-transform: uppercase;
+}
+
+.scoreRow {
+  gap: 16px;
+  font-family: var(--font-score);
+  font-size: clamp(72px, 20vw, 120px);
+  line-height: 0.9;
+}
+
+.scoreRow b {
+  color: var(--muted);
+}
+
+.footer :global(a) {
+  width: 100%;
+}
