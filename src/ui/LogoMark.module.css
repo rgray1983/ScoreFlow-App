@@ -1,0 +1,38 @@
+.mark {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+}
+
+.initial {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+.mark img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hasLogo img {
+  display: block;
+}
+
+.hasLogo .initial {
+  display: none;
+}

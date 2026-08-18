@@ -1,0 +1,23 @@
+.wrap h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: var(--tap);
+  height: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.active {
+  box-shadow: 0 0 0 3px #fff;
+}

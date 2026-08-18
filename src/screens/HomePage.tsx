@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { ChevronIcon, SettingsIcon } from "../ui/icons";
+import { LogoMark } from "../ui/LogoMark";
+import { StackedText } from "../ui/StackedText";
+import { useWorkspace } from "../state/workspace";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
+  const homeTeam = useWorkspace((state) => state.homeTeam);
+
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -27,12 +32,29 @@ export function HomePage() {
       </header>
 
       <main className={styles.dashboard}>
-        <section className={styles.card}>
+        <section
+          className={`${styles.card} ${homeTeam ? styles.homeTeamCard : ""}`}
+          style={homeTeam ? { ["--home-team-card-color" as string]: homeTeam.color } : undefined}
+        >
           <div className={styles.cardHead}>
             <h2>Home Team</h2>
             <small>Default team</small>
           </div>
-          <p className={styles.muted}>Team setup arrives in the next phase. Start a match to walk the new screens.</p>
+          <div className={styles.teamRow}>
+            <LogoMark name={homeTeam?.name || "T"} logo={homeTeam?.logo} color={homeTeam?.color} />
+            <div className={styles.teamMeta}>
+              <strong>{homeTeam?.name || "Set up your team"}</strong>
+              <span>{homeTeam?.location || "Team name, city/state, logo, and color"}</span>
+            </div>
+          </div>
+          <p className={styles.muted}>
+            {homeTeam
+              ? "Your home team is saved on this device."
+              : "Set up your team once, then only enter the opponent when you start a match."}
+          </p>
+          <div className={styles.teamAction}>
+            <Button to="/team" tone="quiet">{homeTeam ? "Edit Home Team" : "Setup Your Home Team"}</Button>
+          </div>
         </section>
 
         <section className={styles.card}>
@@ -44,10 +66,7 @@ export function HomePage() {
         </section>
 
         <Link className={`${styles.card} ${styles.navCard}`} to="/settings">
-          <span>
-            <strong>Settings</strong>
-            <small>Themes, graphics, and backup.</small>
-          </span>
+          <StackedText title="Settings" copy="Themes, graphics, and backup." />
           <ChevronIcon className={styles.chevron} />
         </Link>
       </main>

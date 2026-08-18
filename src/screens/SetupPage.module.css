@@ -1,0 +1,19 @@
+.gap {
+  height: 12px;
+}
+
+.teams {
+  display: grid;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.teams :global(h3) {
+  margin-top: 12px;
+}
+
+@media (min-width: 720px) {
+  .teams {
+    grid-template-columns: 1fr 1fr;
+  }
+}

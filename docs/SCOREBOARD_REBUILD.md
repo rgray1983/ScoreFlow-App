@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 2 app shell is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild is a navigable ScoreFlow shell on port 5173 with no scoring wired yet.
+Phase 3 home team + match setup is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can save a home team locally and start a match into `/match`. Scoring is still unwired.
 
 ## Why rebuild
 
@@ -92,6 +92,7 @@ Rules:
 | Route | Who | Purpose |
 |---|---|---|
 | `/` | Scorer | Home |
+| `/team` | Scorer | Home team name, location, logo, color |
 | `/setup` | Scorer | Match setup |
 | `/match` | Scorer | Live scoring |
 | `/g/:gameId` | Viewer | Read-only live board |
@@ -222,7 +223,7 @@ Every rebuild PR and every agent message that expects local testing must include
 | Scoring tests | `npm test` | terminal output |
 | Firestore rules tests (unchanged) | `npm run test:firestore-rules` | emulator |
 
-Until Phase 2 lands, `npm run dev` only shows a Phase 1 placeholder. The gym scoreboard is still the existing `index.html` app in the repo.
+Until Cutover, `npm run dev` is the Vite rebuild on 5173. The gym scoreboard is still the existing `index.html` app in the repo.
 
 ### Run in VS Code — template
 
@@ -289,7 +290,7 @@ First code phase.
 - Persist home team locally
 - Resize logos on upload before they are stored
 
-**Done when:** A scorer can save a home team and start a local match into the new Match route, even if scoring is still crude.
+**Done when:** A scorer can save a home team and start a local match into the new Match route, even if scoring is still crude. Richie has merged this phase.
 
 ### Phase 4 — Match screen
 
@@ -372,4 +373,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 3: Home Team setup and Match Setup, persisted locally, then continue into `/match`.
+Phase 4: wire the Match screen through `src/scoring`, including Undo and set/match point. Do not start Phase 4 until this phase is merged.

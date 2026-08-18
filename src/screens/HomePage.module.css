@@ -101,7 +101,7 @@
   font-size: 16px;
 }
 
-.card small {
+.cardHead small {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -120,6 +120,40 @@
   font-weight: 800;
 }
 
+.teamAction :global(a) {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.homeTeamCard {
+  border-color: color-mix(in srgb, var(--home-team-card-color), #ffffff 28%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--home-team-card-color), #101827 32%), rgba(16, 24, 39, 0.92));
+}
+
+.teamRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.teamMeta {
+  min-width: 0;
+}
+
+.teamMeta strong,
+.teamMeta span {
+  display: block;
+}
+
+.teamMeta span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .navCard {
   display: flex;
   align-items: center;
@@ -127,10 +161,9 @@
   gap: 12px;
 }
 
-.navCard small {
-  display: block;
-  margin-top: 4px;
-  font-weight: 600;
+.navCard :global(span) {
+  flex: 1;
+  min-width: 0;
 }
 
 .chevron {

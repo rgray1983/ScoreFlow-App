@@ -1,0 +1,14 @@
+.uploader {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.uploader input {
+  display: none;
+}

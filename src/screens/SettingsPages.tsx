@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { InnerScreen } from "./InnerScreen";
 import { ChevronIcon } from "../ui/icons";
+import { StackedText } from "../ui/StackedText";
 import styles from "./InnerScreen.module.css";
 
 export function SettingsPage() {
@@ -11,17 +12,11 @@ export function SettingsPage() {
       copy="Control the look and backups that make ScoreFlow feel like your team's app."
     >
       <Link className={`${styles.card} ${styles.navCard}`} to="/settings/themes">
-        <span>
-          <strong>Themes</strong>
-          <small>Choose the app's visual style.</small>
-        </span>
+        <StackedText title="Themes" copy="Choose the app's visual style." />
         <ChevronIcon className={styles.chevron} />
       </Link>
       <Link className={`${styles.card} ${styles.navCard}`} to="/settings/graphics">
-        <span>
-          <strong>Background Graphics</strong>
-          <small>Match Results and social share backgrounds.</small>
-        </span>
+        <StackedText title="Background Graphics" copy="Match Results and social share backgrounds." />
         <ChevronIcon className={styles.chevron} />
       </Link>
     </InnerScreen>
