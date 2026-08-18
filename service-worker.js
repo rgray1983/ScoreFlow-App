@@ -1,4 +1,4 @@
-const SCORE_FLOW_CACHE = "scoreflow-v2.5.0-fanzone";
+const SCORE_FLOW_CACHE = "scoreflow-v2.6.0-firestore-rules";
 
 const CORE_ASSETS = [
   "./",

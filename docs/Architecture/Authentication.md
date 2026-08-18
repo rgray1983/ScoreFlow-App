@@ -1,10 +1,26 @@
 # Authentication and Roles
 
-## Planned authentication
+## Current Scoreboard authentication
 
-ScoreFlow Coach will use Firebase Authentication unless a later architecture decision replaces it.
+The ScoreFlow scoreboard uses Firebase Authentication.
 
-## Planned roles
+- Email and password sign-in remain available in the client.
+- Google and Apple popup sign-in remain available in the client.
+- Guest scorers and family viewers receive a silent Firebase Anonymous session so live sharing can stay signed-out in the UI while still having a stable UID for security rules.
+- Anonymous sessions are not treated as cloud-backup accounts. Teams, match history, and premium settings only sync under `users/{uid}` after a non-anonymous sign-in.
+
+## Current permissions
+
+There are no organization or role documents in the live scoreboard database. Access is:
+
+- Account owner for private `users/{uid}` data
+- Game owner (`ownerId`) for live score writes
+- Any authenticated session for fan-zone chat, reactions, and presence writes
+- Anyone with the game ID for live score and fan-zone reads
+
+## Planned Coach roles
+
+ScoreFlow Coach will add organization-aware roles in a later Firebase implementation:
 
 - Organization owner
 - Head coach

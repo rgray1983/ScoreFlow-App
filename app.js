@@ -19,10 +19,14 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
   signOut,
   GoogleAuthProvider,
   OAuthProvider,
-  signInWithPopup
+  EmailAuthProvider,
+  signInWithPopup,
+  linkWithPopup,
+  linkWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -632,6 +636,7 @@ async function endRecoveredLiveMatch() {
     if (db) {
       try {
         await setDoc(liveDocRef(), {
+          ...liveOwnerFields(),
           ended: true,
           endedAt: serverTimestamp(),
           endedAtMs: Date.now(),
@@ -678,6 +683,7 @@ async function endLiveMatch() {
   try {
     if (db) {
       await setDoc(liveDocRef(), {
+        ...liveOwnerFields(),
         ended: true,
         endedAt: serverTimestamp(),
         endedAtMs: Date.now(),
@@ -946,10 +952,11 @@ function setViewerCount(count) {
 }
 
 async function updatePresence() {
-  if (!db || !liveGameId) return;
+  if (!db || !liveGameId || !currentUser) return;
   try {
-    await setDoc(doc(db, "volleyballGames", liveGameId, "presence", viewerSessionId), {
+    await setDoc(doc(db, "volleyballGames", liveGameId, "presence", currentUser.uid), {
       role: isViewer ? "viewer" : "scorer",
+      uid: currentUser.uid,
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
     }, { merge: true });
@@ -1161,11 +1168,16 @@ async function sendChatMessage(event) {
   chatCooldownUntil = Date.now() + 1800;
   els.chatInput.value = "";
   try {
+    if (!currentUser) {
+      toast("Live chat needs a ScoreFlow session first", true);
+      return;
+    }
     await addDoc(liveChatCollectionRef(), {
       text,
       name: isViewer ? viewerChatName : "Scorer",
       role: isViewer ? "viewer" : "scorer",
       sessionId: isViewer ? viewerSessionId : "scorer",
+      uid: currentUser.uid,
       createdAt: serverTimestamp(),
       createdAtMs: Date.now()
     });
@@ -1182,8 +1194,10 @@ async function sendReaction(emoji) {
   if (Date.now() < reactionCooldownUntil) return;
   reactionCooldownUntil = Date.now() + 650;
   try {
+    if (!currentUser) return;
     await addDoc(liveReactionCollectionRef(), {
       emoji,
+      uid: currentUser.uid,
       createdAt: serverTimestamp(),
       createdAtMs: Date.now()
     });
@@ -1262,23 +1276,62 @@ function initFirebase() {
   }
 }
 
+function hasCloudAccount() {
+  return Boolean(currentUser && !currentUser.isAnonymous);
+}
+
 function userDocPath(...parts) {
-  if (!currentUser) return null;
+  if (!hasCloudAccount()) return null;
   return ["users", currentUser.uid, ...parts];
+}
+
+function guestAuthStatus() {
+  return "Guest mode — sign in to sync teams and history.";
+}
+
+function signedInAuthStatus() {
+  return `Signed in as ${currentUser?.email || "ScoreFlow user"}`;
 }
 
 function setAuthStatus(message) {
   if (els.authStatus) els.authStatus.textContent = message;
-  if (els.accountChip) els.accountChip.textContent = currentUser ? (currentUser.email || "Signed In") : "Guest Mode";
-  if (els.signOutBtn) els.signOutBtn.hidden = !currentUser;
+  if (els.accountChip) els.accountChip.textContent = hasCloudAccount() ? (currentUser.email || "Signed In") : "Guest Mode";
+  if (els.signOutBtn) els.signOutBtn.hidden = !hasCloudAccount();
+}
+
+function waitForAuthState() {
+  if (!auth) return Promise.resolve(null);
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      unsub();
+      resolve(user || null);
+    });
+  });
+}
+
+async function ensureFirebaseAuth() {
+  if (!auth) return null;
+  let user = await waitForAuthState();
+  if (!user) {
+    try {
+      const credential = await signInAnonymously(auth);
+      user = credential.user;
+    } catch (error) {
+      console.warn("ScoreFlow guest session failed. Enable Anonymous Authentication in the Firebase console.", error);
+      return null;
+    }
+  }
+  currentUser = user || null;
+  return currentUser;
 }
 
 function watchAuth() {
   if (!auth) return;
   onAuthStateChanged(auth, async (user) => {
     currentUser = user || null;
-    setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
-    await syncLocalDataToCloud();
+    setAuthStatus(hasCloudAccount() ? signedInAuthStatus() : guestAuthStatus());
+    if (hasCloudAccount()) await syncLocalDataToCloud();
     await renderHomeData();
   });
 }
@@ -1295,8 +1348,13 @@ async function emailSignIn(createAccount = false) {
     return;
   }
   try {
-    if (createAccount) await createUserWithEmailAndPassword(auth, email, password);
-    else await signInWithEmailAndPassword(auth, email, password);
+    if (createAccount && currentUser?.isAnonymous) {
+      await linkWithCredential(currentUser, EmailAuthProvider.credential(email, password));
+    } else if (createAccount) {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
     toast(createAccount ? "Account created" : "Signed in");
   } catch (error) {
     console.error(error);
@@ -1313,7 +1371,16 @@ async function providerSignIn(providerName) {
     ? new OAuthProvider("apple.com")
     : new GoogleAuthProvider();
   try {
-    await signInWithPopup(auth, provider);
+    if (currentUser?.isAnonymous) {
+      try {
+        await linkWithPopup(currentUser, provider);
+      } catch (linkError) {
+        if (linkError?.code !== "auth/credential-already-in-use") throw linkError;
+        await signInWithPopup(auth, provider);
+      }
+    } else {
+      await signInWithPopup(auth, provider);
+    }
     toast("Signed in");
   } catch (error) {
     console.error(error);
@@ -1322,8 +1389,9 @@ async function providerSignIn(providerName) {
 }
 
 async function doSignOut() {
-  if (!auth) return;
+  if (!auth || !hasCloudAccount()) return;
   await signOut(auth);
+  await ensureFirebaseAuth();
   toast("Signed out");
 }
 
@@ -1818,7 +1886,7 @@ function focusProFromSettings() {
 
 
 async function syncPremiumSettingsToCloud() {
-  if (!currentUser || !db || !premium.cloudBackup) return;
+  if (!hasCloudAccount() || !db || !premium.cloudBackup) return;
   try {
     await setDoc(doc(db, ...userDocPath("settings", "premium")), {
       ...premium,
@@ -1836,7 +1904,7 @@ async function backupNow() {
     focusProFromSettings();
     return;
   }
-  if (!currentUser || !db) {
+  if (!hasCloudAccount() || !db) {
     toast("Sign in to use cloud backup", true);
     return;
   }
@@ -1887,7 +1955,7 @@ function saveLocalTeam(team) {
 }
 
 async function saveCloudTeam(team) {
-  if (!currentUser || !db) return;
+  if (!hasCloudAccount() || !db) return;
   await setDoc(doc(db, ...userDocPath("teams", team.id)), {
     ...team,
     updatedAt: serverTimestamp(),
@@ -1896,7 +1964,7 @@ async function saveCloudTeam(team) {
 }
 
 async function syncLocalDataToCloud() {
-  if (!currentUser || !db || !premium.cloudBackup) return;
+  if (!hasCloudAccount() || !db || !premium.cloudBackup) return;
   const teams = localTeams();
   await Promise.allSettled(teams.map((team) => saveCloudTeam(team)));
   const matches = getLocalJson("scoreflowMatchHistoryV2", []);
@@ -1907,7 +1975,7 @@ async function syncLocalDataToCloud() {
 
 async function getAllTeams() {
   const local = localTeams();
-  if (!currentUser || !db) return local;
+  if (!hasCloudAccount() || !db) return local;
   try {
     const snap = await getDocs(query(collection(db, ...userDocPath("teams")), orderBy("updatedAtMs", "desc"), limit(50)));
     const cloud = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -1950,7 +2018,7 @@ function localMatches() {
 
 async function getAllMatches() {
   const local = localMatches();
-  if (!currentUser || !db) return local;
+  if (!hasCloudAccount() || !db) return local;
   try {
     const snap = await getDocs(query(collection(db, ...userDocPath("matches")), orderBy("updatedAtMs", "desc"), limit(matchHistoryLimit())));
     const cloud = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -1992,7 +2060,7 @@ async function saveMatchHistory() {
   const matches = localMatches();
   matches.unshift(match);
   setLocalJson("scoreflowMatchHistoryV2", matches.slice(0, matchHistoryLimit()));
-  if (currentUser && db && premium.cloudBackup) {
+  if (hasCloudAccount() && db && premium.cloudBackup) {
     await setDoc(doc(db, ...userDocPath("matches", match.id)), {
       ...match,
       updatedAt: serverTimestamp()
@@ -2194,7 +2262,7 @@ async function renderHomeData() {
   }
   renderPremiumUI();
   if (document.body.classList.contains("history-active")) await renderFullMatchHistoryPage();
-  setAuthStatus(currentUser ? `Signed in as ${currentUser.email || "ScoreFlow user"}` : "Guest mode — sign in to sync teams and history.");
+  setAuthStatus(hasCloudAccount() ? signedInAuthStatus() : guestAuthStatus());
 }
 
 
@@ -2349,6 +2417,11 @@ function liveDocRef() {
   return doc(db, "volleyballGames", liveGameId);
 }
 
+function liveOwnerFields() {
+  if (!currentUser) return {};
+  return { ownerId: currentUser.uid };
+}
+
 function buildViewerLink(gameId = liveGameId) {
   const cleanUrl = `${window.location.origin}${window.location.pathname}`;
   return `${cleanUrl}?game=${encodeURIComponent(gameId)}&mode=view`;
@@ -2366,6 +2439,13 @@ async function createLiveGame() {
     return;
   }
 
+  await ensureFirebaseAuth();
+  if (!currentUser) {
+    els.firebaseNote.textContent = "Live sharing needs Anonymous Authentication enabled in the ScoreFlow Firebase project.";
+    toast("Enable Anonymous Authentication in Firebase to share live games", true);
+    return;
+  }
+
   if (!liveGameId || liveEnded) {
     liveGameId = `game-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   }
@@ -2373,6 +2453,7 @@ async function createLiveGame() {
 
   await setDoc(liveDocRef(), {
     ...publicState(),
+    ...liveOwnerFields(),
     ended: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -2412,6 +2493,7 @@ async function pushRemoteUpdate() {
   try {
     await setDoc(liveDocRef(), {
       ...publicState(false),
+      ...liveOwnerFields(),
       ended: false,
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
@@ -2431,6 +2513,7 @@ async function pushRemoteBrandingUpdate() {
   try {
     await setDoc(liveDocRef(), {
       ...publicState(true),
+      ...liveOwnerFields(),
       ended: false,
       updatedAt: serverTimestamp(),
       updatedAtMs: Date.now()
@@ -2460,7 +2543,12 @@ async function startLiveListener() {
       toast("Game link not found", true);
       return;
     }
-    await setDoc(ref, { ...publicState(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    if (!currentUser) {
+      setConnectionStatus("error", "Sync Error");
+      toast("Enable Anonymous Authentication in Firebase to share live games", true);
+      return;
+    }
+    await setDoc(ref, { ...publicState(), ...liveOwnerFields(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   }
   liveEnded = false;
   els.viewerLink.value = buildViewerLink();
@@ -3493,7 +3581,7 @@ async function saveTeamProfiles() {
   };
   localStorage.setItem("scoreflowSavedTeams", JSON.stringify(saved));
   await renderHomeData();
-  toast(currentUser ? "Teams saved and synced" : "Teams saved locally");
+  toast(hasCloudAccount() ? "Teams saved and synced" : "Teams saved locally");
 }
 
 function loadTeamProfiles() {
@@ -3912,6 +4000,7 @@ async function boot() {
 
     if (initFirebase()) {
       setConnectionStatus(liveGameId ? "connecting" : "offline", liveGameId ? "Connecting" : "Offline");
+      await ensureFirebaseAuth();
       if (liveGameId) await startLiveListener();
       if (isViewer) loadViewerChatName();
     } else {

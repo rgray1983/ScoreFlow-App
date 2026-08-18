@@ -1,10 +1,39 @@
-# Firebase Collections Plan
+# Firebase Collections
 
-This is the planned cloud model. Final collection names and security rules will be confirmed in the Firebase implementation PR.
+This document describes the collections the ScoreFlow scoreboard actually uses today, plus the planned Coach cloud model.
 
-## Planned top-level collections
+## Current scoreboard collections
 
-- `users`
+### `users/{userId}`
+
+Private signed-in account data. Not used by anonymous guest sessions.
+
+Subcollections:
+
+- `users/{userId}/settings/premium` — Pro preview flags, theme, graphics, and cloud-backup preference
+- `users/{userId}/teams/{teamId}` — saved team profiles (`id`, `name`, `color`, `logo`, `favorite`, `updatedAtMs`)
+- `users/{userId}/matches/{matchId}` — match history (`title`, team names/logos, set scores, winner, format, `completedSets`, `updatedAtMs`)
+
+Queries: `orderBy("updatedAtMs", "desc")` with a limit. Security rules allow only the authenticated owner.
+
+### `volleyballGames/{gameId}`
+
+Live shared scoreboard document created when a scorer starts a live match. Family viewer links read this document by ID. Listing the collection is denied.
+
+Fields include public scoreboard state (`homeScore`, `awayScore`, set counts, names, colors, logos, `ended`) plus `ownerId` for the creating scorer.
+
+Subcollections:
+
+- `chat/{messageId}` — fan chat (`text`, `name`, `role`, `sessionId`, `uid`, timestamps)
+- `reactions/{reactionId}` — emoji reactions (`emoji`, `uid`, timestamps)
+- `presence/{uid}` — live viewer/scorer heartbeat (`role`, `uid`, timestamps)
+
+Reads of a known game and its fan-zone subcollections are public so viewer links work. Writes require authentication. Only `ownerId` can change the live score document.
+
+## Planned Coach collections
+
+These are not implemented in Firestore yet and remain denied by default:
+
 - `organizations`
 - `teams`
 - `seasons`
@@ -20,13 +49,12 @@ This is the planned cloud model. Final collection names and security rules will 
 
 ## Key principles
 
-- Every record includes stable IDs, created/updated timestamps, and ownership context.
-- Team and season IDs are stored on frequently queried records to support efficient offline and cloud queries.
-- Match events are stored individually and ordered by timestamp and sequence number.
-- Corrections do not silently erase history; they create correction metadata or replacement events.
+- Every live game stores an `ownerId`.
+- Private account records stay under `users/{uid}`.
+- Match events in the future Coach product should stay append-oriented.
 - Offline actions receive a client-generated ID before synchronization.
-- Security rules enforce organization membership and role permissions.
+- Security rules default to deny and never use an expiration date.
 
 ## Local-first relationship
 
-Firebase is the shared cloud source, but important match and schedule actions save locally first. The local database and synchronization queue will be designed before live stat collection is connected to production data.
+Firebase is the shared cloud source for live viewer links and optional signed-in backup. Scoring, teams, and history still save locally first.
