@@ -324,6 +324,8 @@ function preventMobileDoubleTapZoom() {
 let db = null;
 let auth = null;
 let currentUser = null;
+let lastAuthError = null;
+let firstAuthState = null;
 let lastSavedWinnerKey = "";
 let liveGameId = GAME_ID_FROM_URL || "";
 let unsubscribeLive = null;
@@ -622,8 +624,10 @@ async function resumeRecoveredLiveMatch() {
   window.history.replaceState({}, "", buildScorerLink(liveGameId));
   els.liveRecoveryDialog?.close?.();
   saveActiveLiveMatch();
-  if (db) await startLiveListener();
-  else setConnectionStatus("offline", "Offline");
+  if (db) {
+    await ensureFirebaseAuth();
+    await startLiveListener();
+  } else setConnectionStatus("offline", "Offline");
   updateRotateScreenState();
   toast("Live match resumed");
 }
@@ -952,7 +956,9 @@ function setViewerCount(count) {
 }
 
 async function updatePresence() {
-  if (!db || !liveGameId || !currentUser) return;
+  if (!db || !liveGameId) return;
+  await ensureFirebaseAuth();
+  if (!currentUser) return;
   try {
     await setDoc(doc(db, "volleyballGames", liveGameId, "presence", currentUser.uid), {
       role: isViewer ? "viewer" : "scorer",
@@ -1166,12 +1172,14 @@ async function sendChatMessage(event) {
     return;
   }
   chatCooldownUntil = Date.now() + 1800;
-  els.chatInput.value = "";
   try {
+    await ensureFirebaseAuth();
     if (!currentUser) {
-      toast("Live chat needs a ScoreFlow session first", true);
+      chatCooldownUntil = 0;
+      toast(guestSessionErrorMessage(), true);
       return;
     }
+    els.chatInput.value = "";
     await addDoc(liveChatCollectionRef(), {
       text,
       name: isViewer ? viewerChatName : "Scorer",
@@ -1194,6 +1202,7 @@ async function sendReaction(emoji) {
   if (Date.now() < reactionCooldownUntil) return;
   reactionCooldownUntil = Date.now() + 650;
   try {
+    await ensureFirebaseAuth();
     if (!currentUser) return;
     await addDoc(liveReactionCollectionRef(), {
       emoji,
@@ -1299,41 +1308,59 @@ function setAuthStatus(message) {
   if (els.signOutBtn) els.signOutBtn.hidden = !hasCloudAccount();
 }
 
-function waitForAuthState() {
-  if (!auth) return Promise.resolve(null);
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
-  return new Promise((resolve) => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      unsub();
-      resolve(user || null);
+function guestSessionErrorMessage(error = lastAuthError) {
+  const code = error?.code || "";
+  const host = window.location.hostname;
+  if (code === "auth/unauthorized-domain") {
+    return `Add ${host} to Firebase Authentication → Settings → Authorized domains`;
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Enable Anonymous Authentication in the Firebase console";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Live session blocked. Check your connection and ad blockers.";
+  }
+  return error?.message || "Could not start a live ScoreFlow session";
+}
+
+function watchAuth() {
+  if (!auth) return;
+  firstAuthState = new Promise((resolve) => {
+    let resolved = false;
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user || null;
+      if (!resolved) {
+        resolved = true;
+        resolve(user || null);
+      }
+      setAuthStatus(hasCloudAccount() ? signedInAuthStatus() : guestAuthStatus());
+      if (hasCloudAccount()) await syncLocalDataToCloud();
+      await renderHomeData();
     });
   });
 }
 
 async function ensureFirebaseAuth() {
   if (!auth) return null;
-  let user = await waitForAuthState();
-  if (!user) {
-    try {
-      const credential = await signInAnonymously(auth);
-      user = credential.user;
-    } catch (error) {
-      console.warn("ScoreFlow guest session failed. Enable Anonymous Authentication in the Firebase console.", error);
-      return null;
-    }
-  }
-  currentUser = user || null;
-  return currentUser;
-}
+  if (currentUser) return currentUser;
 
-function watchAuth() {
-  if (!auth) return;
-  onAuthStateChanged(auth, async (user) => {
-    currentUser = user || null;
-    setAuthStatus(hasCloudAccount() ? signedInAuthStatus() : guestAuthStatus());
-    if (hasCloudAccount()) await syncLocalDataToCloud();
-    await renderHomeData();
-  });
+  const initialUser = auth.currentUser || (firstAuthState ? await firstAuthState : null);
+  if (initialUser) {
+    currentUser = initialUser;
+    lastAuthError = null;
+    return currentUser;
+  }
+
+  try {
+    const credential = await signInAnonymously(auth);
+    currentUser = credential.user;
+    lastAuthError = null;
+    return currentUser;
+  } catch (error) {
+    lastAuthError = error;
+    console.warn("ScoreFlow guest session failed", error);
+    return null;
+  }
 }
 
 async function emailSignIn(createAccount = false) {
@@ -2441,8 +2468,8 @@ async function createLiveGame() {
 
   await ensureFirebaseAuth();
   if (!currentUser) {
-    els.firebaseNote.textContent = "Live sharing needs Anonymous Authentication enabled in the ScoreFlow Firebase project.";
-    toast("Enable Anonymous Authentication in Firebase to share live games", true);
+    els.firebaseNote.textContent = guestSessionErrorMessage();
+    toast(guestSessionErrorMessage(), true);
     return;
   }
 
@@ -2490,6 +2517,12 @@ function queueRemoteBrandingUpdate() {
 
 async function pushRemoteUpdate() {
   if (!db || !liveGameId || isViewer || applyingRemote) return;
+  await ensureFirebaseAuth();
+  if (!currentUser) {
+    setConnectionStatus("error", "Sync Error");
+    toast(guestSessionErrorMessage(), true);
+    return;
+  }
   try {
     await setDoc(liveDocRef(), {
       ...publicState(false),
@@ -2510,6 +2543,12 @@ async function pushRemoteUpdate() {
 
 async function pushRemoteBrandingUpdate() {
   if (!db || !liveGameId || isViewer || applyingRemote) return;
+  await ensureFirebaseAuth();
+  if (!currentUser) {
+    setConnectionStatus("error", "Sync Error");
+    toast(guestSessionErrorMessage(), true);
+    return;
+  }
   try {
     await setDoc(liveDocRef(), {
       ...publicState(true),
@@ -2531,54 +2570,65 @@ async function pushRemoteBrandingUpdate() {
 async function startLiveListener() {
   if (!db || !liveGameId) return;
   unsubscribeLive?.();
+  await ensureFirebaseAuth();
   const ref = liveDocRef();
-  const snap = await getDoc(ref);
-  if (snap.exists() && snap.data()?.ended) {
-    handleLiveEnded(snap.data());
-    return;
-  }
-  if (!snap.exists()) {
-    if (isViewer) {
-      setConnectionStatus("error", "Not Found");
-      toast("Game link not found", true);
+  try {
+    const snap = await getDoc(ref);
+    if (snap.exists() && snap.data()?.ended) {
+      handleLiveEnded(snap.data());
       return;
     }
-    if (!currentUser) {
+    if (!snap.exists()) {
+      if (isViewer) {
+        setConnectionStatus("error", "Not Found");
+        toast("Game link not found", true);
+        return;
+      }
+      if (!currentUser) {
+        setConnectionStatus("error", "Sync Error");
+        toast(guestSessionErrorMessage(), true);
+        return;
+      }
+      await setDoc(ref, { ...publicState(), ...liveOwnerFields(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    } else if (!isViewer && !currentUser) {
       setConnectionStatus("error", "Sync Error");
-      toast("Enable Anonymous Authentication in Firebase to share live games", true);
-      return;
+      toast(guestSessionErrorMessage(), true);
     }
-    await setDoc(ref, { ...publicState(), ...liveOwnerFields(), ended: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  }
-  liveEnded = false;
-  els.viewerLink.value = buildViewerLink();
-  updateShareExtras();
-  liveReady = true;
-  setConnectionStatus("online", "Online");
-  document.body.classList.toggle("viewer-mode", isViewer);
-  if (isViewer) document.body.classList.add("scoreboard-active");
-  await startFanZoneListeners();
-  await startPresenceTracking();
 
-  unsubscribeLive = onSnapshot(ref, (documentSnap) => {
-    if (!documentSnap.exists()) return;
-    const remoteData = documentSnap.data();
-    if (remoteData?.ended) {
-      handleLiveEnded(remoteData);
-      return;
-    }
     liveEnded = false;
-    applyingRemote = true;
-    applyState(remoteData);
-    applyingRemote = false;
-    if (!isViewer) saveActiveLiveMatch();
+    els.viewerLink.value = buildViewerLink();
+    updateShareExtras();
     liveReady = true;
-    setConnectionStatus("online", "Online");
-  }, (error) => {
+    setConnectionStatus(!isViewer && !currentUser ? "error" : "online", !isViewer && !currentUser ? "Sync Error" : "Online");
+    document.body.classList.toggle("viewer-mode", isViewer);
+    if (isViewer) document.body.classList.add("scoreboard-active");
+    await startFanZoneListeners();
+    await startPresenceTracking();
+
+    unsubscribeLive = onSnapshot(ref, (documentSnap) => {
+      if (!documentSnap.exists()) return;
+      const remoteData = documentSnap.data();
+      if (remoteData?.ended) {
+        handleLiveEnded(remoteData);
+        return;
+      }
+      liveEnded = false;
+      applyingRemote = true;
+      applyState(remoteData);
+      applyingRemote = false;
+      if (!isViewer) saveActiveLiveMatch();
+      liveReady = true;
+      setConnectionStatus(!isViewer && !currentUser ? "error" : "online", !isViewer && !currentUser ? "Sync Error" : "Online");
+    }, (error) => {
+      console.error(error);
+      setConnectionStatus("error", "Sync Error");
+      toast("Live connection error", true);
+    });
+  } catch (error) {
     console.error(error);
     setConnectionStatus("error", "Sync Error");
     toast("Live connection error", true);
-  });
+  }
 }
 
 function teamName(team) {
