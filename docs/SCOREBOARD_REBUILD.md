@@ -229,6 +229,7 @@ Until Phase 2 lands, `npm run dev` only shows a Phase 1 placeholder. The gym sco
 Replace `BRANCH` with the PR branch name. From the repo root in the VS Code terminal:
 
 ```bash
+git restore package-lock.json package.json
 git fetch origin
 git checkout BRANCH
 git pull origin BRANCH
@@ -236,6 +237,8 @@ npm install
 npm test
 npm run dev -- --port 5173
 ```
+
+`git restore` discards local lockfile rewrites from the previous `npm install` (common on Node 24) so checkout is not blocked.
 
 Then open http://localhost:5173 when the phase has UI to click.
 
