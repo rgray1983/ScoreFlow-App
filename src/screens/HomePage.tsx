@@ -41,7 +41,7 @@ export function HomePage() {
           </div>
           <div className={styles.teamRow}>
             <LogoMark name={homeTeam?.name || "T"} logo={homeTeam?.logo} color={homeTeam?.color} />
-            <div>
+            <div className={styles.teamMeta}>
               <strong>{homeTeam?.name || "Set up your team"}</strong>
               <span>{homeTeam?.location || "Team name, city/state, logo, and color"}</span>
             </div>

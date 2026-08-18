@@ -14,7 +14,7 @@ export function LogoMark({ name, logo, color, className = "" }: LogoMarkProps) {
       className={`${styles.mark} ${logo ? styles.hasLogo : ""} ${className}`}
       style={color ? { background: color } : undefined}
     >
-      {logo ? <img src={logo} alt="" /> : <span>{initial}</span>}
+      {logo ? <img src={logo} alt="" /> : <span className={styles.initial}>{initial}</span>}
     </span>
   );
 }

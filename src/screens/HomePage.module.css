@@ -138,12 +138,16 @@
   margin-top: 12px;
 }
 
-.teamRow strong,
-.teamRow span {
+.teamMeta {
+  min-width: 0;
+}
+
+.teamMeta strong,
+.teamMeta span {
   display: block;
 }
 
-.teamRow span {
+.teamMeta span {
   margin-top: 4px;
   color: var(--muted);
   font-size: 13px;
