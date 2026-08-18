@@ -69,7 +69,8 @@ function resetSession(): void {
     viewerCount: 0,
     error: "",
     shareOpen: false,
-    recovery: null
+    recovery: null,
+    returnPrompt: false
   });
 }
 
@@ -132,6 +133,18 @@ describe("live session", () => {
     expect(useLiveSession.getState().gameId).toBe("id-a");
     expect(liveMocks.createLiveGame).not.toHaveBeenCalled();
     expect(useLiveSession.getState().shareOpen).toBe(true);
+  });
+
+  it("does not raise the return-to-app prompt when going live in this session", async () => {
+    await useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().returnPrompt).toBe(false);
+    useLiveSession.getState().offerReturnPrompt();
+    expect(useLiveSession.getState().returnPrompt).toBe(true);
+    useLiveSession.getState().dismissReturnPrompt();
+    expect(useLiveSession.getState().returnPrompt).toBe(false);
+    await useLiveSession.getState().endLive();
+    useLiveSession.getState().offerReturnPrompt();
+    expect(useLiveSession.getState().returnPrompt).toBe(false);
   });
 
   it("resumes the recovered game id instead of minting a new one", async () => {

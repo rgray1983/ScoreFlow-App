@@ -34,6 +34,7 @@ type LiveSessionState = {
   error: string;
   shareOpen: boolean;
   recovery: LiveRecovery | null;
+  returnPrompt: boolean;
   goLive: (match: MatchState, draft: MatchDraft, options?: GoLiveOptions) => Promise<void>;
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
@@ -42,6 +43,8 @@ type LiveSessionState = {
   openShare: () => void;
   closeShare: () => void;
   dismissRecovery: () => void;
+  dismissReturnPrompt: () => void;
+  offerReturnPrompt: () => void;
 };
 
 let scoreTimer = 0;
@@ -80,6 +83,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   error: "",
   shareOpen: false,
   recovery: loadLiveRecovery(),
+  returnPrompt: Boolean(loadLiveRecovery()),
   openShare() {
     set({ shareOpen: true });
   },
@@ -87,7 +91,13 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     set({ shareOpen: false });
   },
   dismissRecovery() {
-    set({ recovery: null });
+    set({ recovery: null, returnPrompt: false });
+  },
+  dismissReturnPrompt() {
+    set({ returnPrompt: false });
+  },
+  offerReturnPrompt() {
+    if (get().active || get().recovery) set({ returnPrompt: true });
   },
   async goLive(match, draft, options) {
     if (!firebaseReady()) {
@@ -166,7 +176,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       viewerCount: 0,
       error: "",
       shareOpen: false,
-      recovery: null
+      recovery: null,
+      returnPrompt: false
     });
     if (gameId) {
       try {

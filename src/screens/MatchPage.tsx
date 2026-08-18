@@ -68,6 +68,7 @@ export function MatchPage() {
   }, [match.completedSets, match.winner, match.homeName, match.awayName]);
 
   useEffect(() => {
+    live.dismissReturnPrompt();
     if (live.recovery?.gameId && !live.active && live.status !== "connecting") {
       void live.resumeLive(match, draft);
     }
