@@ -33,7 +33,7 @@ The rebuild keeps the same product and replaces the foundation.
 | Payments | Not in the first rebuild. Pro may keep a clearly labeled Preview. |
 | Native / App Store | Not now. PWA only. |
 | Coach | Separate repo. This app may later expose a live game ID. That is all. |
-| Local test ports | Current app: `http://localhost:4173`. New Vite app: `http://localhost:5173`. |
+| Local test | Checkout the PR branch, then run the rebuild on `http://localhost:5173`. Do not serve the current gym app locally. |
 
 ## Product boundary
 
@@ -210,57 +210,44 @@ Cutover is a dedicated phase: Vite becomes the production entry, then `app.js` a
 
 Richie tests every rebuild PR locally before merge. The agent does not require production hosting for these phases.
 
-The current app and the new Vite app must run **at the same time** on different ports. Every rebuild PR and every agent message that expects local testing must include a **Run in VS Code** block with the exact terminal commands.
+The current gym app already runs from this repo as it does today. Do not start a second local server for `index.html` / `app.js`. Rebuild PRs only need the new Vite app (and tests).
+
+Every rebuild PR and every agent message that expects local testing must include a **Run in VS Code** block that starts with fetching and checking out that PR's branch.
 
 ### Ports (locked)
 
 | App | Command | URL |
 |---|---|---|
-| Current scoreboard (`index.html`) | `npx --yes serve -l 4173 .` | http://localhost:4173 |
-| New rebuild (Vite, from Phase 2) | `npm run dev -- --port 5173` | http://localhost:5173 |
-| Scoring tests (from Phase 1) | `npm test` | terminal output |
+| Rebuild (Vite) | `npm run dev -- --port 5173` | http://localhost:5173 |
+| Scoring tests | `npm test` | terminal output |
 | Firestore rules tests (unchanged) | `npm run test:firestore-rules` | emulator |
 
-Until Phase 1 lands, only the current-app command exists. Until Phase 2 lands, the new app has tests but no UI to click.
+Until Phase 2 lands, `npm run dev` only shows a Phase 1 placeholder. The gym scoreboard is still the existing `index.html` app in the repo.
 
-### Run in VS Code — current app (always available)
+### Run in VS Code — template
 
-In the VS Code terminal, from the repo root:
-
-```bash
-npx --yes serve -l 4173 .
-```
-
-Then open http://localhost:4173. This is the gym product. Leave it running while testing a rebuild PR.
-
-### Run in VS Code — rebuild (after Phase 1)
-
-In a **second** VS Code terminal, from the repo root:
+Replace `BRANCH` with the PR branch name. From the repo root in the VS Code terminal:
 
 ```bash
+git fetch origin
+git checkout BRANCH
+git pull origin BRANCH
 npm install
 npm test
-```
-
-After Phase 2 adds the UI shell:
-
-```bash
-npm install
 npm run dev -- --port 5173
 ```
 
-Then open http://localhost:5173. Compare it next to http://localhost:4173.
-
-Do not use port 4173 for Vite. Do not stop the current app in order to start the new one.
+Then open http://localhost:5173 when the phase has UI to click.
 
 ## How we work
 
 1. One phase per PR, named and recorded as `PR-###`.
-2. The agent opens the PR. Richie tests locally, asks for adjustments, then merges. Only then does the next phase start.
-3. Every rebuild PR names its phase, includes a **Run in VS Code** command block, and does not take down the current app.
+2. The agent opens the PR. Richie checks out that branch, tests locally, asks for adjustments, then merges. Only then does the next phase start.
+3. Every rebuild PR names its phase and includes a **Run in VS Code** block that starts with `git fetch` / `git checkout` of that branch.
 4. If a phase needs a schema change, update this file and `docs/Architecture/Firebase Collections.md` in the same PR.
 5. Test on a phone/iPad as well as the desktop preview when the UI exists. Gyms do not care that Vite is clean.
 6. Do not “quickly” add a Coach link, roster, or stat button because it would be cool on the board.
+7. Do not ask Richie to locally serve the current `index.html` app. That app stays in the repo until Cutover.
 
 ## Build order
 
@@ -382,4 +369,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 2: app shell, router, tokens, PWA plugin, empty screens. Scoring stays in `src/scoring`. The gym app stays on port 4173.
+Phase 2: app shell, router, tokens, PWA plugin, empty screens. Scoring stays in `src/scoring`. The gym `index.html` app stays in the repo until Cutover.
