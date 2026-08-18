@@ -1,5 +1,5 @@
 export const firebaseConfig = {
-  apiKey: "AIzaSyB_6V7IbsZ36iM_Q5IeLHE16BiexMJFYd4",
+  apiKey: "AIzaSyCY78mz7KKVT7SYZSLFpND8GSbVCoUrjL4",
   authDomain: "scoreflow-6059f.firebaseapp.com",
   projectId: "scoreflow-6059f",
   storageBucket: "scoreflow-6059f.firebasestorage.app",
