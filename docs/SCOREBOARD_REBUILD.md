@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 3 home team + match setup is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can save a home team locally and start a match into `/match`. Scoring is still unwired.
+Phase 4 match scoring is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can score a local club or high-school match through `src/scoring`, including Undo.
 
 ## Why rebuild
 
@@ -300,7 +300,7 @@ First code phase.
 - Set point / match point banners
 - No live Firebase yet
 
-**Done when:** A full club or high-school match can be scored offline on phone and iPad, including undoing a set.
+**Done when:** A full club or high-school match can be scored offline on phone and iPad, including undoing a set. Richie has merged this phase.
 
 ### Phase 5 — Live share + viewer
 
@@ -373,4 +373,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 4: wire the Match screen through `src/scoring`, including Undo and set/match point. Do not start Phase 4 until this phase is merged.
+Phase 5: live share + viewer. Do not start Phase 5 until this phase is merged.

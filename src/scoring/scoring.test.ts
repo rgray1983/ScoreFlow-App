@@ -6,6 +6,7 @@ import {
   isMatchOver,
   isMatchPoint,
   isSetPoint,
+  matchBanner,
   newMatch,
   point,
   pointsToWin,
@@ -255,5 +256,28 @@ describe("setup commands", () => {
     expect(engine.match.homeScore).toBe(0);
     expect(engine.match.awayScore).toBe(0);
     expect(canUndo(engine)).toBe(false);
+  });
+});
+
+describe("matchBanner", () => {
+  it("shows first-to-25 until a set or match point", () => {
+    expect(matchBanner(createMatch().match)).toBe("FIRST TO 25");
+  });
+
+  it("names the team on set point and match point", () => {
+    const late = rallyTo(setNames(createMatch(), "Blazers", "Eastside"), 24, 23);
+    expect(matchBanner(late.match)).toBe("SET POINT — Blazers");
+
+    const setOne = winSet(createMatch({ homeName: "Blazers", awayName: "Eastside" }), "home");
+    const matchPoint = rallyTo(setNames(setOne, "Blazers", "Eastside"), 24, 20);
+    expect(matchBanner(matchPoint.match)).toBe("MATCH POINT — Blazers");
+  });
+
+  it("names the winner when the match ends", () => {
+    let engine = setNames(createMatch(), "Blazers", "Eastside");
+    engine = winSet(engine, "home");
+    engine = winSet(engine, "home");
+    expect(isMatchOver(engine.match)).toBe(true);
+    expect(matchBanner(engine.match)).toBe("MATCH WON — Blazers");
   });
 });
