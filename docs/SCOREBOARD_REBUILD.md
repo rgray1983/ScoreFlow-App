@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Look and local-test workflow locked. The current `index.html` / `app.js` / `style.css` app remains the live product until Cutover. Phase 1 (toolchain + scoring kernel) is the next code PR.
+Phase 1 scoring kernel is in review. The current `index.html` / `app.js` / `style.css` app remains the live product. Vite lives under `src/` on port 5173 and does not replace the gym app.
 
 ## Why rebuild
 
@@ -275,11 +275,12 @@ Do these in order. Do not skip ahead to results graphics or Pro themes before Un
 First code phase.
 
 - Add Vite, TypeScript, React, Vitest at the repo root without replacing the live app
+- Vite `root` is `src/`, so production `index.html` is untouched
 - Add `src/scoring` with the reducer and the tests listed above
 - Add npm scripts: `dev`, `build`, `test`
 - Leave `index.html` / `app.js` as the production scoreboard
 
-**Done when:** `npm test` proves volleyball rules, including undo-through-set-win. The old app still opens as it does today.
+**Done when:** `npm test` proves volleyball rules, including undo-through-set-win. The old app still opens as it does today. Richie has merged this phase.
 
 ### Phase 2 — App shell
 
@@ -379,6 +380,6 @@ This repo still contains Coach vision docs (`docs/ROADMAP.md`, `docs/Features/*`
 
 For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this rebuild, follow this rebuild.
 
-## First code PR after this file
+## Next code PR
 
-Phase 1: toolchain + `src/scoring` + tests. No screen port. No Firebase changes. No Coach. The PR must include the VS Code commands for `npm test` and for running the current app on port 4173.
+Phase 2: app shell, router, tokens, PWA plugin, empty screens. Scoring stays in `src/scoring`. The gym app stays on port 4173.
