@@ -5,18 +5,45 @@ export type DominantHand = 'right' | 'left' | 'ambidextrous';
 export type ScheduleEventType = 'match' | 'practice' | 'tournament' | 'scrimmage' | 'team-event';
 export type ScheduleEventStatus = 'draft' | 'scheduled' | 'changed' | 'cancelled' | 'completed';
 export type ScheduleLocationType = 'home' | 'away' | 'neutral';
+export type MatchFormat = 'best-of-3' | 'best-of-5';
+export type MatchStatus = 'setup' | 'live' | 'completed';
+export type MatchSide = 'home' | 'away';
 
 export type Organization = { id:string; name:string; type:OrganizationType; city:string; state:string; archived:boolean; createdAt:string };
 export type Team = { id:string; organizationId:string; name:string; level:string; abbreviation:string; primaryColor:string; secondaryColor:string; homeCourt:string; archived:boolean; createdAt:string };
 export type Season = { id:string; teamId:string; name:string; startDate:string; endDate:string; status:SeasonStatus; archived:boolean; createdAt:string };
-export type Player = { id:string; organizationId:string; firstName:string; lastName:string; preferredName:string; photoUrl?:string; graduationYear:string; height:string; dominantHand:DominantHand; primaryPosition:string; secondaryPosition:string; notes:string; archived:boolean; createdAt:string };
+export type Player = { id:string; organizationId:string; firstName:string; lastName:string; preferredName:string; photoUrl:string; graduationYear:string; height:string; dominantHand:DominantHand; primaryPosition:string; secondaryPosition:string; notes:string; archived:boolean; createdAt:string };
 export type RosterMembership = { id:string; playerId:string; teamId:string; seasonId:string; jerseyNumber:string; position:string; status:PlayerStatus; captain:boolean; libero:boolean; starter:boolean; notes:string; createdAt:string };
 export type ScheduleEvent = { id:string; teamId:string; seasonId:string; type:ScheduleEventType; title:string; date:string; startTime:string; arrivalTime:string; endTime:string; opponent:string; locationType:ScheduleLocationType; venue:string; address:string; court:string; travelNotes:string; notes:string; status:ScheduleEventStatus; createdAt:string; updatedAt:string };
 
-export type WorkspaceData = { organizations:Organization[]; teams:Team[]; seasons:Season[]; players:Player[]; rosterMemberships:RosterMembership[]; scheduleEvents:ScheduleEvent[]; activeOrganizationId:string; activeTeamId:string; activeSeasonId:string };
+export type MatchSetRecord = { number:number; homeScore:number; awayScore:number; winner:MatchSide | ''; completedAt:string };
+export type MatchRecord = {
+  id:string;
+  scheduleEventId:string;
+  teamId:string;
+  seasonId:string;
+  opponent:string;
+  locationType:ScheduleLocationType;
+  format:MatchFormat;
+  regularSetTarget:number;
+  decidingSetTarget:number;
+  winByTwo:boolean;
+  initialServe:MatchSide;
+  startingPlayerIds:string[];
+  liberoPlayerId:string;
+  status:MatchStatus;
+  sets:MatchSetRecord[];
+  winner:MatchSide | '';
+  startedAt:string;
+  completedAt:string;
+  updatedAt:string;
+};
+
+export type WorkspaceData = { organizations:Organization[]; teams:Team[]; seasons:Season[]; players:Player[]; rosterMemberships:RosterMembership[]; scheduleEvents:ScheduleEvent[]; matches:MatchRecord[]; activeOrganizationId:string; activeTeamId:string; activeSeasonId:string };
 export type OrganizationInput = Pick<Organization,'name'|'type'|'city'|'state'>;
 export type TeamInput = Pick<Team,'organizationId'|'name'|'level'|'abbreviation'|'primaryColor'|'secondaryColor'|'homeCourt'>;
 export type SeasonInput = Pick<Season,'teamId'|'name'|'startDate'|'endDate'|'status'>;
 export type PlayerInput = Pick<Player,'organizationId'|'firstName'|'lastName'|'preferredName'|'photoUrl'|'graduationYear'|'height'|'dominantHand'|'primaryPosition'|'secondaryPosition'|'notes'>;
 export type RosterMembershipInput = Pick<RosterMembership,'playerId'|'teamId'|'seasonId'|'jerseyNumber'|'position'|'status'|'captain'|'libero'|'starter'|'notes'>;
 export type ScheduleEventInput = Pick<ScheduleEvent,'teamId'|'seasonId'|'type'|'title'|'date'|'startTime'|'arrivalTime'|'endTime'|'opponent'|'locationType'|'venue'|'address'|'court'|'travelNotes'|'notes'|'status'>;
+export type MatchInput = Pick<MatchRecord,'scheduleEventId'|'teamId'|'seasonId'|'opponent'|'locationType'|'format'|'regularSetTarget'|'decidingSetTarget'|'winByTwo'|'initialServe'|'startingPlayerIds'|'liberoPlayerId'>;

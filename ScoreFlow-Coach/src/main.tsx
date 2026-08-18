@@ -18,6 +18,10 @@ import './live-match.css';
 import './live-match-header.css';
 import './player-action-wheel.css';
 import './player-photo.css';
+import './match-setup.css';
+import './app-scrollbars.css';
+import './live-substitutions.css';
+import './rotations.css';
 
 registerSW({ immediate: true });
 
