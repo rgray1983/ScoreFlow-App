@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Planning. The current `index.html` / `app.js` / `style.css` app remains the live product until Cutover.
+Look and local-test workflow locked. The current `index.html` / `app.js` / `style.css` app remains the live product until Cutover. Phase 1 (toolchain + scoring kernel) is the next code PR.
 
 ## Why rebuild
 
@@ -25,7 +25,7 @@ The rebuild keeps the same product and replaces the foundation.
 | Product | Volleyball scoreboard + live viewer. Nothing else. |
 | Language | TypeScript |
 | App | Vite + React + React Router + Vite PWA |
-| Styling | Design tokens + CSS modules. Self-hosted Anton + Inter. |
+| Styling | Keep the current ScoreFlow look. Tokens + CSS modules. Self-hosted Anton + Inter. Polish listed below — not a redesign. |
 | Scoring | Pure TypeScript reducer with Vitest. No DOM. No Firebase. |
 | State | Scoring reducer + a thin UI store (Zustand). |
 | Backend | Same Firebase project: Auth, Firestore, Storage, later Functions |
@@ -33,6 +33,7 @@ The rebuild keeps the same product and replaces the foundation.
 | Payments | Not in the first rebuild. Pro may keep a clearly labeled Preview. |
 | Native / App Store | Not now. PWA only. |
 | Coach | Separate repo. This app may later expose a live game ID. That is all. |
+| Local test ports | Current app: `http://localhost:4173`. New Vite app: `http://localhost:5173`. |
 
 ## Product boundary
 
@@ -149,6 +150,43 @@ Private data stays under `users/{uid}`: settings, saved home team, match history
 
 Anonymous Auth remains for gyms: scorer and viewer get a silent UID. Cloud backup still requires a real account.
 
+## Look and feel
+
+The current ScoreFlow look is the product. People already trust the dark arena, red brand, Anton scores, and home cards. The rebuild copies that visual language and polishes it. It does not become a new brand, a Coach dashboard, or a neon betting board.
+
+### Keep
+
+- Dark arena background `#080b12` with the existing red/blue gym-light wash
+- Anton for scores and match titles; Inter for UI
+- Brand red `#ff1414` / `#c70d13`
+- Championship gold `#fbbf24` for live share, winner, and Pro — used like hardware, not as the default button
+- Home/away team colors on the board only, as underglow and accents
+- Rounded cards on Home/Settings; large score digits on Match
+- Splash logo + volleyball
+- PWA safe-area insets and 44px minimum tap targets
+
+### Polish — sporty and professional
+
+These are the upgrades. Apply them when the matching screen is ported, not as a separate “redesign phase.”
+
+1. **Button hierarchy.** Today almost every pill is the same red. In the new app: red = start match and +1; gold = go live / share; quiet dark glass = secondary (Home, Settings, −1, Save). One loud action per screen.
+2. **Scoreboard as a gym LED, Home as a product.** Match view is a black well, huge digits, thin court-line ticks, team-color glow behind each side. Home stays cards and copy. Do not put dashboard chrome, sidebars, or Coach navigation on the board.
+3. **Broadcast live pill.** Replace the small Offline/Online chip with a real status: green dot + `LIVE`, muted `OFFLINE`, red `SYNC ERROR`. Portrait scoring shows the same pill and viewer count.
+4. **Real icons, not emoji chrome.** Home, settings, share, undo, live, and close become a small SVG set. Keep emoji only for fan reactions.
+5. **Typography discipline.** Uppercase tracked labels for SET, LIVE, FIRST TO 25. Anton only for scores and the match title. Body copy stays Inter and readable in a gym.
+6. **Depth without glass everywhere.** Scoring surfaces stay solid and high-contrast. Glass/blur is for dialogs and sheets only, so points stay readable under gym lights.
+7. **Motion is feedback, not a show.** Score pop 200–300ms. Set/match win can confetti. Honor `prefers-reduced-motion`. No slow page choreography before the first serve.
+8. **Winner and results stay premium.** Trophy overlay and results graphic already feel like the shareable artifact. Keep them; make Share the one obvious next tap.
+9. **Pro themes stay optional skins.** Classic is the default and must remain the gym-readable board. Neon/gold/ice themes cannot reduce contrast on scores.
+
+### Do not
+
+- Recolor the brand to Coach’s `#ef3340` / `#f4c95d` just because those tokens exist in old docs
+- Use emoji for app chrome
+- Make every button red
+- Add court diagrams, rosters, or stat wheels to this scoreboard
+- Copy a generic SaaS dashboard or a betting ticker
+
 ## UI rules for the new app
 
 - One scoreboard layout. CSS reflows it. No second portrait markup tree.
@@ -168,13 +206,69 @@ Each phase adds new code beside the old app, or ports one screen onto the new ke
 
 Cutover is a dedicated phase: Vite becomes the production entry, then `app.js` and the old CSS are deleted.
 
+## Local testing
+
+Richie tests every rebuild PR locally before merge. The agent does not require production hosting for these phases.
+
+The current app and the new Vite app must run **at the same time** on different ports. Every rebuild PR and every agent message that expects local testing must include a **Run in VS Code** block with the exact terminal commands.
+
+### Ports (locked)
+
+| App | Command | URL |
+|---|---|---|
+| Current scoreboard (`index.html`) | `npx --yes serve -l 4173 .` | http://localhost:4173 |
+| New rebuild (Vite, from Phase 2) | `npm run dev -- --port 5173` | http://localhost:5173 |
+| Scoring tests (from Phase 1) | `npm test` | terminal output |
+| Firestore rules tests (unchanged) | `npm run test:firestore-rules` | emulator |
+
+Until Phase 1 lands, only the current-app command exists. Until Phase 2 lands, the new app has tests but no UI to click.
+
+### Run in VS Code — current app (always available)
+
+In the VS Code terminal, from the repo root:
+
+```bash
+npx --yes serve -l 4173 .
+```
+
+Then open http://localhost:4173. This is the gym product. Leave it running while testing a rebuild PR.
+
+### Run in VS Code — rebuild (after Phase 1)
+
+In a **second** VS Code terminal, from the repo root:
+
+```bash
+npm install
+npm test
+```
+
+After Phase 2 adds the UI shell:
+
+```bash
+npm install
+npm run dev -- --port 5173
+```
+
+Then open http://localhost:5173. Compare it next to http://localhost:4173.
+
+Do not use port 4173 for Vite. Do not stop the current app in order to start the new one.
+
+## How we work
+
+1. One phase per PR, named and recorded as `PR-###`.
+2. The agent opens the PR. Richie tests locally, asks for adjustments, then merges. Only then does the next phase start.
+3. Every rebuild PR names its phase, includes a **Run in VS Code** command block, and does not take down the current app.
+4. If a phase needs a schema change, update this file and `docs/Architecture/Firebase Collections.md` in the same PR.
+5. Test on a phone/iPad as well as the desktop preview when the UI exists. Gyms do not care that Vite is clean.
+6. Do not “quickly” add a Coach link, roster, or stat button because it would be cool on the board.
+
 ## Build order
 
 Do these in order. Do not skip ahead to results graphics or Pro themes before Undo and live viewer work.
 
 ### Phase 0 — Plan (this document)
 
-**Done when:** This file is the agreed map. Coach is recorded as out of scope.
+**Done when:** This file is the agreed map. Coach is out of scope. Look-and-feel and local-test ports are locked.
 
 ### Phase 1 — Toolchain + scoring kernel
 
@@ -279,14 +373,6 @@ Only after Phase 9:
 
 Do not start these during Phases 1–9.
 
-## How we work
-
-1. One phase per PR, named and recorded as `PR-###`.
-2. Every rebuild PR must name its phase in the PR record.
-3. If a phase needs a schema change, update this file and `docs/Architecture/Firebase Collections.md` in the same PR.
-4. Richie tests on a phone/iPad before merge. Gyms do not care that Vite is clean.
-5. Do not “quickly” add a Coach link, roster, or stat button because it would be cool on the board.
-
 ## Relationship to existing docs
 
 This repo still contains Coach vision docs (`docs/ROADMAP.md`, `docs/Features/*`, `docs/Architecture/Routing.md`, and others). Treat those as historical / Coach-repo material.
@@ -295,4 +381,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## First code PR after this file
 
-Phase 1: toolchain + `src/scoring` + tests. No screen port. No Firebase changes. No Coach.
+Phase 1: toolchain + `src/scoring` + tests. No screen port. No Firebase changes. No Coach. The PR must include the VS Code commands for `npm test` and for running the current app on port 4173.
