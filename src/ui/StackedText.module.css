@@ -1,0 +1,22 @@
+.stack {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stack strong,
+.stack small {
+  display: block;
+}
+
+.stack strong {
+  margin: 0;
+  font-size: 16px;
+}
+
+.stack small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}

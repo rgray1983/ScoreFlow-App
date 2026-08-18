@@ -38,11 +38,9 @@
   min-height: var(--tap);
 }
 
-.navCard small {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted);
-  font-weight: 600;
+.navCard :global(span) {
+  flex: 1;
+  min-width: 0;
 }
 
 .chevron {

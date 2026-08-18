@@ -12,13 +12,3 @@
 .uploader input {
   display: none;
 }
-
-.uploader strong {
-  display: block;
-  margin-bottom: 3px;
-}
-
-.uploader small {
-  color: var(--muted);
-  font-size: 12px;
-}

@@ -1,4 +1,5 @@
 import { LogoMark } from "./LogoMark";
+import { StackedText } from "./StackedText";
 import { resizeImageFile } from "../lib/logo";
 import styles from "./LogoUploader.module.css";
 
@@ -28,10 +29,10 @@ export function LogoUploader({ name, logo, color, onChange, onError }: LogoUploa
         }}
       />
       <LogoMark name={name} logo={logo} color={color} />
-      <span>
-        <strong>Upload Team Logo</strong>
-        <small>PNG or JPG works best. Photos are resized before saving.</small>
-      </span>
+      <StackedText
+        title="Upload Team Logo"
+        copy="PNG or JPG works best. Photos are resized before saving."
+      />
     </label>
   );
 }

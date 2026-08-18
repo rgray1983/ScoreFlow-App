@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { ChevronIcon, SettingsIcon } from "../ui/icons";
 import { LogoMark } from "../ui/LogoMark";
+import { StackedText } from "../ui/StackedText";
 import { useWorkspace } from "../state/workspace";
 import styles from "./HomePage.module.css";
 
@@ -65,10 +66,7 @@ export function HomePage() {
         </section>
 
         <Link className={`${styles.card} ${styles.navCard}`} to="/settings">
-          <span>
-            <strong>Settings</strong>
-            <small>Themes, graphics, and backup.</small>
-          </span>
+          <StackedText title="Settings" copy="Themes, graphics, and backup." />
           <ChevronIcon className={styles.chevron} />
         </Link>
       </main>

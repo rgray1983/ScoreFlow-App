@@ -101,7 +101,7 @@
   font-size: 16px;
 }
 
-.card small {
+.cardHead small {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -159,6 +159,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.navCard :global(span) {
+  flex: 1;
+  min-width: 0;
 }
 
 .chevron {
