@@ -1,0 +1,140 @@
+.page {
+  height: 100%;
+  overflow: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+}
+
+.hero {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(18, 31, 52, 0.92), rgba(12, 18, 30, 0.96));
+  box-shadow: var(--shadow);
+}
+
+.topline,
+.actions,
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logo {
+  width: min(48vw, 158px);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  color: var(--muted);
+  background: transparent;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+}
+
+.copy {
+  padding: 28px 2px 16px;
+}
+
+.primaryAction :global(a) {
+  width: 100%;
+}
+
+.eyebrow {
+  color: var(--brand);
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.copy h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(38px, 11vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.copy p {
+  margin: 0;
+  max-width: 680px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.dashboard {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0 0;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 16px;
+  background: rgba(16, 24, 39, 0.72);
+}
+
+.card h2,
+.card strong {
+  margin: 0;
+  font-size: 16px;
+}
+
+.card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.muted,
+.empty {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.textLink {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.navCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.navCard small {
+  display: block;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+}
