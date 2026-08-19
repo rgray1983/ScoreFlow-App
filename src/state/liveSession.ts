@@ -102,9 +102,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   async goLive(match, draft, options) {
     if (!firebaseReady()) {
       set({ status: "error", error: "Firebase config is missing.", active: false });
-      throw new Error("Firebase config is missing.");
+      return;
     }
-    if (get().status === "connecting") return;
     if (get().active && get().gameId && !options?.reuseId) {
       set({ shareOpen: true, status: "live", error: "" });
       return;
@@ -115,7 +114,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       ? get().gameId || get().recovery?.gameId || createGameId()
       : createGameId();
     const epoch = get().epoch + 1;
-    set({ status: "connecting", error: "", gameId, active: false, epoch });
+    set({ status: "offline", error: "", gameId, active: false, epoch });
     stopPresence();
     clearScoreTimer();
     try {
@@ -153,7 +152,6 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         gameId: reuseId ? gameId : "",
         error: error instanceof Error ? error.message : "Live game could not be created."
       });
-      throw error;
     }
   },
   async resumeLive(match, draft) {

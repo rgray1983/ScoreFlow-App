@@ -130,6 +130,28 @@ describe("live session", () => {
     expect(liveMocks.createLiveGame.mock.calls.map((call) => call[0])).toEqual(["id-a", "id-b"]);
   });
 
+  it("lets Share Live start even if a previous start is still in flight", async () => {
+    let finishFirst: (() => void) | undefined;
+    liveMocks.createLiveGame.mockImplementation((gameId: string) => {
+      if (gameId === "id-a") {
+        return new Promise<void>((resolve) => {
+          finishFirst = resolve;
+        });
+      }
+      return Promise.resolve();
+    });
+    const first = useLiveSession.getState().goLive(match, draft);
+    await Promise.resolve();
+    await Promise.resolve();
+    await useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().gameId).toBe("id-b");
+    expect(useLiveSession.getState().status).toBe("live");
+    finishFirst?.();
+    await first;
+    expect(useLiveSession.getState().gameId).toBe("id-b");
+    expect(useLiveSession.getState().status).toBe("live");
+  });
+
   it("keeps the same game id when Share Live is tapped while already live", async () => {
     await useLiveSession.getState().goLive(match, draft);
     liveMocks.createLiveGame.mockClear();
