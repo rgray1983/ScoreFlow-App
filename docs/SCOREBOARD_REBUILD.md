@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 5 live share is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can create a live game, share `/g/:gameId`, and show viewer counts. Chat is still Phase 6.
+Phase 5 live share is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can create a live game, share `/g/:gameId`, and show viewer counts. Chat is still Phase 6. Look-and-feel parity with the gym scoreboard is Phase 10.
 
 ## Why rebuild
 
@@ -25,7 +25,7 @@ The rebuild keeps the same product and replaces the foundation.
 | Product | Volleyball scoreboard + live viewer. Nothing else. |
 | Language | TypeScript |
 | App | Vite + React + React Router + Vite PWA |
-| Styling | Keep the current ScoreFlow look. Tokens + CSS modules. Self-hosted Anton + Inter. Polish listed below — not a redesign. |
+| Styling | Keep the current ScoreFlow look. Tokens + CSS modules. Self-hosted Anton + Inter. Screens land functional in their phases. Phase 10 is the dedicated gym look-and-feel pass — not a new brand. |
 | Scoring | Pure TypeScript reducer with Vitest. No DOM. No Firebase. |
 | State | Scoring reducer + a thin UI store (Zustand). |
 | Backend | Same Firebase project: Auth, Firestore, Storage, later Functions |
@@ -153,7 +153,7 @@ Anonymous Auth remains for gyms: scorer and viewer get a silent UID. Cloud backu
 
 ## Look and feel
 
-The current ScoreFlow look is the product. People already trust the dark arena, red brand, Anton scores, and home cards. The rebuild copies that visual language and polishes it. It does not become a new brand, a Coach dashboard, or a neon betting board.
+The current ScoreFlow look is the product. People already trust the dark arena, red brand, Anton scores, and home cards. The rebuild copies that visual language. Feature phases may ship a working screen that is not yet gym-identical. **Phase 10** is the pass that makes Match, Viewer, Home, and Setup look and feel like the current gym scoreboard. It does not become a new brand, a Coach dashboard, or a neon betting board.
 
 ### Keep
 
@@ -168,7 +168,7 @@ The current ScoreFlow look is the product. People already trust the dark arena, 
 
 ### Polish — sporty and professional
 
-These are the upgrades. Apply them when the matching screen is ported, not as a separate “redesign phase.”
+These are the upgrades. Feature phases should not invent a new look. **Phase 10** is when the rebuild is brought to gym-board parity using this list and a side-by-side with `index.html` / `app.js`.
 
 1. **Button hierarchy.** Today almost every pill is the same red. In the new app: red = start match and +1; gold = go live / share; quiet dark glass = secondary (Home, Settings, −1, Save). One loud action per screen.
 2. **Scoreboard as a gym LED, Home as a product.** Match view is a black well, huge digits, thin court-line ticks, team-color glow behind each side. Home stays cards and copy. Do not put dashboard chrome, sidebars, or Coach navigation on the board.
@@ -205,7 +205,7 @@ The gym app keeps shipping from the current root files until Cutover.
 
 Each phase adds new code beside the old app, or ports one screen onto the new kernel, without breaking `index.html`.
 
-Cutover is a dedicated phase: Vite becomes the production entry, then `app.js` and the old CSS are deleted.
+Cutover is a dedicated phase: Vite becomes the production entry. Keep `app.js` until Phase 10 so polish can still match the gym board, then delete the old CSS/HTML.
 
 ## Local testing
 
@@ -345,15 +345,30 @@ First code phase.
 
 - Production hosting serves the Vite build
 - Redirect or replace the old `app.js` entry
-- Delete `app.js` and unused legacy CSS/HTML
+- Keep `app.js` and unused gym CSS/HTML in the repo until Phase 10 — they are the look-and-feel reference
 - Keep Firestore rules tests green
 - Add one Playwright (or similar) test: scorer point appears on viewer
 
-**Done when:** The old tournament file is gone, and a live match still works on a hard refresh of the PWA.
+**Done when:** A live match still works on a hard refresh of the PWA served from the Vite build. The gym files may still be in the repo for Phase 10.
 
-## Later, after cutover (still scoreboard, still not Coach)
+### Phase 10 — Style and polish the scoreboard
 
-Only after Phase 9:
+The rebuild must look and feel like the gym scoreboard, not a different product. This phase is that pass. No new features.
+
+- Side-by-side with the current `index.html` / `app.js` board on phone and iPad
+- Dark arena `#080b12`, brand red `#ff1414`, gold `#fbbf24`, Anton scores, Inter UI
+- Match + viewer as a gym LED: huge digits, team-color underglow, court-line ticks, one layout that reflows
+- Same tap language as the gym: +1 is the primary hit, −1 quieter, Undo visible
+- Live pill, viewer count, winner overlay, and share sheet match the gym weight and placement
+- Apply the Look and feel polish list (button hierarchy, icons, type, motion)
+- Home and Setup stay ScoreFlow cards, not a dashboard
+- Then delete `app.js` and unused legacy CSS/HTML
+
+**Done when:** A scorer who knows the gym app recognizes this board. Richie has signed off side-by-side. The old tournament files are gone.
+
+## Later, after cutover and polish (still scoreboard, still not Coach)
+
+Only after Phase 10:
 
 - Serving-team indicator
 - Running set-score strip for viewers (25-18, 20-25, 8-7)
@@ -363,7 +378,7 @@ Only after Phase 9:
 - Real Pro billing
 - Optional Capacitor wrapper if App Store discovery matters
 
-Do not start these during Phases 1–9.
+Do not start these during Phases 1–10.
 
 ## Relationship to existing docs
 
