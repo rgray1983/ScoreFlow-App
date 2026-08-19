@@ -6,7 +6,6 @@ import {
   createGameId,
   createLiveGame,
   endLiveGame,
-  ensureAnonymousAuth,
   firebaseReady,
   listenViewerCount,
   loadLiveRecovery,
@@ -115,15 +114,18 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       ? get().gameId || get().recovery?.gameId || createGameId()
       : createGameId();
     const epoch = get().epoch + 1;
-    set({ status: "offline", error: "", gameId, active: false, epoch });
+    set({
+      status: "offline",
+      error: "",
+      gameId,
+      active: false,
+      epoch,
+      shareOpen: true
+    });
     stopPresence();
     clearScoreTimer();
     try {
-      await ensureAnonymousAuth();
-      if (get().epoch !== epoch) return;
-      const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-      if (get().epoch !== epoch) return;
-      await createLiveGame(gameId, match, logos);
+      await createLiveGame(gameId, match, { homeLogo: "", awayLogo: "" });
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
@@ -147,11 +149,22 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
         if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
       });
+      void (async () => {
+        try {
+          const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+          if (!sessionStillOpen(epoch, gameId, get())) return;
+          if (!logos.homeLogo && !logos.awayLogo) return;
+          await updateLiveBranding(gameId, match, logos);
+        } catch {
+          // Logos are optional. The live game and QR already exist.
+        }
+      })();
     } catch (error) {
       if (get().epoch !== epoch) return;
       set({
         status: "error",
         active: false,
+        shareOpen: false,
         gameId: reuseId ? gameId : "",
         error: error instanceof Error ? error.message : "Live game could not be created."
       });

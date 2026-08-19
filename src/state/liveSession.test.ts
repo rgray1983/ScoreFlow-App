@@ -135,6 +135,13 @@ describe("live session", () => {
     expect(liveMocks.createLiveGame.mock.calls.map((call) => call[0])).toEqual(["id-a", "id-b"]);
   });
 
+  it("opens the share sheet as soon as Share Live is tapped", () => {
+    liveMocks.createLiveGame.mockImplementation(() => new Promise(() => {}));
+    void useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().shareOpen).toBe(true);
+    expect(useLiveSession.getState().gameId).toBe("id-a");
+  });
+
   it("lets Share Live start even if a previous start is still in flight", async () => {
     let finishFirst: (() => void) | undefined;
     liveMocks.createLiveGame.mockImplementation((gameId: string) => {

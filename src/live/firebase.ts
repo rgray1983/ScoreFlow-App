@@ -41,25 +41,16 @@ export function authErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Could not start a live ScoreFlow session";
 }
 
-async function refreshAuthToken(user: User): Promise<User> {
-  try {
-    await user.getIdToken();
-  } catch {
-    // Storage and Firestore still get the cached token if refresh is offline.
-  }
-  return user;
-}
-
 export async function ensureAnonymousAuth(): Promise<User> {
   const { auth: firebaseAuth } = getFirebase();
   if (typeof firebaseAuth.authStateReady === "function") {
     await firebaseAuth.authStateReady();
   }
-  if (firebaseAuth.currentUser) return refreshAuthToken(firebaseAuth.currentUser);
+  if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
   try {
     const credential = await signInAnonymously(firebaseAuth);
     if (!credential.user) throw new Error("Could not start a live ScoreFlow session");
-    return refreshAuthToken(credential.user);
+    return credential.user;
   } catch (error) {
     throw new Error(authErrorMessage(error));
   }

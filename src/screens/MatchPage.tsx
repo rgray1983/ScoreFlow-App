@@ -106,12 +106,8 @@ export function MatchPage() {
     navigate("/");
   }
 
-  async function requestShare() {
-    if (live.active && live.gameId) {
-      live.openShare();
-      return;
-    }
-    await live.goLive(match, draft);
+  function requestShare() {
+    void useLiveSession.getState().goLive(match, draft);
   }
 
   return (
@@ -224,7 +220,7 @@ export function MatchPage() {
         <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
           New Match
         </Button>
-        <Button tone="gold" onClick={() => void requestShare()}>
+        <Button type="button" tone="gold" onClick={requestShare}>
           <ShareIcon className={styles.controlIcon} />
           {live.status === "error" ? "Retry Live" : "Share Live"}
         </Button>
@@ -245,7 +241,7 @@ export function MatchPage() {
               ))}
             </ul>
             <div className={styles.winnerActions}>
-              <Button tone="gold" onClick={() => void requestShare()}>
+              <Button type="button" tone="gold" onClick={requestShare}>
                 <ShareIcon className={styles.controlIcon} />
                 Share Live
               </Button>
