@@ -192,11 +192,4 @@ describe("live session", () => {
     expect(useLiveSession.getState().active).toBe(false);
     expect(liveMocks.stored()).toBeNull();
   });
-
-  it("opens Share Live even if logo upload never finishes", async () => {
-    liveMocks.uploadMatchLogos.mockImplementation(() => new Promise(() => {}));
-    await useLiveSession.getState().goLive(match, draft);
-    expect(useLiveSession.getState().status).toBe("live");
-    expect(useLiveSession.getState().shareOpen).toBe(true);
-  });
 });

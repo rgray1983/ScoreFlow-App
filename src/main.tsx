@@ -10,10 +10,8 @@ import "@fontsource/anton/400.css";
 import "./ui/base.css";
 import { App } from "./App";
 import { registerPwa } from "./pwa/register";
-import { warmLiveAuth } from "./live/firebase";
 
 registerPwa();
-void warmLiveAuth();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

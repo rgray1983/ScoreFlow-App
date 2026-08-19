@@ -2,13 +2,11 @@ import { create } from "zustand";
 import type { MatchState } from "../scoring";
 import type { MatchDraft } from "../storage/matchSetup";
 import {
-  authErrorMessage,
   clearLiveRecovery,
   createGameId,
   createLiveGame,
   endLiveGame,
   firebaseReady,
-  isHttpUrl,
   listenViewerCount,
   loadLiveRecovery,
   liveRecoverySummary,
@@ -76,13 +74,6 @@ function sessionStillOpen(
   return state.active && state.epoch === epoch && state.gameId === gameId;
 }
 
-function publicLogos(draft: MatchDraft): { homeLogo: string; awayLogo: string } {
-  return {
-    homeLogo: isHttpUrl(draft.homeLogo) ? draft.homeLogo.trim() : "",
-    awayLogo: isHttpUrl(draft.awayLogo) ? draft.awayLogo.trim() : ""
-  };
-}
-
 export const useLiveSession = create<LiveSessionState>((set, get) => ({
   status: "offline",
   active: false,
@@ -113,6 +104,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       set({ status: "error", error: "Firebase config is missing.", active: false });
       throw new Error("Firebase config is missing.");
     }
+    if (get().status === "connecting") return;
     if (get().active && get().gameId && !options?.reuseId) {
       set({ shareOpen: true, status: "live", error: "" });
       return;
@@ -127,13 +119,23 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     stopPresence();
     clearScoreTimer();
     try {
-      await createLiveGame(gameId, match, publicLogos(draft));
+      const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+      if (get().epoch !== epoch) return;
+      await createLiveGame(gameId, match, logos);
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
         active: true,
         savedAtMs: Date.now(),
         summary: liveRecoverySummary(match)
+      });
+      await writePresence(gameId, "scorer");
+      if (get().epoch !== epoch) return;
+      presenceTimer = window.setInterval(() => {
+        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
+      }, 15000);
+      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
+        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
       });
       set({
         status: "live",
@@ -143,34 +145,15 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         shareOpen: true,
         recovery: loadLiveRecovery()
       });
-      void (async () => {
-        try {
-          stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
-            if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
-          });
-          await writePresence(gameId, "scorer");
-          if (!sessionStillOpen(epoch, gameId, get())) return;
-          presenceTimer = window.setInterval(() => {
-            if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
-          }, 15000);
-          const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-          if (!sessionStillOpen(epoch, gameId, get())) return;
-          if (logos.homeLogo || logos.awayLogo) {
-            await updateLiveBranding(gameId, match, logos);
-          }
-        } catch {
-          // The QR is already up. Presence and logos can catch up on the next retry.
-        }
-      })();
     } catch (error) {
       if (get().epoch !== epoch) return;
       set({
         status: "error",
         active: false,
         gameId: reuseId ? gameId : "",
-        error: authErrorMessage(error)
+        error: error instanceof Error ? error.message : "Live game could not be created."
       });
-      throw error instanceof Error ? error : new Error(authErrorMessage(error));
+      throw error;
     }
   },
   async resumeLive(match, draft) {
