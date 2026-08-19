@@ -40,15 +40,15 @@ export function ViewerPage() {
       try {
         await ensureAnonymousAuth();
         if (cancelled) return;
-        await writePresence(gameId, "viewer");
-        heartbeat = window.setInterval(() => {
+        const beat = () => {
           void writePresence(gameId, "viewer");
-        }, 15000);
+        };
+        beat();
+        heartbeat = window.setInterval(beat, 15000);
         stopCount = listenViewerCount(gameId, setViewers);
         stopGame = listenLiveGame(gameId, (next) => {
           if (!next) {
-            setMissing(true);
-            setStatus("error");
+            setStatus("offline");
             return;
           }
           setMissing(false);

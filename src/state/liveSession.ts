@@ -6,6 +6,7 @@ import {
   createGameId,
   createLiveGame,
   endLiveGame,
+  ensureAnonymousAuth,
   firebaseReady,
   listenViewerCount,
   loadLiveRecovery,
@@ -118,6 +119,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     stopPresence();
     clearScoreTimer();
     try {
+      await ensureAnonymousAuth();
+      if (get().epoch !== epoch) return;
       const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
       if (get().epoch !== epoch) return;
       await createLiveGame(gameId, match, logos);
@@ -128,14 +131,6 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         savedAtMs: Date.now(),
         summary: liveRecoverySummary(match)
       });
-      await writePresence(gameId, "scorer");
-      if (get().epoch !== epoch) return;
-      presenceTimer = window.setInterval(() => {
-        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
-      }, 15000);
-      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
-        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
-      });
       set({
         status: "live",
         active: true,
@@ -143,6 +138,14 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         error: "",
         shareOpen: true,
         recovery: loadLiveRecovery()
+      });
+      const beat = () => {
+        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
+      };
+      beat();
+      presenceTimer = window.setInterval(beat, 15000);
+      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
+        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
       });
     } catch (error) {
       if (get().epoch !== epoch) return;

@@ -24,6 +24,7 @@ const liveMocks = vi.hoisted(() => {
     updateLiveBranding: vi.fn(async () => {}),
     uploadMatchLogos: vi.fn(async () => ({ homeLogo: "", awayLogo: "" })),
     writePresence: vi.fn(async () => {}),
+    ensureAnonymousAuth: vi.fn(async () => ({ uid: "scorer" })),
     listenViewerCount: vi.fn(() => vi.fn()),
     loadLiveRecovery: vi.fn(() => stored),
     saveLiveRecovery: vi.fn((recovery: LiveRecovery) => {
@@ -47,6 +48,7 @@ vi.mock("../live", async (importOriginal) => {
     updateLiveBranding: liveMocks.updateLiveBranding,
     uploadMatchLogos: liveMocks.uploadMatchLogos,
     writePresence: liveMocks.writePresence,
+    ensureAnonymousAuth: liveMocks.ensureAnonymousAuth,
     listenViewerCount: liveMocks.listenViewerCount,
     loadLiveRecovery: liveMocks.loadLiveRecovery,
     saveLiveRecovery: liveMocks.saveLiveRecovery,
@@ -86,10 +88,13 @@ describe("live session", () => {
     liveMocks.createGameId.mockClear();
     liveMocks.saveLiveRecovery.mockClear();
     liveMocks.clearLiveRecovery.mockClear();
+    liveMocks.writePresence.mockClear();
+    liveMocks.ensureAnonymousAuth.mockClear();
     liveMocks.createLiveGame.mockImplementation(async () => {});
     liveMocks.uploadMatchLogos.mockImplementation(async () => ({ homeLogo: "", awayLogo: "" }));
     liveMocks.updateLiveScore.mockImplementation(async () => {});
     liveMocks.writePresence.mockImplementation(async () => {});
+    liveMocks.ensureAnonymousAuth.mockImplementation(async () => ({ uid: "scorer" }));
   });
 
   afterEach(() => {
@@ -141,8 +146,10 @@ describe("live session", () => {
       return Promise.resolve();
     });
     const first = useLiveSession.getState().goLive(match, draft);
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 20 && liveMocks.createLiveGame.mock.calls.length === 0; i += 1) {
+      await Promise.resolve();
+    }
+    expect(liveMocks.createLiveGame).toHaveBeenCalled();
     await useLiveSession.getState().goLive(match, draft);
     expect(useLiveSession.getState().gameId).toBe("id-b");
     expect(useLiveSession.getState().status).toBe("live");
@@ -150,6 +157,18 @@ describe("live session", () => {
     await first;
     expect(useLiveSession.getState().gameId).toBe("id-b");
     expect(useLiveSession.getState().status).toBe("live");
+  });
+
+  it("opens the QR sheet after the game exists even if presence never returns", async () => {
+    liveMocks.writePresence.mockImplementation(() => new Promise(() => {}));
+    await useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState()).toMatchObject({
+      status: "live",
+      active: true,
+      shareOpen: true,
+      gameId: "id-a"
+    });
+    expect(liveMocks.createLiveGame).toHaveBeenCalledWith("id-a", match, { homeLogo: "", awayLogo: "" });
   });
 
   it("keeps the same game id when Share Live is tapped while already live", async () => {

@@ -1,5 +1,5 @@
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
-import { getFirebase } from "./firebase";
+import { ensureAnonymousAuth, getFirebase } from "./firebase";
 import { isHttpUrl } from "./payload";
 
 function extensionFor(dataUrl: string): string {
@@ -13,6 +13,7 @@ export async function uploadTeamLogo(gameId: string, side: "home" | "away", logo
   if (!value) return "";
   if (isHttpUrl(value)) return value;
   if (!value.startsWith("data:image/")) return "";
+  await ensureAnonymousAuth();
   const { storage } = getFirebase();
   const fileRef = ref(storage, `volleyballGames/${gameId}/${side}.${extensionFor(value)}`);
   await uploadString(fileRef, value, "data_url");
