@@ -11,6 +11,7 @@ import { matchHasProgress } from "../storage/matchEngine";
 import { consumeResumeIntent, isDocumentReload } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
+import { warmLiveAuth } from "../live";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { ShareSheet } from "../ui/ShareSheet";
@@ -70,6 +71,7 @@ export function MatchPage() {
 
   useEffect(() => {
     live.dismissReturnPrompt();
+    void warmLiveAuth();
     const shouldResume = consumeResumeIntent() || isDocumentReload();
     if (shouldResume && live.recovery?.gameId && !live.active && live.status !== "connecting") {
       void live.resumeLive(match, draft);

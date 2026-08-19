@@ -76,24 +76,6 @@ function sessionStillOpen(
   return state.active && state.epoch === epoch && state.gameId === gameId;
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = (typeof window === "undefined" ? globalThis : window).setTimeout(() => {
-      reject(new Error(message));
-    }, ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
-
 function publicLogos(draft: MatchDraft): { homeLogo: string; awayLogo: string } {
   return {
     homeLogo: isHttpUrl(draft.homeLogo) ? draft.homeLogo.trim() : "",
@@ -131,7 +113,6 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       set({ status: "error", error: "Firebase config is missing.", active: false });
       throw new Error("Firebase config is missing.");
     }
-    if (get().status === "connecting") return;
     if (get().active && get().gameId && !options?.reuseId) {
       set({ shareOpen: true, status: "live", error: "" });
       return;
@@ -146,11 +127,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     stopPresence();
     clearScoreTimer();
     try {
-      await withTimeout(
-        createLiveGame(gameId, match, publicLogos(draft)),
-        12000,
-        "Live share timed out. Check your connection and try again."
-      );
+      await createLiveGame(gameId, match, publicLogos(draft));
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
