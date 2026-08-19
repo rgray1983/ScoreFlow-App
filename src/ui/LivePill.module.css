@@ -1,16 +1,18 @@
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 6px 12px;
+  gap: 5px;
+  min-height: 26px;
+  padding: 4px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .dot {
@@ -27,6 +29,7 @@
 
 .connecting .dot {
   background: #fbbf24;
+  animation: waitPulse 1s ease-in-out infinite;
 }
 
 .live {
@@ -46,4 +49,8 @@
 
 .error .dot {
   background: var(--danger);
+}
+
+@keyframes waitPulse {
+  50% { opacity: 0.35; }
 }

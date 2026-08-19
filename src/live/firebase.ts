@@ -44,7 +44,12 @@ export function authErrorMessage(error: unknown): string {
 export async function ensureAnonymousAuth(): Promise<User> {
   const { auth: firebaseAuth } = getFirebase();
   if (typeof firebaseAuth.authStateReady === "function") {
-    await firebaseAuth.authStateReady();
+    await Promise.race([
+      firebaseAuth.authStateReady(),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, 4000);
+      })
+    ]);
   }
   if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
   try {

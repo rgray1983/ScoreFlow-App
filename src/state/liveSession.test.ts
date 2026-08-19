@@ -86,6 +86,10 @@ describe("live session", () => {
     liveMocks.createGameId.mockClear();
     liveMocks.saveLiveRecovery.mockClear();
     liveMocks.clearLiveRecovery.mockClear();
+    liveMocks.createLiveGame.mockImplementation(async () => {});
+    liveMocks.uploadMatchLogos.mockImplementation(async () => ({ homeLogo: "", awayLogo: "" }));
+    liveMocks.updateLiveScore.mockImplementation(async () => {});
+    liveMocks.writePresence.mockImplementation(async () => {});
   });
 
   afterEach(() => {
@@ -187,5 +191,22 @@ describe("live session", () => {
     expect(useLiveSession.getState().status).toBe("offline");
     expect(useLiveSession.getState().active).toBe(false);
     expect(liveMocks.stored()).toBeNull();
+  });
+
+  it("opens Share Live even if logo upload never finishes", async () => {
+    liveMocks.uploadMatchLogos.mockImplementation(() => new Promise(() => {}));
+    await useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().status).toBe("live");
+    expect(useLiveSession.getState().shareOpen).toBe(true);
+  });
+
+  it("does not stay on Starting if the live write never returns", async () => {
+    liveMocks.createLiveGame.mockImplementation(() => new Promise(() => {}));
+    const pending = useLiveSession.getState().goLive(match, draft);
+    const finished = expect(pending).rejects.toThrow(/timed out/);
+    await vi.advanceTimersByTimeAsync(12000);
+    await finished;
+    expect(useLiveSession.getState().status).toBe("error");
+    expect(useLiveSession.getState().shareOpen).toBe(false);
   });
 });

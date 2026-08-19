@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { Field, SelectInput, TextInput } from "../ui/Field";
@@ -12,6 +12,7 @@ import setupStyles from "./SetupPage.module.css";
 
 export function SetupPage() {
   const navigate = useNavigate();
+  const fromMatch = Boolean((useLocation().state as { fromMatch?: boolean } | null)?.fromMatch);
   const draft = useWorkspace((state) => state.draft);
   const engine = useWorkspace((state) => state.engine);
   const updateDraft = useWorkspace((state) => state.updateDraft);
@@ -34,6 +35,7 @@ export function SetupPage() {
       eyebrow="Match Setup"
       title="Your Match. Your Way."
       copy="Set names, colors, and format before the first serve."
+      backTo={fromMatch ? "/match" : "/"}
     >
       <section className={styles.card}>
         <Field label="Match title">
@@ -78,7 +80,7 @@ export function SetupPage() {
         >
           Start Scoreboard
         </Button>
-        <Button to="/" tone="quiet">Back Home</Button>
+        <Button to={fromMatch ? "/match" : "/"} tone="quiet">{fromMatch ? "Back to Match" : "Back Home"}</Button>
       </div>
 
       <Dialog

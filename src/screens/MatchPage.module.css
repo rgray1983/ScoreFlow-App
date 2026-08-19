@@ -3,6 +3,8 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 10px;
+  min-width: 0;
+  overflow-x: hidden;
   padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 
@@ -17,35 +19,39 @@
   align-items: center;
 }
 
-.topBar,
+.topBar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .footer {
   justify-content: space-between;
   gap: 10px;
 }
 
 .left {
-  gap: 8px;
+  gap: 6px;
 }
 
-.iconButton,
-.setupLink {
+.status {
+  justify-self: end;
+  gap: 6px;
+  min-width: 0;
+  max-width: 46vw;
+}
+
+.iconButton {
   display: grid;
   place-items: center;
+  width: var(--tap);
   min-height: var(--tap);
   border-radius: 14px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--line);
-}
-
-.iconButton {
-  width: var(--tap);
-}
-
-.setupLink {
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .icon,
@@ -55,19 +61,19 @@
 }
 
 .logo {
-  width: min(36vw, 140px);
-}
-
-.status {
-  gap: 8px;
+  width: min(28vw, 112px);
+  max-height: 28px;
+  object-fit: contain;
+  justify-self: center;
 }
 
 .viewers {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .board {
@@ -354,5 +360,18 @@
   .score {
     min-width: 26vw;
     font-size: clamp(72px, 22vw, 120px);
+  }
+
+  .viewersLabel {
+    display: none;
+  }
+
+  .status {
+    max-width: none;
+  }
+
+  .iconButton {
+    width: 36px;
+    min-height: 36px;
   }
 }

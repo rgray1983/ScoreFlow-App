@@ -78,9 +78,10 @@ export function ViewerPage() {
       style={match ? { ["--home" as string]: match.homeColor, ["--away" as string]: match.awayColor } : undefined}
     >
       <header className={styles.topBar}>
+        <span className={styles.left} />
         <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
         <div className={styles.status}>
-          <span className={styles.viewers}>Viewers {viewers}</span>
+          <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{viewers}</span>
           <LivePill status={status} />
         </div>
       </header>

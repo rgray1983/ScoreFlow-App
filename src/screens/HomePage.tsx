@@ -5,7 +5,7 @@ import { Dialog } from "../ui/Dialog";
 import { ChevronIcon, SettingsIcon } from "../ui/icons";
 import { LogoMark } from "../ui/LogoMark";
 import { StackedText } from "../ui/StackedText";
-import { shouldPromptLiveReturn, shouldShowResumeMatch } from "../state/homeResume";
+import { shouldPromptLiveReturn, shouldShowResumeMatch, markResumeIntent } from "../state/homeResume";
 import { useLiveSession } from "../state/liveSession";
 import { useWorkspace } from "../state/workspace";
 import { matchHasProgress } from "../storage/matchEngine";
@@ -56,6 +56,7 @@ export function HomePage() {
 
   function resumeMatch() {
     dismissReturnPrompt();
+    markResumeIntent();
     navigate("/match");
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldPromptLiveReturn, shouldShowResumeMatch } from "./homeResume";
+import { consumeResumeIntent, markResumeIntent, shouldPromptLiveReturn, shouldShowResumeMatch } from "./homeResume";
 
 describe("shouldShowResumeMatch", () => {
   it("shows Resume Match for a live session, recovery, or in-progress local match", () => {
@@ -32,3 +32,27 @@ describe("shouldPromptLiveReturn", () => {
     ).toBe(false);
   });
 });
+
+describe("resume intent", () => {
+  it("is consumed once so a new match does not auto-reconnect the old live game", () => {
+    const storage = memorySession();
+    markResumeIntent(storage);
+    expect(consumeResumeIntent(storage)).toBe(true);
+    expect(consumeResumeIntent(storage)).toBe(false);
+  });
+});
+
+function memorySession() {
+  const data = new Map<string, string>();
+  return {
+    getItem(key: string) {
+      return data.has(key) ? data.get(key)! : null;
+    },
+    setItem(key: string, value: string) {
+      data.set(key, value);
+    },
+    removeItem(key: string) {
+      data.delete(key);
+    }
+  };
+}

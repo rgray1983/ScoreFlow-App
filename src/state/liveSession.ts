@@ -2,11 +2,13 @@ import { create } from "zustand";
 import type { MatchState } from "../scoring";
 import type { MatchDraft } from "../storage/matchSetup";
 import {
+  authErrorMessage,
   clearLiveRecovery,
   createGameId,
   createLiveGame,
   endLiveGame,
   firebaseReady,
+  isHttpUrl,
   listenViewerCount,
   loadLiveRecovery,
   liveRecoverySummary,
@@ -74,6 +76,31 @@ function sessionStillOpen(
   return state.active && state.epoch === epoch && state.gameId === gameId;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = (typeof window === "undefined" ? globalThis : window).setTimeout(() => {
+      reject(new Error(message));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+function publicLogos(draft: MatchDraft): { homeLogo: string; awayLogo: string } {
+  return {
+    homeLogo: isHttpUrl(draft.homeLogo) ? draft.homeLogo.trim() : "",
+    awayLogo: isHttpUrl(draft.awayLogo) ? draft.awayLogo.trim() : ""
+  };
+}
+
 export const useLiveSession = create<LiveSessionState>((set, get) => ({
   status: "offline",
   active: false,
@@ -119,23 +146,17 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     stopPresence();
     clearScoreTimer();
     try {
-      const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-      if (get().epoch !== epoch) return;
-      await createLiveGame(gameId, match, logos);
+      await withTimeout(
+        createLiveGame(gameId, match, publicLogos(draft)),
+        12000,
+        "Live share timed out. Check your connection and try again."
+      );
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
         active: true,
         savedAtMs: Date.now(),
         summary: liveRecoverySummary(match)
-      });
-      await writePresence(gameId, "scorer");
-      if (get().epoch !== epoch) return;
-      presenceTimer = window.setInterval(() => {
-        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
-      }, 15000);
-      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
-        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
       });
       set({
         status: "live",
@@ -145,15 +166,34 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         shareOpen: true,
         recovery: loadLiveRecovery()
       });
+      void (async () => {
+        try {
+          stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
+            if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
+          });
+          await writePresence(gameId, "scorer");
+          if (!sessionStillOpen(epoch, gameId, get())) return;
+          presenceTimer = window.setInterval(() => {
+            if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
+          }, 15000);
+          const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+          if (!sessionStillOpen(epoch, gameId, get())) return;
+          if (logos.homeLogo || logos.awayLogo) {
+            await updateLiveBranding(gameId, match, logos);
+          }
+        } catch {
+          // The QR is already up. Presence and logos can catch up on the next retry.
+        }
+      })();
     } catch (error) {
       if (get().epoch !== epoch) return;
       set({
         status: "error",
         active: false,
         gameId: reuseId ? gameId : "",
-        error: error instanceof Error ? error.message : "Live game could not be created."
+        error: authErrorMessage(error)
       });
-      throw error;
+      throw error instanceof Error ? error : new Error(authErrorMessage(error));
     }
   },
   async resumeLive(match, draft) {

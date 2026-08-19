@@ -8,12 +8,13 @@ import {
 } from "../scoring";
 import { matchFormatLabel } from "../storage/matchSetup";
 import { matchHasProgress } from "../storage/matchEngine";
+import { consumeResumeIntent, isDocumentReload } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { ShareSheet } from "../ui/ShareSheet";
-import { HomeIcon, ShareIcon, UndoIcon } from "../ui/icons";
+import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import styles from "./MatchPage.module.css";
@@ -69,7 +70,8 @@ export function MatchPage() {
 
   useEffect(() => {
     live.dismissReturnPrompt();
-    if (live.recovery?.gameId && !live.active && live.status !== "connecting") {
+    const shouldResume = consumeResumeIntent() || isDocumentReload();
+    if (shouldResume && live.recovery?.gameId && !live.active && live.status !== "connecting") {
       void live.resumeLive(match, draft);
     }
   }, []);
@@ -134,11 +136,13 @@ export function MatchPage() {
           <button className={styles.iconButton} type="button" aria-label="Home" onClick={requestHome}>
             <HomeIcon className={styles.icon} />
           </button>
-          <Link className={styles.setupLink} to="/setup">Setup</Link>
+          <Link className={styles.iconButton} to="/setup" state={{ fromMatch: true }} aria-label="Match setup">
+            <SettingsIcon className={styles.icon} />
+          </Link>
         </div>
         <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
         <div className={styles.status}>
-          <span className={styles.viewers}>Viewers {live.viewerCount}</span>
+          <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{live.viewerCount}</span>
           <LivePill status={live.status} />
         </div>
       </header>
