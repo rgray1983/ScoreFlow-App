@@ -74,3 +74,12 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+html.viewer-mode,
+html.viewer-mode body,
+html.viewer-mode #root {
+  height: auto;
+  min-height: var(--scoreflow-vh);
+  overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+}

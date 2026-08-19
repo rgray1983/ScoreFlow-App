@@ -10,6 +10,7 @@ import {
   saveMatchDraft,
   type MatchDraft
 } from "../storage/matchSetup";
+import { useLiveSession } from "./liveSession";
 
 type WorkspaceState = {
   homeTeam: HomeTeam | null;
@@ -63,11 +64,13 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       const committed = saveMatchDraft(commitMatchDraft(get().draft));
       const engine = saveMatchEngine(engineFromDraft(committed));
       set({ draft: committed, engine });
+      useLiveSession.getState().publishBranding(engine.match, committed);
       return committed;
     },
     dispatch(command) {
       const engine = saveMatchEngine(reduce(get().engine, command));
       set({ engine });
+      useLiveSession.getState().publishScore(engine.match);
       return engine;
     }
   };

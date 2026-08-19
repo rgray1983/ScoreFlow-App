@@ -6,12 +6,13 @@ type DialogProps = {
   open: boolean;
   title: string;
   copy?: string;
-  confirmLabel: string;
+  confirmLabel?: string;
   cancelLabel?: string;
-  confirmTone?: "primary" | "quiet";
-  onConfirm: () => void;
+  confirmTone?: "primary" | "gold" | "quiet";
+  onConfirm?: () => void;
   onCancel: () => void;
   children?: ReactNode;
+  actions?: ReactNode;
 };
 
 export function Dialog({
@@ -23,7 +24,8 @@ export function Dialog({
   confirmTone = "primary",
   onConfirm,
   onCancel,
-  children
+  children,
+  actions
 }: DialogProps) {
   if (!open) return null;
   return (
@@ -39,8 +41,12 @@ export function Dialog({
         {copy ? <p>{copy}</p> : null}
         {children}
         <div className={styles.actions}>
-          <Button tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Button>
-          <Button tone="quiet" onClick={onCancel}>{cancelLabel}</Button>
+          {actions ?? (
+            <>
+              {onConfirm && confirmLabel ? <Button tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Button> : null}
+              <Button tone="quiet" onClick={onCancel}>{cancelLabel}</Button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -56,8 +56,31 @@
   padding: 28px 2px 16px;
 }
 
-.primaryAction :global(a) {
+.primaryAction {
+  display: grid;
+  gap: 10px;
+}
+
+.primaryAction.withResume {
+  grid-template-columns: 1fr 1fr;
+}
+
+.primaryAction :global(a),
+.primaryAction :global(button) {
   width: 100%;
+}
+
+.resumeHint {
+  margin: 10px 2px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.liveChip {
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 .eyebrow {
