@@ -388,4 +388,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 6: fan zone chat and reactions. Do not start Phase 6 until this phase is merged.
+Phase 6: fan zone chat and reactions. Do not start Phase 6 until Richie asks. Phase 10 is look-and-feel, not the next code PR.
