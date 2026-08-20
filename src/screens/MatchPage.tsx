@@ -13,7 +13,7 @@ import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
-import { FloatingReactions } from "../ui/FloatingReactions";
+import { FanZone } from "../ui/FanZone";
 import { ResultsSheet } from "../ui/ResultsSheet";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
@@ -140,7 +140,7 @@ export function MatchPage() {
 
   return (
     <div
-      className={styles.page}
+      className={`${styles.page} ${styles.scorer}`}
       style={{ ["--home" as string]: match.homeColor, ["--away" as string]: match.awayColor }}
     >
       <header className={styles.topBar}>
@@ -171,11 +171,11 @@ export function MatchPage() {
       <main className={styles.board} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
+            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
             <div>
               <span className={styles.teamName}>{match.homeName}</span>
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
-            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
           </div>
           <div className={styles.pointActions}>
             <button
@@ -200,15 +200,17 @@ export function MatchPage() {
         </section>
 
         <section className={styles.center}>
-          <h1 className={styles.title}>{match.matchTitle}</h1>
-          <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
-          <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
-            {setFlash || banner}
-          </p>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>{match.matchTitle}</h1>
+            <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
+            <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
+              {setFlash || banner}
+            </p>
+          </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
+            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
+            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
           </div>
           <div className={styles.controls}>
             <button
@@ -238,11 +240,11 @@ export function MatchPage() {
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
+            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
             <div>
               <span className={styles.teamName}>{match.awayName}</span>
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
-            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
           </div>
           <div className={styles.pointActions}>
             <button
@@ -345,7 +347,13 @@ export function MatchPage() {
       />
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
       <ResultsSheet open={recapOpen} match={recapMatch} onClose={closeRecap} />
-      {live.gameId ? <FloatingReactions gameId={live.gameId} /> : null}
+      <FanZone
+        gameId={live.gameId}
+        chatPaused={live.chatPaused}
+        ended={!live.active}
+        role="scorer"
+        onToggleChat={live.active ? () => void live.setChatPaused(!live.chatPaused) : undefined}
+      />
     </div>
   );
 }

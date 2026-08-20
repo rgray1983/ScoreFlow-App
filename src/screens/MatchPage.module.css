@@ -25,6 +25,12 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  min-height: 48px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: clamp(10px, 1.35vw, 18px);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.72));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
 }
 
 .left {
@@ -57,12 +63,12 @@
 .iconButton {
   display: grid;
   place-items: center;
-  width: 34px;
-  min-height: 34px;
-  border-radius: 12px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--line);
+  width: 38px;
+  min-height: 38px;
+  border-radius: 999px;
+  color: #fff;
+  background: transparent;
+  border: 0;
 }
 
 .icon,
@@ -143,6 +149,14 @@
   text-align: center;
 }
 
+.identity {
+  grid-row: 1;
+}
+
+.pointActions {
+  grid-row: 3;
+}
+
 .home { grid-area: home; }
 .away { grid-area: away; }
 
@@ -167,11 +181,17 @@
   position: relative;
   z-index: 2;
   display: grid;
+  grid-template-areas: "meta" "logo";
   justify-items: center;
   gap: 8px;
 }
 
+.identity > div {
+  grid-area: meta;
+}
+
 .teamLogo {
+  grid-area: logo;
   width: clamp(104px, min(17.5vw, 34vh), 235px) !important;
   height: clamp(104px, min(17.5vw, 34vh), 235px) !important;
   border: 0;
@@ -212,6 +232,14 @@
   overflow-wrap: anywhere;
 }
 
+.home .teamName {
+  color: var(--home);
+}
+
+.away .teamName {
+  color: var(--away);
+}
+
 .sets {
   margin-top: 4px;
   color: rgba(5, 7, 12, 0.55);
@@ -226,12 +254,19 @@
   position: relative;
   z-index: 3;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(4px, 1vh, 10px);
   align-items: center;
   justify-items: center;
   padding: clamp(14px, 3.5vh, 34px) clamp(10px, 1.7vw, 22px) clamp(12px, 2.4vh, 24px);
   text-align: center;
+}
+
+.titleBlock {
+  display: grid;
+  justify-items: center;
+  gap: clamp(4px, 1vh, 10px);
+  min-width: 0;
 }
 
 .title {
@@ -309,6 +344,14 @@
   text-shadow:
     0 2px 0 rgba(255, 255, 255, 0.24),
     0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.homeScore {
+  color: var(--home);
+}
+
+.awayScore {
+  color: var(--away);
 }
 
 .scorePop {
@@ -522,32 +565,114 @@
   }
 }
 
-@media (max-width: 720px), (orientation: portrait) {
-  .board {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "center"
-      "home"
-      "away";
-    grid-template-rows: minmax(0, 1.4fr) auto auto;
+@media (orientation: portrait) {
+  .scorer {
+    grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
+    gap: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  .team {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto;
-    align-items: center;
-    justify-items: stretch;
-    padding: 10px 14px;
-    text-align: left;
+  .scorer .topBar,
+  .scorer .board {
+    min-height: 0;
+  }
+
+  .scorer .logo {
+    display: none;
+  }
+
+  .scorer .chatPause {
+    display: none;
+  }
+
+  .scorer .topBar {
+    min-height: 48px;
+    border-radius: 0;
+  }
+
+  .iconButton {
+    width: 34px;
+    min-height: 34px;
+  }
+
+  .status {
+    max-width: none;
+  }
+
+  .viewers,
+  .status :global([class*="pill"]) {
+    min-height: 24px;
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "title title"
+      "homeId awayId"
+      "scores scores";
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: clamp(3px, 0.6svh, 6px);
+    padding: clamp(8px, 1.25svh, 12px);
+  }
+
+  .scorer .board {
+    grid-template-areas:
+      "title title"
+      "homeId awayId"
+      "scores scores"
+      "homePts awayPts"
+      "actions actions";
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  }
+
+  .team,
+  .center {
+    display: contents;
+  }
+
+  .titleBlock {
+    grid-area: title;
+    gap: clamp(3px, 0.5svh, 6px);
+  }
+
+  .home .identity {
+    grid-area: homeId;
+  }
+
+  .away .identity {
+    grid-area: awayId;
+  }
+
+  .scoreRow {
+    grid-area: scores;
+    width: 100%;
+  }
+
+  .home .pointActions {
+    grid-area: homePts;
+    width: 100%;
+  }
+
+  .away .pointActions {
+    grid-area: awayPts;
+    width: 100%;
+  }
+
+  .controls {
+    grid-area: actions;
+    width: 100%;
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .identity {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-items: start;
-    gap: 12px;
-    text-align: left;
+    grid-template-areas: "logo" "meta";
+    gap: 4px;
+    padding: 7px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .teamLogo {
@@ -557,29 +682,15 @@
   }
 
   .teamName {
-    font-size: clamp(16px, 5vw, 22px);
+    font-size: clamp(13px, 4.2vw, 18px);
+    text-shadow: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .pointActions {
-    flex-direction: row;
-    width: min(42vw, 168px);
-  }
-
-  .plus,
-  .home .plus,
-  .away .plus {
-    border-radius: 14px;
-  }
-
-  .minus,
-  .home .minus,
-  .away .minus {
-    border-radius: 14px;
-  }
-
-  .center {
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-    padding: 10px 12px 8px;
+  .sets {
+    font-size: 10px;
   }
 
   .title {
@@ -599,24 +710,26 @@
 
   .score {
     font-size: clamp(86px, 22vw, 160px);
+    filter: drop-shadow(0 0 18px color-mix(in srgb, currentColor, transparent 35%));
   }
 
-  .controls {
-    width: 100%;
-    grid-template-columns: 1fr 1fr 1fr;
+  .pointActions {
+    grid-template-columns: 1.05fr 0.95fr;
   }
 
-  .viewersLabel {
-    display: none;
+  .point {
+    min-height: clamp(32px, 5.2svh, 42px);
+    padding: 6px 8px;
+    font-size: clamp(15px, 4.4vw, 21px);
   }
 
-  .status {
-    max-width: none;
-  }
-
-  .logo {
-    width: clamp(118px, 38vw, 160px);
-    max-height: 34px;
+  .plus,
+  .home .plus,
+  .away .plus,
+  .minus,
+  .home .minus,
+  .away .minus {
+    border-radius: 14px;
   }
 }
 

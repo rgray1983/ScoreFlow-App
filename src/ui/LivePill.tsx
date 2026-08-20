@@ -3,10 +3,10 @@ import styles from "./LivePill.module.css";
 type Status = "offline" | "connecting" | "live" | "error";
 
 const labels: Record<Status, string> = {
-  offline: "OFFLINE",
-  connecting: "CONNECTING",
-  live: "LIVE",
-  error: "SYNC ERROR"
+  offline: "Offline",
+  connecting: "Connecting",
+  live: "Online",
+  error: "Sync Error"
 };
 
 export function LivePill({ status = "offline" }: { status?: Status }) {
