@@ -263,7 +263,7 @@
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    animation: 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both :global(scoreflowLandscapeChatIn);
+    animation: landscapeChatIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .toast strong {
@@ -285,7 +285,7 @@
   }
 
   .toastLeaving {
-    animation: 0.72s ease forwards :global(scoreflowLandscapeChatOut);
+    animation: landscapeChatOut 0.72s ease forwards;
   }
 }
 
@@ -301,5 +301,27 @@
     min-height: clamp(26px, 5.8vh, 34px);
     height: clamp(26px, 5.8vh, 34px);
     font-size: clamp(13px, 2.7vh, 17px);
+  }
+}
+
+@keyframes landscapeChatIn {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landscapeChatOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-18px);
   }
 }

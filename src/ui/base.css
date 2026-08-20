@@ -89,6 +89,7 @@ a {
   font-size: 28px;
   line-height: 1;
   pointer-events: none;
+  animation: scoreflowFloatUp 5.2s ease-out forwards;
 }
 
 @media (orientation: portrait) {
@@ -114,28 +115,6 @@ a {
   to {
     transform: translate(var(--drift), -72vh);
     opacity: 0;
-  }
-}
-
-@keyframes scoreflowLandscapeChatIn {
-  from {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes scoreflowLandscapeChatOut {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-18px);
   }
 }
 
