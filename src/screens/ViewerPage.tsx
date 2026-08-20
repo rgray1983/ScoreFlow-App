@@ -11,6 +11,7 @@ import {
 import { FanZone } from "../ui/FanZone";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
+import { PrematchOverlay } from "../ui/PrematchOverlay";
 import styles from "./MatchPage.module.css";
 import viewerStyles from "./ViewerPage.module.css";
 
@@ -20,6 +21,11 @@ export function ViewerPage() {
   const [missing, setMissing] = useState(false);
   const [status, setStatus] = useState<"offline" | "live" | "error">("offline");
   const [viewers, setViewers] = useState(0);
+  const [watching, setWatching] = useState(false);
+
+  useEffect(() => {
+    setWatching(false);
+  }, [gameId]);
 
   useEffect(() => {
     document.documentElement.classList.add("viewer-mode");
@@ -69,6 +75,8 @@ export function ViewerPage() {
   }, [gameId]);
 
   const match = game?.match;
+  const ended = Boolean(game?.ended);
+  const showPrematch = !watching || ended;
   const banner = match ? matchBanner(match) : missing ? "GAME NOT FOUND" : "CONNECTING";
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON") || banner === "GAME NOT FOUND";
 
@@ -119,7 +127,7 @@ export function ViewerPage() {
         </section>
       </main>
 
-      {match && isMatchOver(match) && match.winner ? (
+      {match && isMatchOver(match) && match.winner && !showPrematch ? (
         <div className={styles.winner} role="status">
           <div className={styles.winnerShade} />
           <div className={styles.winnerCard}>
@@ -137,7 +145,18 @@ export function ViewerPage() {
         </div>
       ) : null}
 
-      {gameId ? <FanZone gameId={gameId} chatPaused={Boolean(game?.chatPaused)} ended={Boolean(game?.ended)} /> : null}
+      {showPrematch ? (
+        <PrematchOverlay match={match ?? null} ended={ended} onWatch={() => setWatching(true)} />
+      ) : null}
+
+      {gameId ? (
+        <FanZone
+          gameId={gameId}
+          chatPaused={Boolean(game?.chatPaused)}
+          ended={ended}
+          askName={watching && !ended}
+        />
+      ) : null}
     </div>
   );
 }

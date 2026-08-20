@@ -24,11 +24,12 @@ type FanZoneProps = {
   gameId: string;
   chatPaused: boolean;
   ended: boolean;
+  askName?: boolean;
 };
 
 type Toast = ChatMessage & { leaving?: boolean };
 
-export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
+export function FanZone({ gameId, chatPaused, ended, askName = false }: FanZoneProps) {
   const sessionId = useRef(viewerSessionId()).current;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -37,14 +38,34 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   const [nameDraft, setNameDraft] = useState(name);
   const [nameOpen, setNameOpen] = useState(false);
   const [hint, setHint] = useState("");
+  const askedEntry = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const chatCool = useRef(0);
   const reactionCool = useRef(0);
   const seenChat = useRef(new Set<string>());
 
   useEffect(() => {
-    setName(loadViewerChatName(gameId, sessionId));
+    askedEntry.current = false;
+    const existing = loadViewerChatName(gameId, sessionId);
+    setName(existing);
+    setNameDraft(existing);
   }, [gameId, sessionId]);
+
+  useEffect(() => {
+    if (!askName || askedEntry.current) return;
+    askedEntry.current = true;
+    const existing = loadViewerChatName(gameId, sessionId);
+    if (existing) {
+      setName(existing);
+      return;
+    }
+    setNameDraft("");
+    setNameOpen(true);
+  }, [askName, gameId, sessionId]);
+
+  useEffect(() => {
+    if (ended) setNameOpen(false);
+  }, [ended]);
 
   useEffect(() => {
     seenChat.current.clear();
@@ -191,10 +212,12 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
       <FloatingReactions gameId={gameId} />
       <Dialog
         open={nameOpen}
+        eyebrow="Fan Zone"
         title="What name should show in chat?"
         copy="Pick a name for this device only. Other viewers can choose their own."
         confirmLabel="Start Chatting"
-        confirmTone="gold"
+        variant="fan"
+        hideCancel
         onConfirm={saveName}
         onCancel={() => setNameOpen(false)}
       >

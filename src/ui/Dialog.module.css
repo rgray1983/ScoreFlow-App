@@ -40,6 +40,38 @@
   letter-spacing: -0.05em;
 }
 
+.card p.eyebrow {
+  margin: 0 0 8px;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fan {
+  text-align: left;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 20, 20, 0.22), transparent 38%),
+    linear-gradient(180deg, rgba(16, 24, 39, 0.98), rgba(8, 11, 18, 0.98));
+}
+
+.fan :global(label) {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.fan :global(input) {
+  min-height: 50px;
+  font-size: 17px;
+  font-weight: 900;
+}
+
 .card p {
   margin: 10px 0 0;
   color: var(--muted);

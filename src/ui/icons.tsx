@@ -72,3 +72,12 @@ export function ChevronIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M10 8.8v6.4L16 12 10 8.8Z" fill="currentColor" />
+    </svg>
+  );
+}
