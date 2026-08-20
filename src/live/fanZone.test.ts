@@ -20,7 +20,7 @@ describe("fan zone", () => {
     expect(cleanChatText("x".repeat(80))).toHaveLength(60);
   });
 
-  it("accepts only the gym reaction set", () => {
+  it("accepts only the ScoreFlow reaction set", () => {
     expect(isReactionEmoji("🏐")).toBe(true);
     expect(isReactionEmoji("💩")).toBe(false);
   });

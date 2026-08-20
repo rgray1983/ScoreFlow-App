@@ -17,7 +17,7 @@ import {
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { Field, TextInput } from "./Field";
-import { FloatingReactions } from "./FloatingReactions";
+import { FloatingReactions, type FloatingReactionsHandle } from "./FloatingReactions";
 import styles from "./FanZone.module.css";
 
 type FanZoneProps = {
@@ -26,11 +26,13 @@ type FanZoneProps = {
   ended: boolean;
 };
 
+type Toast = ChatMessage & { leaving?: boolean };
+
 export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   const sessionId = useRef(viewerSessionId()).current;
-  const [open, setOpen] = useState(false);
+  const floatsRef = useRef<FloatingReactionsHandle>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [toasts, setToasts] = useState<ChatMessage[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   const [draft, setDraft] = useState("");
   const [name, setName] = useState(() => loadViewerChatName(gameId, sessionId));
   const [nameDraft, setNameDraft] = useState(name);
@@ -54,6 +56,11 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
       seenChat.current.add(message.id);
       if (!isFreshFanEvent(message.createdAtMs)) return;
       setToasts((current) => [...current.slice(-3), message]);
+      window.setTimeout(() => {
+        setToasts((current) =>
+          current.map((item) => (item.id === message.id ? { ...item, leaving: true } : item))
+        );
+      }, 2800);
       window.setTimeout(() => {
         setToasts((current) => current.filter((item) => item.id !== message.id));
       }, 3600);
@@ -103,6 +110,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
 
   async function react(emoji: string) {
     if (ended) return;
+    floatsRef.current?.spawn(emoji);
     if (Date.now() < reactionCool.current) return;
     reactionCool.current = Date.now() + REACTION_COOLDOWN_MS;
     try {
@@ -123,15 +131,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   const empty = messages.length === 0;
 
   return (
-    <section className={`${styles.fanZone} ${open ? styles.open : ""}`} aria-label="Live fan zone">
-      <button
-        className={styles.toggle}
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        Chat
-      </button>
+    <section className={styles.fanZone} aria-label="Live fan zone">
       <div className={styles.dock}>
         <div className={styles.head}>
           <div>
@@ -170,14 +170,14 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           aria-label="Chat message"
           onChange={(event) => setDraft(event.target.value)}
         />
-        <Button type="submit" disabled={locked}>Send</Button>
+        <Button className={styles.send} type="submit" disabled={locked}>Send</Button>
         {hint ? <p className={styles.hint}>{hint}</p> : null}
       </form>
       <div className={styles.toasts} aria-live="polite">
         {toasts.map((message) => (
           <article
             key={message.id}
-            className={`${styles.toast} ${message.role === "scorer" ? styles.scorer : ""}`}
+            className={`${styles.toast} ${message.role === "scorer" ? styles.scorer : ""} ${message.leaving ? styles.toastLeaving : ""}`}
           >
             <strong>{message.role === "scorer" ? "Scorer:" : `${message.name}:`}</strong>
             {" "}
@@ -185,7 +185,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           </article>
         ))}
       </div>
-      <FloatingReactions gameId={gameId} />
+      <FloatingReactions ref={floatsRef} gameId={gameId} />
       <Dialog
         open={nameOpen}
         title="What name should show in chat?"
