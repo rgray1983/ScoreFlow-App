@@ -9,6 +9,7 @@ import {
 import { resultsBackgroundSrc } from "../storage/premium";
 import { Button } from "./Button";
 import { LogoMark } from "./LogoMark";
+import { usePortraitLock } from "./portraitLock";
 import styles from "./ResultsSheet.module.css";
 
 type ResultsSheetProps = {
@@ -21,6 +22,8 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState("");
+
+  usePortraitLock(open);
 
   useLayoutEffect(() => {
     const node = ref.current;
@@ -71,6 +74,11 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
       <button className={styles.close} type="button" aria-label="Close results" onClick={onClose}>
         ×
       </button>
+      <div className={styles.rotatePrompt}>
+        <p>Turn your phone upright</p>
+        <strong>Match Results is portrait-only</strong>
+        <small>Rotate to see the recap graphic and share it.</small>
+      </div>
       <article
         className={styles.card}
         style={{

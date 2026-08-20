@@ -121,7 +121,15 @@ export function MatchPage() {
 
   function closeWinner() {
     setWinnerOpen(false);
-    if (match.winner) setRecapOpen(true);
+  }
+
+  function closeRecap() {
+    setRecapOpen(false);
+    if (match.winner) setWinnerOpen(true);
+  }
+
+  function endMatch() {
+    void live.endLive().finally(() => navigate("/"));
   }
 
   const recapMatch = historyMatchFromLive({
@@ -204,7 +212,7 @@ export function MatchPage() {
           </div>
           <div className={styles.controls}>
             <button
-              className={`${styles.point} ${styles.undo}`}
+              className={styles.undo}
               type="button"
               disabled={!canUndo(engine)}
               onClick={() => dispatch({ type: "undo" })}
@@ -215,10 +223,16 @@ export function MatchPage() {
             <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
               New Match
             </Button>
-            <Button type="button" tone="gold" onClick={requestShare}>
-              <ShareIcon className={styles.controlIcon} />
-              {live.status === "error" ? "Retry Live" : "Share Live"}
-            </Button>
+            {over ? (
+              <Button type="button" tone="quiet" onClick={endMatch}>
+                End Match
+              </Button>
+            ) : (
+              <Button type="button" tone="gold" onClick={requestShare}>
+                <ShareIcon className={styles.controlIcon} />
+                {live.status === "error" ? "Retry Live" : "Share Live"}
+              </Button>
+            )}
           </div>
         </section>
 
@@ -258,7 +272,9 @@ export function MatchPage() {
           <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={closeWinner} />
           <div className={styles.winnerCard}>
             <p className={styles.winnerEyebrow}>Match won</p>
-            <h2 id="winner-title">{match.winner === "home" ? match.homeName : match.awayName}</h2>
+            <h2 className={styles.winnerName} id="winner-title">
+              {match.winner === "home" ? match.homeName : match.awayName}
+            </h2>
             <ul className={styles.setList}>
               {match.completedSets.map((set) => (
                 <li key={set.set}>
@@ -271,9 +287,8 @@ export function MatchPage() {
               <Button type="button" tone="gold" onClick={openRecap}>
                 Share Results
               </Button>
-              <Button type="button" tone="quiet" onClick={requestShare}>
-                <ShareIcon className={styles.controlIcon} />
-                Share Live
+              <Button type="button" tone="quiet" onClick={endMatch}>
+                End Match
               </Button>
               <Button tone="quiet" onClick={startNewMatch}>New Match</Button>
               <Button tone="quiet" disabled={!canUndo(engine)} onClick={() => dispatch({ type: "undo" })}>
@@ -329,7 +344,7 @@ export function MatchPage() {
         onCancel={() => useLiveSession.setState({ error: "" })}
       />
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
-      <ResultsSheet open={recapOpen} match={recapMatch} onClose={() => setRecapOpen(false)} />
+      <ResultsSheet open={recapOpen} match={recapMatch} onClose={closeRecap} />
       {live.gameId ? <FloatingReactions gameId={live.gameId} /> : null}
     </div>
   );

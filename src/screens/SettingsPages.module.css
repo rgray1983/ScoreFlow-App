@@ -13,7 +13,7 @@
 .accountForm,
 .accountActions {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .accountActions :global(a),
