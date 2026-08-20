@@ -4,6 +4,7 @@ import {
   matchSetCount,
   type HistoryMatch
 } from "../storage/matchHistory";
+import { resultsBackgroundSrc } from "../storage/premium";
 
 export const RESULTS_WIDTH = 1080;
 export const RESULTS_HEIGHT = 1920;
@@ -113,7 +114,7 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
   const homeColor = normalizeHex(match.homeColor, DEFAULT_HOME_COLOR);
   const awayColor = normalizeHex(match.awayColor, DEFAULT_AWAY_COLOR);
   const [bgImg, homeLogo, awayLogo, brandLogo] = await Promise.all([
-    loadCanvasImage(DEFAULT_RESULTS_BACKGROUND),
+    loadCanvasImage(resultsBackgroundSrc(match.resultBackground)),
     loadCanvasImage(match.homeLogo),
     loadCanvasImage(match.awayLogo),
     loadCanvasImage(BRAND_LOGO_SRC)

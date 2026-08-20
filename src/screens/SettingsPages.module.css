@@ -1,0 +1,169 @@
+.accountCard {
+  display: grid;
+  gap: 14px;
+}
+
+.cloudCard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.accountForm,
+.accountActions {
+  display: grid;
+  gap: 10px;
+}
+
+.accountActions :global(a),
+.accountActions :global(button) {
+  width: 100%;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  user-select: none;
+}
+
+.toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.track {
+  position: relative;
+  width: 62px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.34);
+}
+
+.knob {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #d9e1ee);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.36);
+  transform: translateY(-50%);
+  transition: transform 0.22s ease;
+}
+
+.toggle input:checked + .track {
+  border-color: rgba(251, 191, 36, 0.66);
+  background:
+    linear-gradient(180deg, rgba(251, 191, 36, 0.82), rgba(217, 119, 6, 0.86)),
+    rgba(251, 191, 36, 0.7);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.24);
+}
+
+.toggle input:checked + .track .knob {
+  transform: translate(28px, -50%);
+}
+
+.toggle > b {
+  min-width: 28px;
+  color: var(--gold-soft);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.toggleLocked .track {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toggleLocked > b {
+  color: var(--gold);
+}
+
+.choiceGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.choice {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(16, 24, 39, 0.82);
+  color: var(--text);
+  text-align: left;
+}
+
+.graphicChoice {
+  grid-template-columns: 70px 1fr auto;
+  min-height: 92px;
+}
+
+.choice :global(span) {
+  min-width: 0;
+}
+
+.choice b {
+  min-width: 24px;
+  color: var(--brand);
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1;
+}
+
+.locked b {
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.active {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.locked {
+  opacity: 0.72;
+}
+
+.themeDot,
+.graphicThumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, var(--brand), var(--panel-2));
+}
+
+.graphicThumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 18px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.theme_classic { background: linear-gradient(135deg, #ff1414, #162235); }
+.theme_championship { background: linear-gradient(135deg, #fbbf24, #221b0c); }
+.theme_neon { background: linear-gradient(135deg, #e879f9, #0ea5e9); }
+.theme_midnight { background: linear-gradient(135deg, #0f172a, #38bdf8); }
+.theme_ice { background: linear-gradient(135deg, #e0f2fe, #1d4ed8); }
+.theme_fire { background: linear-gradient(135deg, #fb923c, #991b1b); }

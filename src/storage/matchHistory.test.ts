@@ -8,10 +8,12 @@ import {
   historyMatchFromLive,
   loadMatches,
   matchSetCount,
+  mergeMatchHistory,
   parseHistoryMatch,
   recordCompletedMatch,
   resetHistorySaveGuard,
-  winnerSaveKey
+  winnerSaveKey,
+  type HistoryMatch
 } from "./matchHistory";
 
 function rallyTo(engine: MatchEngine, home: number, away: number): MatchEngine {
@@ -123,6 +125,20 @@ describe("match history", () => {
     expect(JSON.parse(storage.getItem(MATCH_HISTORY_KEY) || "[]")).toHaveLength(3);
   });
 
+  it("merges cloud history first, then leftover local matches", () => {
+    const cloud = [
+      parseHistoryMatch({ id: "cloud-1", homeName: "Cloud", awayName: "East", homeSets: 2, awaySets: 0, winnerSide: "home", updatedAtMs: 30 }),
+      parseHistoryMatch({ id: "shared", homeName: "Shared", awayName: "East", homeSets: 2, awaySets: 1, winnerSide: "home", updatedAtMs: 20 })
+    ].filter((item): item is HistoryMatch => Boolean(item));
+    const local = [
+      parseHistoryMatch({ id: "shared", homeName: "Local Shared", awayName: "East", homeSets: 2, awaySets: 1, winnerSide: "home", updatedAtMs: 40 }),
+      parseHistoryMatch({ id: "local-1", homeName: "Local", awayName: "East", homeSets: 2, awaySets: 0, winnerSide: "home", updatedAtMs: 10 })
+    ].filter((item): item is HistoryMatch => Boolean(item));
+    const merged = mergeMatchHistory(local, cloud, 10);
+    expect(merged.map((item) => item.id)).toEqual(["cloud-1", "shared", "local-1"]);
+    expect(merged[1]?.homeName).toBe("Shared");
+  });
+
   it("builds a history record from live match state", () => {
     const engine = reduce(createMatch({ homeName: "Blazers", matchTitle: "Rumble" }), { type: "point", side: "home" });
     const record = historyMatchFromLive({
@@ -132,5 +148,25 @@ describe("match history", () => {
     expect(record?.title).toBe("Rumble");
     expect(record?.winner).toBe("Blazers");
     expect(record?.homeLogo).toBe("x");
+    expect(record?.resultBackground).toBe("default");
+  });
+
+  it("keeps more than 3 matches when the Pro limit is passed", () => {
+    const storage = memoryStorage();
+    resetHistorySaveGuard();
+    for (let i = 0; i < 5; i++) {
+      resetHistorySaveGuard();
+      let engine = createMatch({ homeName: `Home ${i}`, awayName: "Visitor" });
+      engine = winSet(engine, "home");
+      engine = winSet(engine, "home");
+      recordCompletedMatch(
+        { match: engine.match, resultBackground: "neon-lights", now: 2000 + i },
+        storage,
+        10000
+      );
+    }
+    const matches = loadMatches(storage);
+    expect(matches).toHaveLength(5);
+    expect(matches[0]?.resultBackground).toBe("neon-lights");
   });
 });

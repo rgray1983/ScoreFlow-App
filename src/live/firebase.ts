@@ -1,6 +1,21 @@
 import { firebaseConfig } from "./config";
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, signInAnonymously, type Auth, type User } from "firebase/auth";
+import {
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  OAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  linkWithCredential,
+  linkWithPopup,
+  onAuthStateChanged,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  type Auth,
+  type User
+} from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
@@ -26,6 +41,28 @@ export function getFirebase() {
   return { app, auth: auth!, db: db!, storage: storage! };
 }
 
+export function currentAuthUser(): User | null {
+  if (!firebaseReady()) return null;
+  try {
+    return getFirebase().auth.currentUser;
+  } catch {
+    return null;
+  }
+}
+
+export function hasCloudAccount(user: User | null | undefined): user is User {
+  return Boolean(user && !user.isAnonymous);
+}
+
+export function accountStatusText(user: User | null | undefined): string {
+  if (hasCloudAccount(user)) return `Signed in as ${user?.email || "ScoreFlow user"}`;
+  return "Guest mode — sign in to sync teams and history.";
+}
+
+export function accountChipText(user: User | null | undefined): string {
+  return hasCloudAccount(user) ? (user?.email || "Signed In") : "Guest Mode";
+}
+
 export function authErrorMessage(error: unknown): string {
   const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
   const host = typeof location === "undefined" ? "this host" : location.hostname;
@@ -41,6 +78,11 @@ export function authErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Could not start a live ScoreFlow session";
 }
 
+export function signInErrorMessage(error: unknown, provider?: "google" | "apple"): string {
+  if (provider) return `${provider === "apple" ? "Apple" : "Google"} sign in needs to be enabled`;
+  return error instanceof Error ? error.message : "Sign in failed";
+}
+
 export async function ensureAnonymousAuth(): Promise<User> {
   const { auth: firebaseAuth } = getFirebase();
   if (typeof firebaseAuth.authStateReady === "function") {
@@ -53,5 +95,72 @@ export async function ensureAnonymousAuth(): Promise<User> {
     return credential.user;
   } catch (error) {
     throw new Error(authErrorMessage(error));
+  }
+}
+
+export function watchAuth(onUser: (user: User | null) => void): () => void {
+  const { auth: firebaseAuth } = getFirebase();
+  return onAuthStateChanged(firebaseAuth, onUser);
+}
+
+export async function emailSignIn(input: {
+  email: string;
+  password: string;
+  createAccount?: boolean;
+}): Promise<User> {
+  const { auth: firebaseAuth } = getFirebase();
+  const email = input.email.trim();
+  const password = input.password;
+  if (!email || password.length < 6) {
+    throw new Error("Enter email and 6+ character password");
+  }
+  const user = firebaseAuth.currentUser;
+  if (input.createAccount && user?.isAnonymous) {
+    const linked = await linkWithCredential(user, EmailAuthProvider.credential(email, password));
+    return linked.user;
+  }
+  if (input.createAccount) {
+    const created = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    return created.user;
+  }
+  const signedIn = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  return signedIn.user;
+}
+
+export async function providerSignIn(providerName: "google" | "apple"): Promise<User> {
+  const { auth: firebaseAuth } = getFirebase();
+  const provider = providerName === "apple"
+    ? new OAuthProvider("apple.com")
+    : new GoogleAuthProvider();
+  const user = firebaseAuth.currentUser;
+  try {
+    if (user?.isAnonymous) {
+      try {
+        const linked = await linkWithPopup(user, provider);
+        return linked.user;
+      } catch (linkError) {
+        const code = typeof linkError === "object" && linkError && "code" in linkError
+          ? String(linkError.code)
+          : "";
+        if (code !== "auth/credential-already-in-use") throw linkError;
+        const signedIn = await signInWithPopup(firebaseAuth, provider);
+        return signedIn.user;
+      }
+    }
+    const signedIn = await signInWithPopup(firebaseAuth, provider);
+    return signedIn.user;
+  } catch (error) {
+    throw new Error(signInErrorMessage(error, providerName));
+  }
+}
+
+export async function signOutAccount(): Promise<User | null> {
+  const { auth: firebaseAuth } = getFirebase();
+  if (!hasCloudAccount(firebaseAuth.currentUser)) return firebaseAuth.currentUser;
+  await signOut(firebaseAuth);
+  try {
+    return await ensureAnonymousAuth();
+  } catch {
+    return null;
   }
 }

@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
-import { ChevronIcon, SettingsIcon } from "../ui/icons";
+import { SettingsIcon } from "../ui/icons";
 import { LogoMark } from "../ui/LogoMark";
 import { MatchHistoryCard } from "../ui/MatchHistoryCard";
+import { ProCard } from "../ui/ProCard";
 import { ResultsSheet } from "../ui/ResultsSheet";
-import { StackedText } from "../ui/StackedText";
 import { shouldPromptLiveReturn, shouldShowResumeMatch, markResumeIntent } from "../state/homeResume";
+import { useAccount } from "../state/account";
 import { useLiveSession } from "../state/liveSession";
+import { usePremium } from "../state/premium";
 import { useWorkspace } from "../state/workspace";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
@@ -35,8 +37,14 @@ export function HomePage() {
     hasRecovery: Boolean(recovery),
     returnedToApp: returnPrompt
   });
-  const [history] = useState(() => loadMatches().slice(0, 3));
+  const [history, setHistory] = useState(() => loadMatches().slice(0, 3));
   const [recap, setRecap] = useState<HistoryMatch | null>(null);
+  const historyRevision = useAccount((state) => state.historyRevision);
+  const isPro = usePremium((state) => state.isPro);
+
+  useEffect(() => {
+    setHistory(loadMatches().slice(0, 3));
+  }, [historyRevision, isPro]);
 
   useEffect(() => {
     let leftApp = document.visibilityState === "hidden";
@@ -138,10 +146,7 @@ export function HomePage() {
           )}
         </section>
 
-        <Link className={`${styles.card} ${styles.navCard}`} to="/settings">
-          <StackedText title="Settings" copy="Themes, graphics, and backup." />
-          <ChevronIcon className={styles.chevron} />
-        </Link>
+        <ProCard />
       </main>
       <Dialog
         open={promptOpen}

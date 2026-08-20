@@ -52,7 +52,7 @@
   border-radius: 30px;
   background:
     linear-gradient(180deg, rgba(5, 7, 12, 0.24), rgba(5, 7, 12, 0.48)),
-    url("/images/results/default.jpg") center / cover no-repeat,
+    var(--results-background-image, url("/images/results/default.jpg")) center / cover no-repeat,
     #3a2570;
   box-shadow: var(--shadow);
   isolation: isolate;

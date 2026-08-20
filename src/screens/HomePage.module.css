@@ -182,21 +182,3 @@
   font-size: 13px;
   font-weight: 600;
 }
-
-.navCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.navCard :global(span) {
-  flex: 1;
-  min-width: 0;
-}
-
-.chevron {
-  width: 20px;
-  height: 20px;
-  color: var(--muted);
-}
