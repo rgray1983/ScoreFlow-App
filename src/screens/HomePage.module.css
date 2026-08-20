@@ -137,6 +137,12 @@
   line-height: 1.45;
 }
 
+.historyList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .textLink {
   color: var(--muted);
   font-size: 12px;

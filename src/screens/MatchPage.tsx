@@ -8,12 +8,14 @@ import {
 } from "../scoring";
 import { matchFormatLabel } from "../storage/matchSetup";
 import { matchHasProgress } from "../storage/matchEngine";
+import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { FloatingReactions } from "../ui/FloatingReactions";
+import { ResultsSheet } from "../ui/ResultsSheet";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
@@ -48,6 +50,7 @@ export function MatchPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
+  const [recapOpen, setRecapOpen] = useState(false);
   const [setFlash, setSetFlash] = useState("");
   const previousSets = useRef(match.completedSets.length);
 
@@ -88,6 +91,7 @@ export function MatchPage() {
     dispatch({ type: "newMatch" });
     setConfirmOpen(false);
     setWinnerOpen(false);
+    setRecapOpen(false);
     setSetFlash("");
   }
 
@@ -110,6 +114,22 @@ export function MatchPage() {
   function requestShare() {
     void useLiveSession.getState().goLive(match, draft);
   }
+
+  function openRecap() {
+    setWinnerOpen(false);
+    setRecapOpen(true);
+  }
+
+  function closeWinner() {
+    setWinnerOpen(false);
+    if (match.winner) setRecapOpen(true);
+  }
+
+  const recapMatch = historyMatchFromLive({
+    match,
+    homeLogo: draft.homeLogo,
+    awayLogo: draft.awayLogo
+  });
 
   return (
     <div
@@ -238,7 +258,7 @@ export function MatchPage() {
 
       {winnerOpen && match.winner ? (
         <div className={styles.winner} role="dialog" aria-labelledby="winner-title">
-          <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={() => setWinnerOpen(false)} />
+          <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={closeWinner} />
           <div className={styles.winnerCard}>
             <p className={styles.winnerEyebrow}>Match won</p>
             <h2 id="winner-title">{match.winner === "home" ? match.homeName : match.awayName}</h2>
@@ -251,7 +271,10 @@ export function MatchPage() {
               ))}
             </ul>
             <div className={styles.winnerActions}>
-              <Button type="button" tone="gold" onClick={requestShare}>
+              <Button type="button" tone="gold" onClick={openRecap}>
+                Share Results
+              </Button>
+              <Button type="button" tone="quiet" onClick={requestShare}>
                 <ShareIcon className={styles.controlIcon} />
                 Share Live
               </Button>
@@ -309,6 +332,7 @@ export function MatchPage() {
         onCancel={() => useLiveSession.setState({ error: "" })}
       />
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
+      <ResultsSheet open={recapOpen} match={recapMatch} onClose={() => setRecapOpen(false)} />
       {live.gameId ? <FloatingReactions gameId={live.gameId} /> : null}
     </div>
   );

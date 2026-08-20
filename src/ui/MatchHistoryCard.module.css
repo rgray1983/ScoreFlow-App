@@ -1,0 +1,70 @@
+.card {
+  width: 100%;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+  position: relative;
+}
+
+.win {
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, 0.28), rgba(34, 197, 94, 0.05) 70%, rgba(16, 24, 39, 0.1)),
+    rgba(16, 24, 39, 0.86);
+}
+
+.loss {
+  background:
+    linear-gradient(180deg, rgba(255, 20, 20, 0.3), rgba(255, 20, 20, 0.06) 70%, rgba(16, 24, 39, 0.1)),
+    rgba(16, 24, 39, 0.86);
+}
+
+.team {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.away {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.score span {
+  color: var(--muted);
+  font-weight: 800;
+}

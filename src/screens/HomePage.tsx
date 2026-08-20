@@ -1,14 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { ChevronIcon, SettingsIcon } from "../ui/icons";
 import { LogoMark } from "../ui/LogoMark";
+import { MatchHistoryCard } from "../ui/MatchHistoryCard";
+import { ResultsSheet } from "../ui/ResultsSheet";
 import { StackedText } from "../ui/StackedText";
 import { shouldPromptLiveReturn, shouldShowResumeMatch, markResumeIntent } from "../state/homeResume";
 import { useLiveSession } from "../state/liveSession";
 import { useWorkspace } from "../state/workspace";
 import { matchHasProgress } from "../storage/matchEngine";
+import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -32,6 +35,8 @@ export function HomePage() {
     hasRecovery: Boolean(recovery),
     returnedToApp: returnPrompt
   });
+  const [history] = useState(() => loadMatches().slice(0, 3));
+  const [recap, setRecap] = useState<HistoryMatch | null>(null);
 
   useEffect(() => {
     let leftApp = document.visibilityState === "hidden";
@@ -122,7 +127,15 @@ export function HomePage() {
             <h2>Match History</h2>
             <Link className={styles.textLink} to="/history">Show more</Link>
           </div>
-          <p className={styles.empty}>Completed matches will show up here.</p>
+          {history.length ? (
+            <div className={styles.historyList}>
+              {history.map((match) => (
+                <MatchHistoryCard key={match.id} match={match} onOpen={setRecap} />
+              ))}
+            </div>
+          ) : (
+            <p className={styles.empty}>Completed matches will show up here.</p>
+          )}
         </section>
 
         <Link className={`${styles.card} ${styles.navCard}`} to="/settings">
@@ -143,6 +156,7 @@ export function HomePage() {
           </>
         }
       />
+      <ResultsSheet open={Boolean(recap)} match={recap} onClose={() => setRecap(null)} />
     </div>
   );
 }

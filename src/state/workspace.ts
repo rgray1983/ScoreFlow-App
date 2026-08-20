@@ -3,6 +3,7 @@ import { reduce, type Command, type MatchEngine } from "../scoring";
 import type { HomeTeam } from "../storage/homeTeam";
 import { loadHomeTeam, saveHomeTeamRecord } from "../storage/homeTeam";
 import { engineFromDraft, loadMatchEngine, saveMatchEngine } from "../storage/matchEngine";
+import { recordCompletedMatch, resetHistorySaveGuard } from "../storage/matchHistory";
 import {
   commitMatchDraft,
   loadMatchDraft,
@@ -63,6 +64,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
     startMatch() {
       const committed = saveMatchDraft(commitMatchDraft(get().draft));
       const engine = saveMatchEngine(engineFromDraft(committed));
+      resetHistorySaveGuard();
       set({ draft: committed, engine });
       useLiveSession.getState().publishBranding(engine.match, committed);
       return committed;
@@ -71,6 +73,14 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       const engine = saveMatchEngine(reduce(get().engine, command));
       set({ engine });
       useLiveSession.getState().publishScore(engine.match);
+      if (command.type === "newMatch") resetHistorySaveGuard();
+      if (engine.match.winner) {
+        recordCompletedMatch({
+          match: engine.match,
+          homeLogo: get().draft.homeLogo,
+          awayLogo: get().draft.awayLogo
+        });
+      }
       return engine;
     }
   };

@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 6 fan zone is in review. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. The Vite rebuild can share a live game, and the viewer Fan Zone should match that current app. History is still Phase 7. Phase 10 is remaining visual polish after the features exist — not permission to ship a different Fan Zone.
+Phase 7 history + results graphic is in review. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. Completed matches save locally and can share a results PNG. Settings/Pro stay Phase 8. Phase 10 is remaining visual polish after the features exist.
 
 ## Why rebuild
 
@@ -329,12 +329,15 @@ Copy the current ScoreFlow Fan Zone from `index.html` / `app.js` / `style.css`. 
 
 ### Phase 7 — History + results graphic
 
-- Save completed matches locally first
-- History list and recap
-- One-tap share/download of the results PNG
-- Escape names in the UI (no raw `innerHTML` of team names)
+Copy the current ScoreFlow history and results graphic from `index.html` / `app.js` / `style.css`.
 
-**Done when:** After match point, the scorer can share a results image from the same overlay.
+- Save completed matches locally first under `scoreflowMatchHistoryV2`
+- Home shows the latest 3. `/history` lists saved matches. Tap a card to open the recap
+- After match point, the winner overlay can open the recap. Share/Download Results makes the PNG
+- Names render as React text. Do not use `innerHTML` for team names
+- Cloud backup and Pro unlimited history stay Phase 8
+
+**Done when:** After match point, the scorer can share a results image from the winner overlay / recap. Richie has tested locally.
 
 ### Phase 8 — Settings, themes, account
 
@@ -393,4 +396,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 7: history + results graphic. Do not start Phase 7 until this phase is merged.
+Phase 8: settings, themes, account. Do not start Phase 8 until this phase is merged.
