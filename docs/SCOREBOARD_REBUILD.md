@@ -400,4 +400,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 10: style and polish the scoreboard. Do not start Phase 9 Cutover until this phase is merged.
+After this polish is merged: Phase 9 Cutover. Do not start Cutover until Richie has signed off side-by-side.
