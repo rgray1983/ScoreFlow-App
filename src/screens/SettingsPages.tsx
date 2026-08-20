@@ -44,7 +44,7 @@ export function SettingsGraphicsPage() {
     <InnerScreen
       eyebrow="Background Graphics"
       title="Results That Pop."
-      copy="Result backgrounds will be picked here after history graphics land."
+      copy="The default results background is used for Share/Download Results. More graphics wait for Settings in Phase 8."
       backTo="/settings"
     >
       <section className={styles.card}>

@@ -1,0 +1,121 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { shareResultsGraphic } from "../graphics/results";
+import {
+  formatMatchDate,
+  matchSetCount,
+  type HistoryMatch
+} from "../storage/matchHistory";
+import { Button } from "./Button";
+import { LogoMark } from "./LogoMark";
+import styles from "./ResultsSheet.module.css";
+
+type ResultsSheetProps = {
+  open: boolean;
+  match: HistoryMatch | null;
+  onClose: () => void;
+};
+
+export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [hint, setHint] = useState("");
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (open && !node.open) {
+      try {
+        node.showModal();
+      } catch {
+        node.setAttribute("open", "");
+      }
+    }
+    return () => {
+      if (node.open) node.close();
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) setHint("");
+  }, [open, match?.id]);
+
+  if (!open || !match || typeof document === "undefined") return null;
+
+  const recap = match;
+  const rows = Array.from({ length: matchSetCount(recap) }, (_, index) => recap.completedSets[index] ?? null);
+
+  async function share() {
+    setBusy(true);
+    setHint("");
+    try {
+      await shareResultsGraphic(recap);
+    } catch {
+      setHint("Results image could not be created");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return createPortal(
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      aria-labelledby="results-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
+      <button className={styles.close} type="button" aria-label="Close results" onClick={onClose}>
+        ×
+      </button>
+      <article
+        className={styles.card}
+        style={{
+          ["--results-home-score-color" as string]: match.homeColor,
+          ["--results-away-score-color" as string]: match.awayColor
+        }}
+      >
+        <time className={styles.date}>{formatMatchDate(match.updatedAtMs)}</time>
+        <div className={styles.topLogo}>
+          <LogoMark className={styles.mainLogo} name={match.homeName} logo={match.homeLogo} />
+        </div>
+        <div className={styles.titleBlock}>
+          <span>Match Result</span>
+          <h3 id="results-title">{match.title}</h3>
+        </div>
+        <div className={styles.matchup}>
+          <LogoMark className={styles.logo} name={match.homeName} logo={match.homeLogo} />
+          <strong className={`${styles.bar} ${styles.homeBar}`}>{match.homeName}</strong>
+          <span className={styles.vs}>VS</span>
+          <strong className={`${styles.bar} ${styles.awayBar}`}>{match.awayName}</strong>
+          <LogoMark className={styles.logo} name={match.awayName} logo={match.awayLogo} />
+        </div>
+        <div className={styles.table} aria-label="Set scores">
+          {rows.map((set, index) => (
+            <div
+              key={set ? `set-${set.set}` : `empty-${index}`}
+              className={styles.row}
+              style={{ ["--row-delay" as string]: `${index * 95}ms` }}
+            >
+              <strong>{set ? set.homeScore : "–"}</strong>
+              <span />
+              <strong>{set ? set.awayScore : "–"}</strong>
+            </div>
+          ))}
+        </div>
+        <small className={styles.powered}>
+          Presented by <img src="/scoreflow-logo.png" alt="ScoreFlow" />
+        </small>
+      </article>
+      <div className={styles.actions}>
+        <Button tone="gold" disabled={busy} onClick={() => void share()}>
+          {busy ? "Preparing…" : "Share/Download Results"}
+        </Button>
+        {hint ? <p className={styles.hint}>{hint}</p> : null}
+      </div>
+    </dialog>,
+    document.body
+  );
+}
