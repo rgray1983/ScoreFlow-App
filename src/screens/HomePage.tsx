@@ -96,7 +96,7 @@ export function HomePage() {
           <p>Set your home team once. Start scoring in seconds.</p>
         </div>
         <div className={`${styles.primaryAction} ${showResume ? styles.withResume : ""}`}>
-          <Button to="/setup">Start a Match</Button>
+          <Button to="/setup">Start A Match</Button>
           {showResume ? (
             <Button tone="gold" onClick={resumeMatch}>Resume Match</Button>
           ) : null}

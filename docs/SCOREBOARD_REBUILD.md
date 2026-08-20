@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 8 settings, themes, and account is in review. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. Signed-in Pro preview users can backup history; guests can still score live. Phase 9 is Cutover. Phase 10 is remaining visual polish after the features exist.
+Phase 8 is merged. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. **Phase 10 polish ships before Phase 9 Cutover.** Production stays on the current app until the rebuild looks right and Richie has signed off side-by-side.
 
 ## Why rebuild
 
@@ -30,7 +30,7 @@ The rebuild keeps the same product and replaces the foundation.
 | Scoring | Pure TypeScript reducer with Vitest. No DOM. No Firebase. |
 | State | Scoring reducer + a thin UI store (Zustand). |
 | Backend | Same Firebase project: Auth, Firestore, Storage, later Functions |
-| Hosting | Same as today until cutover, then the Vite production build |
+| Hosting | Same as today until after Phase 10 polish is signed off, then Cutover serves the Vite production build |
 | Payments | Not in the first rebuild. Pro may keep a clearly labeled Preview. |
 | Native / App Store | Not now. PWA only. |
 | Coach | Separate repo. This app may later expose a live game ID. That is all. |
@@ -206,7 +206,7 @@ The current ScoreFlow app keeps shipping from the current root files until Cutov
 
 Each phase adds new code beside the old app, or ports one screen onto the new kernel, without breaking `index.html`.
 
-Cutover is a dedicated phase: Vite becomes the production entry. Keep `app.js` until Phase 10 so polish can still match the current board, then delete the old CSS/HTML.
+Cutover is a dedicated phase after polish: Vite becomes the production entry. Keep `app.js` through Phase 10 as the live product and the look-and-feel reference. Delete the old CSS/HTML only after Cutover.
 
 ## Local testing
 
@@ -256,7 +256,7 @@ Then open http://localhost:5173 when the phase has UI to click.
 
 ## Build order
 
-Do these in order. Do not skip ahead to results graphics or Pro themes before Undo and live viewer work.
+Do these in order, with one exception: **Phase 10 polish comes before Phase 9 Cutover.** Do not skip ahead to results graphics or Pro themes before Undo and live viewer work. Do not cut over production until the rebuild looks and feels like the current board.
 
 ### Phase 0 — Plan (this document)
 
@@ -351,34 +351,36 @@ Copy the current ScoreFlow settings, themes, graphics, Pro preview, and signed-i
 
 **Done when:** A signed-in user can backup history, and a guest still can score live. Richie has tested locally.
 
-### Phase 9 — Cutover
-
-- Production hosting serves the Vite build
-- Redirect or replace the old `app.js` entry
-- Keep `app.js` and unused current-app CSS/HTML in the repo until Phase 10 — they are the look-and-feel reference
-- Keep Firestore rules tests green
-- Add one Playwright (or similar) test: scorer point appears on viewer
-
-**Done when:** A live match still works on a hard refresh of the PWA served from the Vite build. The current-app files may still be in the repo for Phase 10.
-
 ### Phase 10 — Style and polish the scoreboard
 
-The rebuild must look and feel like the current ScoreFlow scoreboard, not a different product. This phase is remaining visual polish. No new features.
+Ships **before** Cutover. The rebuild must look and feel like the current ScoreFlow scoreboard, not a different product. This phase is remaining visual polish. No new features. Production stays on root `index.html` / `app.js`.
 
-- Side-by-side with the current `index.html` / `app.js` board on phone and iPad
+- Side-by-side with the current `index.html` / `app.js` board (live GitHub Pages app vs http://localhost:5173)
 - Dark arena `#080b12`, brand red `#ff1414`, gold `#fbbf24`, Anton scores, Inter UI
-- Match + viewer as an LED board: huge digits, team-color underglow, court-line ticks, one layout that reflows
+- Match + viewer copy the current broadcast board: huge digits, team-color underglow, one layout that reflows
 - Same tap language as the current app: +1 is the primary hit, −1 quieter, Undo visible
 - Live pill, viewer count, winner overlay, and share sheet match the current-app weight and placement
 - Apply the Look and feel polish list (button hierarchy, icons, type, motion)
 - Home and Setup stay ScoreFlow cards, not a dashboard
-- Then delete `app.js` and unused legacy CSS/HTML
+- Keep `app.js` — it is still the live product and the look reference
 
-**Done when:** A scorer who knows the current ScoreFlow app recognizes this board. Richie has signed off side-by-side. The old tournament files are gone.
+**Done when:** A scorer who knows the current ScoreFlow app recognizes this board. Richie has signed off side-by-side.
+
+### Phase 9 — Cutover
+
+Do not start until Phase 10 is merged.
+
+- Production hosting serves the Vite build
+- Redirect or replace the old `app.js` entry
+- Then delete `app.js` and unused current-app CSS/HTML
+- Keep Firestore rules tests green
+- Add one Playwright (or similar) test: scorer point appears on viewer
+
+**Done when:** A live match still works on a hard refresh of the PWA served from the Vite build. The old tournament files are gone.
 
 ## Later, after cutover and polish (still scoreboard, still not Coach)
 
-Only after Phase 10:
+Only after Cutover and polish:
 
 - Serving-team indicator
 - Running set-score strip for viewers (25-18, 20-25, 8-7)
@@ -398,4 +400,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 9: Cutover. Do not start Phase 9 until this phase is merged.
+Phase 10: style and polish the scoreboard. Do not start Phase 9 Cutover until this phase is merged.

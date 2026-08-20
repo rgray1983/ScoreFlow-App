@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { isMatchOver, matchBanner } from "../scoring";
-import { matchFormatLabel } from "../storage/matchSetup";
 import {
   ensureAnonymousAuth,
   listenLiveGame,
@@ -90,33 +89,32 @@ export function ViewerPage() {
       <main className={styles.board} aria-label="Live volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
             <div>
               <span className={styles.teamName}>{match?.homeName || "Home"}</span>
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
             </div>
+            <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
           </div>
         </section>
 
         <section className={styles.center}>
-          <span className={styles.pill}>{match ? matchFormatLabel(match.matchFormat) : "Live viewer"}</span>
           <h1 className={styles.title}>{match?.matchTitle || "ScoreFlow"}</h1>
-          <p className={styles.setLabel}>{match ? `SET ${match.setNumber}` : "SET"}</p>
+          <p className={styles.setBox}><span>Set <strong>{match?.setNumber ?? 1}</strong></span></p>
           <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>{banner}</p>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore}`}>{match?.homeScore ?? 0}</span>
-            <span className={styles.colon} aria-hidden="true">:</span>
-            <span className={`${styles.score} ${styles.awayScore}`}>{match?.awayScore ?? 0}</span>
+            <span className={styles.score}>{match?.homeScore ?? 0}</span>
+            <span className={styles.colon} aria-hidden="true" />
+            <span className={styles.score}>{match?.awayScore ?? 0}</span>
           </div>
         </section>
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
             <div>
               <span className={styles.teamName}>{match?.awayName || "Visitor"}</span>
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
             </div>
+            <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
           </div>
         </section>
       </main>

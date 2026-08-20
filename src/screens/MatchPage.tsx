@@ -6,7 +6,6 @@ import {
   matchBanner,
   type Side
 } from "../scoring";
-import { matchFormatLabel } from "../storage/matchSetup";
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent } from "../state/homeResume";
@@ -164,11 +163,11 @@ export function MatchPage() {
       <main className={styles.board} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
             <div>
               <span className={styles.teamName}>{match.homeName}</span>
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
+            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
           </div>
           <div className={styles.pointActions}>
             <button
@@ -193,35 +192,43 @@ export function MatchPage() {
         </section>
 
         <section className={styles.center}>
-          <span className={styles.pill}>{matchFormatLabel(match.matchFormat)}</span>
           <h1 className={styles.title}>{match.matchTitle}</h1>
-          <p className={styles.setLabel}>SET {match.setNumber}</p>
+          <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
           <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
             {setFlash || banner}
           </p>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
-            <span className={styles.colon} aria-hidden="true">:</span>
-            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
+            <span className={`${styles.score} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
+            <span className={styles.colon} aria-hidden="true" />
+            <span className={`${styles.score} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
           </div>
-          <button
-            className={`${styles.point} ${styles.undo}`}
-            type="button"
-            disabled={!canUndo(engine)}
-            onClick={() => dispatch({ type: "undo" })}
-          >
-            <UndoIcon className={styles.controlIcon} />
-            Undo
-          </button>
+          <div className={styles.controls}>
+            <button
+              className={`${styles.point} ${styles.undo}`}
+              type="button"
+              disabled={!canUndo(engine)}
+              onClick={() => dispatch({ type: "undo" })}
+            >
+              <UndoIcon className={styles.controlIcon} />
+              Undo
+            </button>
+            <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
+              New Match
+            </Button>
+            <Button type="button" tone="gold" onClick={requestShare}>
+              <ShareIcon className={styles.controlIcon} />
+              {live.status === "error" ? "Retry Live" : "Share Live"}
+            </Button>
+          </div>
         </section>
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
             <div>
               <span className={styles.teamName}>{match.awayName}</span>
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
+            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
           </div>
           <div className={styles.pointActions}>
             <button
@@ -246,16 +253,6 @@ export function MatchPage() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
-          New Match
-        </Button>
-        <Button type="button" tone="gold" onClick={requestShare}>
-          <ShareIcon className={styles.controlIcon} />
-          {live.status === "error" ? "Retry Live" : "Share Live"}
-        </Button>
-      </footer>
-
       {winnerOpen && match.winner ? (
         <div className={styles.winner} role="dialog" aria-labelledby="winner-title">
           <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={closeWinner} />
@@ -278,7 +275,7 @@ export function MatchPage() {
                 <ShareIcon className={styles.controlIcon} />
                 Share Live
               </Button>
-              <Button onClick={startNewMatch}>New Match</Button>
+              <Button tone="quiet" onClick={startNewMatch}>New Match</Button>
               <Button tone="quiet" disabled={!canUndo(engine)} onClick={() => dispatch({ type: "undo" })}>
                 Undo last point
               </Button>
