@@ -26,6 +26,7 @@ const liveMocks = vi.hoisted(() => {
     writePresence: vi.fn(async () => {}),
     ensureAnonymousAuth: vi.fn(async () => ({ uid: "scorer" })),
     listenViewerCount: vi.fn(() => vi.fn()),
+    setLiveChatPaused: vi.fn(async () => {}),
     loadLiveRecovery: vi.fn(() => stored),
     saveLiveRecovery: vi.fn((recovery: LiveRecovery) => {
       stored = recovery;
@@ -50,6 +51,7 @@ vi.mock("../live", async (importOriginal) => {
     writePresence: liveMocks.writePresence,
     ensureAnonymousAuth: liveMocks.ensureAnonymousAuth,
     listenViewerCount: liveMocks.listenViewerCount,
+    setLiveChatPaused: liveMocks.setLiveChatPaused,
     loadLiveRecovery: liveMocks.loadLiveRecovery,
     saveLiveRecovery: liveMocks.saveLiveRecovery,
     clearLiveRecovery: liveMocks.clearLiveRecovery
@@ -72,7 +74,8 @@ function resetSession(): void {
     error: "",
     shareOpen: false,
     recovery: null,
-    returnPrompt: false
+    returnPrompt: false,
+    chatPaused: false
   });
 }
 
@@ -90,11 +93,13 @@ describe("live session", () => {
     liveMocks.clearLiveRecovery.mockClear();
     liveMocks.writePresence.mockClear();
     liveMocks.ensureAnonymousAuth.mockClear();
+    liveMocks.setLiveChatPaused.mockClear();
     liveMocks.createLiveGame.mockImplementation(async () => {});
     liveMocks.uploadMatchLogos.mockImplementation(async () => ({ homeLogo: "", awayLogo: "" }));
     liveMocks.updateLiveScore.mockImplementation(async () => {});
     liveMocks.writePresence.mockImplementation(async () => {});
     liveMocks.ensureAnonymousAuth.mockImplementation(async () => ({ uid: "scorer" }));
+    liveMocks.setLiveChatPaused.mockImplementation(async () => {});
   });
 
   afterEach(() => {
@@ -239,5 +244,13 @@ describe("live session", () => {
     expect(useLiveSession.getState().status).toBe("offline");
     expect(useLiveSession.getState().active).toBe(false);
     expect(liveMocks.stored()).toBeNull();
+  });
+
+  it("pauses chat on the live game without ending the session", async () => {
+    await useLiveSession.getState().goLive(match, draft);
+    await useLiveSession.getState().setChatPaused(true);
+    expect(useLiveSession.getState().chatPaused).toBe(true);
+    expect(useLiveSession.getState().active).toBe(true);
+    expect(liveMocks.setLiveChatPaused).toHaveBeenCalledWith("id-a", true);
   });
 });

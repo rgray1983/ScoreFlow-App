@@ -66,12 +66,55 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not(.scoreflow-floating-reaction),
+  *:not(.scoreflow-floating-reaction)::before,
+  *:not(.scoreflow-floating-reaction)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+.scoreflow-floating-reactions {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.scoreflow-floating-reaction {
+  position: absolute;
+  bottom: 80px;
+  font-size: 28px;
+  line-height: 1;
+  pointer-events: none;
+  animation: scoreflowFloatUp 5.2s ease-out forwards;
+}
+
+@media (orientation: portrait) {
+  .scoreflow-floating-reaction {
+    bottom: 30svh;
+  }
+}
+
+@media (orientation: landscape) {
+  html.viewer-mode .scoreflow-floating-reaction {
+    bottom: clamp(58px, 7vw, 92px);
+    font-size: clamp(24px, 3.2vw, 42px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  html.viewer-mode .scoreflow-floating-reaction {
+    bottom: clamp(42px, 10vh, 58px);
+  }
+}
+
+@keyframes scoreflowFloatUp {
+  to {
+    transform: translate(var(--drift), -72vh);
+    opacity: 0;
   }
 }
 

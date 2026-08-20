@@ -13,6 +13,7 @@ import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
+import { FloatingReactions } from "../ui/FloatingReactions";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
@@ -127,6 +128,15 @@ export function MatchPage() {
         <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
         <div className={styles.status}>
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{live.viewerCount}</span>
+          {live.active ? (
+            <button
+              className={styles.chatPause}
+              type="button"
+              onClick={() => void live.setChatPaused(!live.chatPaused)}
+            >
+              {live.chatPaused ? "Chat Off" : "Chat On"}
+            </button>
+          ) : null}
           <LivePill status={live.status} />
         </div>
       </header>
@@ -299,6 +309,7 @@ export function MatchPage() {
         onCancel={() => useLiveSession.setState({ error: "" })}
       />
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
+      {live.gameId ? <FloatingReactions gameId={live.gameId} /> : null}
     </div>
   );
 }

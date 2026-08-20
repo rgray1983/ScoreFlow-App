@@ -1,3 +1,22 @@
 .page {
-  overflow: auto;
+  overflow: hidden;
+}
+
+@media (orientation: portrait) {
+  .page {
+    grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
+    gap: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .page :global(header),
+  .page :global(main) {
+    min-height: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  .page {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
 }

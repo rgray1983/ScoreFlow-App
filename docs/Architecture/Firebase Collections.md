@@ -28,6 +28,8 @@ Subcollections:
 - `reactions/{reactionId}` — emoji reactions (`emoji`, `uid`, timestamps)
 - `presence/{uid}` — live viewer/scorer heartbeat (`role`, `uid`, timestamps)
 
+The live game document may include `chatPaused` so the scorer can pause viewer chat without ending the match.
+
 Reads of a known game and its fan-zone subcollections are public so viewer links work. Writes require authentication. Only `ownerId` can change the live score document.
 
 ## Planned Coach collections

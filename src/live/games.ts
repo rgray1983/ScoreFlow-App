@@ -16,6 +16,7 @@ export type LiveGameView = {
   homeLogo: string;
   awayLogo: string;
   ended: boolean;
+  chatPaused: boolean;
   ownerId: string;
 };
 
@@ -34,6 +35,7 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
     homeLogo: typeof record.homeLogo === "string" && !record.homeLogo.startsWith("data:") ? record.homeLogo : "",
     awayLogo: typeof record.awayLogo === "string" && !record.awayLogo.startsWith("data:") ? record.awayLogo : "",
     ended: Boolean(record.ended),
+    chatPaused: Boolean(record.chatPaused),
     ownerId: String(record.ownerId || "")
   };
 }
@@ -48,6 +50,7 @@ export async function createLiveGame(
     ...scoreFields(match),
     ...brandingFields(logos),
     ownerId: user.uid,
+    chatPaused: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     updatedAtMs: Date.now()
@@ -86,6 +89,16 @@ export async function endLiveGame(gameId: string): Promise<void> {
     ended: true,
     endedAt: serverTimestamp(),
     endedAtMs: Date.now(),
+    updatedAt: serverTimestamp(),
+    updatedAtMs: Date.now()
+  }, { merge: true });
+}
+
+export async function setLiveChatPaused(gameId: string, paused: boolean): Promise<void> {
+  const user = await ensureAnonymousAuth();
+  await setDoc(gameRef(gameId), {
+    ownerId: user.uid,
+    chatPaused: paused,
     updatedAt: serverTimestamp(),
     updatedAtMs: Date.now()
   }, { merge: true });

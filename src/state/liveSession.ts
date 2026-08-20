@@ -16,6 +16,7 @@ import {
   uploadMatchLogos,
   viewerUrl,
   writePresence,
+  setLiveChatPaused,
   type LiveRecovery
 } from "../live";
 
@@ -35,9 +36,11 @@ type LiveSessionState = {
   shareOpen: boolean;
   recovery: LiveRecovery | null;
   returnPrompt: boolean;
+  chatPaused: boolean;
   goLive: (match: MatchState, draft: MatchDraft, options?: GoLiveOptions) => Promise<void>;
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
+  setChatPaused: (paused: boolean) => Promise<void>;
   publishScore: (match: MatchState) => void;
   publishBranding: (match: MatchState, draft: MatchDraft) => void;
   openShare: () => void;
@@ -84,6 +87,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   shareOpen: false,
   recovery: loadLiveRecovery(),
   returnPrompt: Boolean(loadLiveRecovery()),
+  chatPaused: false,
   openShare() {
     set({ shareOpen: true });
   },
@@ -139,7 +143,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         gameId,
         error: "",
         shareOpen: true,
-        recovery: loadLiveRecovery()
+        recovery: loadLiveRecovery(),
+        chatPaused: false
       });
       const beat = () => {
         if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
@@ -191,7 +196,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       error: "",
       shareOpen: false,
       recovery: null,
-      returnPrompt: false
+      returnPrompt: false,
+      chatPaused: false
     });
     if (gameId) {
       try {
@@ -199,6 +205,17 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       } catch {
         // Local end still clears recovery so the scorer can leave the gym.
       }
+    }
+  },
+  async setChatPaused(paused) {
+    const { gameId, active } = get();
+    if (!gameId || !active) return;
+    const previous = get().chatPaused;
+    set({ chatPaused: paused });
+    try {
+      await setLiveChatPaused(gameId, paused);
+    } catch {
+      if (get().gameId === gameId) set({ chatPaused: previous });
     }
   },
   publishScore(match) {
