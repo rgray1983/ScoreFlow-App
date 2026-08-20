@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./Button";
 import styles from "./Dialog.module.css";
 
@@ -27,16 +28,47 @@ export function Dialog({
   children,
   actions
 }: DialogProps) {
-  if (!open) return null;
-  return (
-    <div className={styles.shade} role="presentation" onClick={onCancel}>
-      <div
-        className={styles.card}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dialog-title"
-        onClick={(event) => event.stopPropagation()}
-      >
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (open && !node.open) {
+      try {
+        node.showModal();
+      } catch {
+        node.setAttribute("open", "");
+      }
+    }
+    return () => {
+      if (node.open) node.close();
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const node = ref.current;
+    const input = node?.querySelector<HTMLInputElement>("input, textarea, select");
+    const timer = window.setTimeout(() => input?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      aria-labelledby="dialog-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onCancel();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div className={styles.card} onClick={(event) => event.stopPropagation()}>
         <h2 id="dialog-title">{title}</h2>
         {copy ? <p>{copy}</p> : null}
         {children}
@@ -49,6 +81,7 @@ export function Dialog({
           )}
         </div>
       </div>
-    </div>
+    </dialog>,
+    document.body
   );
 }

@@ -17,7 +17,7 @@ import {
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { Field, TextInput } from "./Field";
-import { FloatingReactions, type FloatingReactionsHandle } from "./FloatingReactions";
+import { FloatingReactions, spawnFloatingReaction } from "./FloatingReactions";
 import styles from "./FanZone.module.css";
 
 type FanZoneProps = {
@@ -30,7 +30,6 @@ type Toast = ChatMessage & { leaving?: boolean };
 
 export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   const sessionId = useRef(viewerSessionId()).current;
-  const floatsRef = useRef<FloatingReactionsHandle>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [draft, setDraft] = useState("");
@@ -110,7 +109,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
 
   async function react(emoji: string) {
     if (ended) return;
-    floatsRef.current?.spawn(emoji);
+    spawnFloatingReaction(emoji);
     if (Date.now() < reactionCool.current) return;
     reactionCool.current = Date.now() + REACTION_COOLDOWN_MS;
     try {
@@ -122,9 +121,13 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
 
   function saveName() {
     const next = saveViewerChatName(gameId, nameDraft, sessionId);
-    if (!next) return;
+    if (!next) {
+      setHint("Enter a chat name first");
+      return;
+    }
     setName(next);
     setNameOpen(false);
+    setHint("");
   }
 
   const locked = ended || chatPaused;
@@ -185,7 +188,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           </article>
         ))}
       </div>
-      <FloatingReactions ref={floatsRef} gameId={gameId} />
+      <FloatingReactions gameId={gameId} />
       <Dialog
         open={nameOpen}
         title="What name should show in chat?"

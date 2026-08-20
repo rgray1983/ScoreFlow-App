@@ -146,33 +146,7 @@
   display: none;
 }
 
-.floats {
-  position: fixed;
-  inset: 0;
-  z-index: 33;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.float {
-  position: absolute;
-  bottom: 80px;
-  font-size: 28px;
-  animation: floatUp 5.2s ease-out forwards;
-}
-
-@keyframes floatUp {
-  to {
-    transform: translate(var(--drift), -72vh);
-    opacity: 0;
-  }
-}
-
 @media (orientation: portrait) {
-  .float {
-    bottom: 30svh;
-  }
-
   .reactions button {
     height: clamp(28px, 4.8svh, 36px);
     min-height: 0;
@@ -289,7 +263,7 @@
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    animation: landscapeChatIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both :global(scoreflowLandscapeChatIn);
   }
 
   .toast strong {
@@ -311,12 +285,7 @@
   }
 
   .toastLeaving {
-    animation: landscapeChatOut 0.72s ease forwards;
-  }
-
-  :global(html.viewer-mode) .float {
-    bottom: clamp(58px, 7vw, 92px);
-    font-size: clamp(24px, 3.2vw, 42px);
+    animation: 0.72s ease forwards :global(scoreflowLandscapeChatOut);
   }
 }
 
@@ -332,43 +301,5 @@
     min-height: clamp(26px, 5.8vh, 34px);
     height: clamp(26px, 5.8vh, 34px);
     font-size: clamp(13px, 2.7vh, 17px);
-  }
-
-  :global(html.viewer-mode) .float {
-    bottom: clamp(42px, 10vh, 58px);
-  }
-}
-
-@keyframes landscapeChatIn {
-  from {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes landscapeChatOut {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .float {
-    animation: none;
-    opacity: 0.85;
-  }
-
-  .toast,
-  .toastLeaving {
-    animation: none;
   }
 }
