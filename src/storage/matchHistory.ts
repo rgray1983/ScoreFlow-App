@@ -107,6 +107,7 @@ export function historyMatchFromLive(input: {
   match: MatchState;
   homeLogo?: string;
   awayLogo?: string;
+  resultBackground?: string;
   now?: number;
 }): HistoryMatch | null {
   const { match } = input;
@@ -127,7 +128,7 @@ export function historyMatchFromLive(input: {
     completedSets: [...match.completedSets],
     matchFormat: match.matchFormat,
     matchSets: match.matchSets === 5 || match.matchSets === 3 ? match.matchSets : match.matchFormat === "highschool" ? 5 : 3,
-    resultBackground: "default",
+    resultBackground: String(input.resultBackground || "default"),
     updatedAtMs: input.now ?? Date.now()
   };
 }
@@ -144,12 +145,21 @@ export function saveMatches(matches: HistoryMatch[], storage?: JsonStorage, limi
   return next;
 }
 
+export function mergeMatchHistory(local: HistoryMatch[], cloud: HistoryMatch[], limit = FREE_MATCH_HISTORY_LIMIT): HistoryMatch[] {
+  const merged = [...cloud];
+  local.forEach((match) => {
+    if (!merged.some((item) => item.id === match.id)) merged.push(match);
+  });
+  return merged.slice(0, limit);
+}
+
 export function recordCompletedMatch(input: {
   match: MatchState;
   homeLogo?: string;
   awayLogo?: string;
+  resultBackground?: string;
   now?: number;
-}, storage?: JsonStorage): HistoryMatch | null {
+}, storage?: JsonStorage, limit = FREE_MATCH_HISTORY_LIMIT): HistoryMatch | null {
   if (!input.match.winner) return null;
   const key = winnerSaveKey(input.match);
   if (lastSavedWinnerKey === key) return loadMatches(storage)[0] ?? null;
@@ -158,6 +168,6 @@ export function recordCompletedMatch(input: {
   lastSavedWinnerKey = key;
   const matches = loadMatches(storage);
   matches.unshift(recorded);
-  saveMatches(matches, storage);
+  saveMatches(matches, storage, limit);
   return recorded;
 }

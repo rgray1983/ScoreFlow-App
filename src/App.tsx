@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { HomePage } from "./screens/HomePage";
 import { SetupPage } from "./screens/SetupPage";
@@ -6,20 +7,34 @@ import { ViewerPage } from "./screens/ViewerPage";
 import { HistoryPage } from "./screens/HistoryPage";
 import { TeamPage } from "./screens/TeamPage";
 import { SettingsGraphicsPage, SettingsPage, SettingsThemesPage } from "./screens/SettingsPages";
+import { useAccount } from "./state/account";
+import { usePremium } from "./state/premium";
+import { ToastHost } from "./ui/Toast";
 
 export function App() {
+  const hydratePremium = usePremium((state) => state.hydrate);
+  const bootAccount = useAccount((state) => state.boot);
+
+  useEffect(() => {
+    hydratePremium();
+    bootAccount();
+  }, [hydratePremium, bootAccount]);
+
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/team" element={<TeamPage />} />
-      <Route path="/setup" element={<SetupPage />} />
-      <Route path="/match" element={<MatchPage />} />
-      <Route path="/g/:gameId" element={<ViewerPage />} />
-      <Route path="/history" element={<HistoryPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/settings/themes" element={<SettingsThemesPage />} />
-      <Route path="/settings/graphics" element={<SettingsGraphicsPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/team" element={<TeamPage />} />
+        <Route path="/setup" element={<SetupPage />} />
+        <Route path="/match" element={<MatchPage />} />
+        <Route path="/g/:gameId" element={<ViewerPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/themes" element={<SettingsThemesPage />} />
+        <Route path="/settings/graphics" element={<SettingsGraphicsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastHost />
+    </>
   );
 }

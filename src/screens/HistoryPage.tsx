@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InnerScreen } from "./InnerScreen";
 import { MatchHistoryCard } from "../ui/MatchHistoryCard";
 import { ResultsSheet } from "../ui/ResultsSheet";
+import { useAccount } from "../state/account";
+import { usePremium } from "../state/premium";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
 import styles from "./InnerScreen.module.css";
 import historyStyles from "./HistoryPage.module.css";
 
 export function HistoryPage() {
-  const [matches] = useState(() => loadMatches());
+  const [matches, setMatches] = useState(() => loadMatches());
   const [recap, setRecap] = useState<HistoryMatch | null>(null);
+  const historyRevision = useAccount((state) => state.historyRevision);
+  const isPro = usePremium((state) => state.isPro);
+
+  useEffect(() => {
+    setMatches(loadMatches());
+  }, [historyRevision, isPro]);
 
   return (
     <InnerScreen

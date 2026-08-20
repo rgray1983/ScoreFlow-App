@@ -4,6 +4,9 @@ import type { HomeTeam } from "../storage/homeTeam";
 import { loadHomeTeam, saveHomeTeamRecord } from "../storage/homeTeam";
 import { engineFromDraft, loadMatchEngine, saveMatchEngine } from "../storage/matchEngine";
 import { recordCompletedMatch, resetHistorySaveGuard } from "../storage/matchHistory";
+import { matchHistoryLimit } from "../storage/premium";
+import { backupCompletedMatch, syncHomeTeamToCloud } from "../live/backup";
+import { usePremium } from "./premium";
 import {
   commitMatchDraft,
   loadMatchDraft,
@@ -50,6 +53,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         }
       }));
       saveMatchDraft(get().draft);
+      const premium = usePremium.getState();
+      if (premium.isPro && premium.cloudBackup) {
+        void syncHomeTeamToCloud(next);
+      }
       return next;
     },
     applyHomeTeamToDraft() {
@@ -75,11 +82,22 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       useLiveSession.getState().publishScore(engine.match);
       if (command.type === "newMatch") resetHistorySaveGuard();
       if (engine.match.winner) {
-        recordCompletedMatch({
+        const premium = usePremium.getState();
+        const recorded = recordCompletedMatch({
           match: engine.match,
           homeLogo: get().draft.homeLogo,
-          awayLogo: get().draft.awayLogo
-        });
+          awayLogo: get().draft.awayLogo,
+          resultBackground: premium.resultBackground
+        }, undefined, matchHistoryLimit(premium));
+        if (recorded) {
+          void backupCompletedMatch(recorded, {
+            isPro: premium.isPro,
+            theme: premium.theme,
+            posterStyle: premium.posterStyle,
+            resultBackground: premium.resultBackground,
+            cloudBackup: premium.cloudBackup
+          });
+        }
       }
       return engine;
     }

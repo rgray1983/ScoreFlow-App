@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 7 history + results graphic is in review. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. Completed matches save locally and can share a results PNG. Settings/Pro stay Phase 8. Phase 10 is remaining visual polish after the features exist.
+Phase 8 settings, themes, and account is in review. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. Signed-in Pro preview users can backup history; guests can still score live. Phase 9 is Cutover. Phase 10 is remaining visual polish after the features exist.
 
 ## Why rebuild
 
@@ -341,13 +341,15 @@ Copy the current ScoreFlow history and results graphic from `index.html` / `app.
 
 ### Phase 8 — Settings, themes, account
 
-- Settings routes
-- Theme + background graphics
-- Sign-in UI that actually exists in the HTML (email + Google; Apple when the domain is ready)
-- Cloud backup only after a non-anonymous account
+Copy the current ScoreFlow settings, themes, graphics, Pro preview, and signed-in backup from `index.html` / `app.js` / `style.css`.
+
+- Settings routes for Themes, Background Graphics, Cloud Backup, Account, and Pro
+- Classic is free. Pro themes and extra result backgrounds stay locked until Try Pro preview
+- Sign-in: email + password, Google, and Apple (Apple can fail until the domain is ready)
+- Cloud backup writes `users/{uid}` only for a non-anonymous account
 - Pro Preview labeled as preview until real billing exists
 
-**Done when:** A signed-in user can backup history, and a guest still can score live.
+**Done when:** A signed-in user can backup history, and a guest still can score live. Richie has tested locally.
 
 ### Phase 9 — Cutover
 
@@ -396,4 +398,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 8: settings, themes, account. Do not start Phase 8 until this phase is merged.
+Phase 9: Cutover. Do not start Phase 9 until this phase is merged.

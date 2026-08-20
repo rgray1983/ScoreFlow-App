@@ -6,6 +6,7 @@ import {
   matchSetCount,
   type HistoryMatch
 } from "../storage/matchHistory";
+import { resultsBackgroundSrc } from "../storage/premium";
 import { Button } from "./Button";
 import { LogoMark } from "./LogoMark";
 import styles from "./ResultsSheet.module.css";
@@ -74,7 +75,8 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
         className={styles.card}
         style={{
           ["--results-home-score-color" as string]: match.homeColor,
-          ["--results-away-score-color" as string]: match.awayColor
+          ["--results-away-score-color" as string]: match.awayColor,
+          ["--results-background-image" as string]: `url("${resultsBackgroundSrc(match.resultBackground)}")`
         }}
       >
         <time className={styles.date}>{formatMatchDate(match.updatedAtMs)}</time>

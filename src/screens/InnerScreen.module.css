@@ -1,7 +1,8 @@
 .page {
   height: 100%;
   overflow: auto;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  overflow-anchor: none;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(48px, env(safe-area-inset-bottom));
 }
 
 .main {
