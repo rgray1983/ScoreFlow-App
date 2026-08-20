@@ -9,6 +9,7 @@ import {
   writePresence,
   type LiveGameView
 } from "../live";
+import { FanZone } from "../ui/FanZone";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import styles from "./MatchPage.module.css";
@@ -137,6 +138,8 @@ export function ViewerPage() {
           </div>
         </div>
       ) : null}
+
+      {gameId ? <FanZone gameId={gameId} chatPaused={Boolean(game?.chatPaused)} ended={Boolean(game?.ended)} /> : null}
     </div>
   );
 }

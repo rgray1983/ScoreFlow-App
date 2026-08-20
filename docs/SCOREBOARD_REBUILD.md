@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 5 live share is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can create a live game, share `/g/:gameId`, and show viewer counts. Chat is still Phase 6. Look-and-feel parity with the gym scoreboard is Phase 10.
+Phase 6 fan zone is in review. The current `index.html` / `app.js` app remains the live product. The Vite rebuild can share a live game, and the viewer can chat and send reactions. History is still Phase 7. Look-and-feel parity with the gym scoreboard is Phase 10.
 
 ## Why rebuild
 
@@ -388,4 +388,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-Phase 6: fan zone chat and reactions. Do not start Phase 6 until Richie asks. Phase 10 is look-and-feel, not the next code PR.
+Phase 7: history + results graphic. Do not start Phase 7 until this phase is merged.

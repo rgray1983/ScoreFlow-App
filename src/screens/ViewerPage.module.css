@@ -1,3 +1,15 @@
 .page {
-  overflow: auto;
+  overflow: hidden;
+}
+
+@media (orientation: portrait) {
+  .page {
+    grid-template-rows: auto minmax(0, 1fr) minmax(190px, 32%);
+    gap: 8px;
+  }
+
+  .page :global(header),
+  .page :global(main) {
+    min-height: 0;
+  }
 }
