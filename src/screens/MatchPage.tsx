@@ -8,7 +8,7 @@ import {
 } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
-import { consumeResumeIntent } from "../state/homeResume";
+import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
@@ -73,8 +73,16 @@ export function MatchPage() {
 
   useEffect(() => {
     live.dismissReturnPrompt();
-    if (consumeResumeIntent() && live.recovery?.gameId && !live.active) {
-      void live.resumeLive(match, draft);
+    const session = useLiveSession.getState();
+    if (
+      shouldResumeLiveOnMatchPage({
+        hasRecovery: Boolean(session.recovery?.gameId),
+        liveActive: session.active,
+        resumeIntent: consumeResumeIntent(),
+        documentReload: isDocumentReload()
+      })
+    ) {
+      void session.resumeLive(match, draft);
     }
   }, []);
 

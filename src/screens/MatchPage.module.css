@@ -20,6 +20,7 @@
 }
 
 .topBar {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -31,6 +32,12 @@
   border-radius: clamp(10px, 1.35vw, 18px);
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.72));
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.left,
+.status {
+  position: relative;
+  z-index: 2;
 }
 
 .left {
@@ -84,10 +91,14 @@
 }
 
 .logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
   width: clamp(118px, 16vw, 210px);
   max-height: 42px;
   object-fit: contain;
-  justify-self: center;
+  transform: translate(-50%, -50%);
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.55));
 }
 
@@ -587,7 +598,7 @@
 
   .scorer .topBar {
     min-height: 48px;
-    border-radius: 0;
+    border-radius: 20px;
   }
 
   .iconButton {

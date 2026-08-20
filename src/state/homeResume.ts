@@ -42,6 +42,26 @@ export function isDocumentReload(): boolean {
   return (performance as Performance & { navigation?: { type: number } }).navigation?.type === 1;
 }
 
+export function shouldResumeLiveOnMatchPage(input: {
+  hasRecovery: boolean;
+  liveActive: boolean;
+  resumeIntent: boolean;
+  documentReload: boolean;
+}): boolean {
+  return input.hasRecovery && !input.liveActive && (input.resumeIntent || input.documentReload);
+}
+
+export function shouldReuseLiveGameId(input: {
+  reuseRequested?: boolean;
+  endedThisSession: boolean;
+  gameId: string;
+  recoveryId: string;
+}): boolean {
+  if (input.reuseRequested === true) return true;
+  if (input.endedThisSession) return false;
+  return Boolean(input.gameId || input.recoveryId);
+}
+
 function defaultSessionStorage(): Storage | null {
   try {
     return typeof sessionStorage === "undefined" ? null : sessionStorage;
