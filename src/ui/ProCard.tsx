@@ -17,7 +17,14 @@ export function ProCard({ variant = "home" }: ProCardProps) {
   useEffect(() => {
     if (!highlightPro || variant !== "settings") return;
     const card = cardRef.current;
-    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const scroller = card?.closest("[data-scroll-page]");
+    if (card && scroller instanceof HTMLElement) {
+      const cardRect = card.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      const nextTop = scroller.scrollTop + cardRect.top - scrollerRect.top - 12;
+      scroller.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+    }
+    window.scrollTo(0, 0);
     const clear = window.setTimeout(() => clearProFocus(), 3400);
     return () => window.clearTimeout(clear);
   }, [highlightPro, variant, clearProFocus]);

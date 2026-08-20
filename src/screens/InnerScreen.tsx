@@ -12,7 +12,7 @@ type InnerScreenProps = {
 
 export function InnerScreen({ eyebrow, title, copy, backTo, children }: InnerScreenProps) {
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-scroll-page>
       <PageHeader eyebrow={eyebrow} title={title} copy={copy} backTo={backTo} />
       <main className={styles.main}>{children}</main>
     </div>

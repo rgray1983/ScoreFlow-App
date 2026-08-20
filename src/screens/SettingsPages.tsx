@@ -124,19 +124,19 @@ export function SettingsPage() {
 
       <section className={`${styles.card} ${settingsStyles.cloudCard}`}>
         <StackedText title="Cloud Backup" copy={backupCopy} />
-        <label className={`${settingsStyles.toggle} ${isPro ? "" : settingsStyles.toggleLocked}`}>
-          <input
-            type="checkbox"
-            checked={backupOn}
-            aria-checked={backupOn}
-            aria-label="Cloud Backup"
-            onChange={(event) => onBackupToggle(event.target.checked)}
-          />
+        <button
+          type="button"
+          className={`${settingsStyles.toggle} ${backupOn ? settingsStyles.toggleOn : ""} ${isPro ? "" : settingsStyles.toggleLocked}`}
+          role="switch"
+          aria-checked={backupOn}
+          aria-label="Cloud Backup"
+          onClick={() => onBackupToggle(!backupOn)}
+        >
           <span className={settingsStyles.track} aria-hidden="true">
             <span className={settingsStyles.knob} />
           </span>
           <b>{backupLabel}</b>
-        </label>
+        </button>
       </section>
 
       <ProCard variant="settings" />

@@ -25,15 +25,11 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   user-select: none;
-}
-
-.toggle input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .track {
@@ -62,7 +58,7 @@
   transition: transform 0.22s ease;
 }
 
-.toggle input:checked + .track {
+.toggleOn .track {
   border-color: rgba(251, 191, 36, 0.66);
   background:
     linear-gradient(180deg, rgba(251, 191, 36, 0.82), rgba(217, 119, 6, 0.86)),
@@ -70,7 +66,7 @@
   box-shadow: 0 0 18px rgba(251, 191, 36, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.24);
 }
 
-.toggle input:checked + .track .knob {
+.toggleOn .track .knob {
   transform: translate(28px, -50%);
 }
 
