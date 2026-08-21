@@ -195,7 +195,7 @@ These are the upgrades. Feature phases should not invent a new look. **Phase 10*
 - The score digits are display. `+1` is the primary hit target. `−1` is smaller. Undo is visible and larger than −1.
 - Leaving a live match asks keep-live vs end-match.
 - No native `confirm()` / `alert()`.
-- Viewer allows pinch-zoom. Scorer can keep tap-manipulation.
+- No pinch-zoom. Accidental pinch on a phone should not scale the board.
 - Honor `prefers-reduced-motion`.
 - Visible `:focus-visible` rings.
 - Compress PWA icons as part of the new shell. Do not copy the 2MB 512px PNG forward as-is.
