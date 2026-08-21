@@ -1,27 +1,40 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { MatchState } from "../scoring";
 import { setWinnerColor } from "./boardChrome";
 import { Button } from "./Button";
+import { ConfettiBurst } from "./ConfettiBurst";
 import styles from "../screens/MatchPage.module.css";
 
 export function WinnerCelebration({
   name,
+  colors,
+  compact = false,
   onShowResults
 }: {
   name: string;
+  colors: string[];
+  compact?: boolean;
   onShowResults: () => void;
 }) {
-  return (
+  const overlay = (
     <div className={styles.winner} role="dialog" aria-labelledby="winner-celebrate-title">
       <button className={styles.winnerShade} type="button" aria-label="Show results" onClick={onShowResults} />
-      <div className={styles.winnerCelebrate} onClick={onShowResults}>
+      <ConfettiBurst active contained colors={colors} />
+      <div
+        className={`${styles.winnerCelebrate} ${compact ? styles.winnerCelebrateCompact : ""}`}
+        onClick={onShowResults}
+      >
         <div className={styles.winnerTrophy} aria-hidden="true">🏆</div>
-        <h2 className={styles.winnerName} id="winner-celebrate-title">{name} Wins!</h2>
+        <h2 className={styles.winnerCelebrateName} id="winner-celebrate-title">{name} Wins!</h2>
         <p className={styles.winnerHint}>Tap anywhere to close</p>
         <Button tone="gold" onClick={onShowResults}>Show Results</Button>
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return overlay;
+  return createPortal(overlay, document.body);
 }
 
 export function MatchWonCard({

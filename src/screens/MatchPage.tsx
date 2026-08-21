@@ -284,13 +284,14 @@ export function MatchPage() {
       </main>
 
       <ConfettiBurst
-        active={fx.confetti || (Boolean(match.winner) && winnerOpen && !matchCardOpen && !recapOpen)}
+        active={fx.confetti}
         colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
       />
 
       {winnerOpen && match.winner && !matchCardOpen && !recapOpen ? (
         <WinnerCelebration
           name={match.winner === "home" ? match.homeName : match.awayName}
+          colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
           onShowResults={showResults}
         />
       ) : null}

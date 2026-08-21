@@ -153,13 +153,18 @@ export function ViewerPage() {
 
       {match ? (
         <ConfettiBurst
-          active={fx.confetti || (showCelebration && !resultsOpen)}
+          active={fx.confetti}
           colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
         />
       ) : null}
 
-      {showCelebration && !resultsOpen ? (
-        <WinnerCelebration name={winnerName} onShowResults={() => setResultsOpen(true)} />
+      {showCelebration && !resultsOpen && match ? (
+        <WinnerCelebration
+          compact
+          name={winnerName}
+          colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
+          onShowResults={() => setResultsOpen(true)}
+        />
       ) : null}
 
       {showCelebration && resultsOpen && match ? (

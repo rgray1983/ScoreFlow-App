@@ -659,8 +659,8 @@
 .winnerShade {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.76);
-  backdrop-filter: blur(10px);
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.55);
 }
 
 .winnerCard {
@@ -704,29 +704,68 @@
 
 .winnerCelebrate {
   position: relative;
-  z-index: 1;
-  width: min(92vw, 460px);
+  z-index: 2;
+  width: min(78vw, 340px);
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 30px;
-  padding: 24px;
+  border-radius: 24px;
+  padding: 16px 16px 14px;
   background: rgba(13, 20, 34, 0.96);
   text-align: center;
   box-shadow: var(--shadow);
   cursor: pointer;
 }
 
+.winnerCelebrateName {
+  margin: 0;
+  max-width: 100%;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: clamp(22px, 6vw, 34px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
 .winnerTrophy {
-  font-size: 58px;
+  font-size: 42px;
   line-height: 1;
   animation: trophyPop 0.6s cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 
 .winnerHint {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--muted);
+  font-size: 13px;
+}
+
+.winnerCelebrateCompact {
+  width: min(58vw, 220px);
+  padding: 10px 12px 10px;
+  gap: 5px;
+  border-radius: 16px;
+}
+
+.winnerCelebrateCompact .winnerTrophy {
+  font-size: 28px;
+}
+
+.winnerCelebrateCompact .winnerCelebrateName {
+  font-size: clamp(16px, 4.6vw, 22px);
+}
+
+.winnerCelebrateCompact .winnerHint {
+  font-size: 11px;
+}
+
+.winnerCelebrateCompact :global(button) {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 
 .setList li {
@@ -1062,6 +1101,9 @@
 
   .winner {
     padding: 8px 10px;
+  }
+
+  .winner:has(.winnerCard) {
     align-items: stretch;
   }
 
