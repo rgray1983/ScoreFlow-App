@@ -149,6 +149,8 @@ export function ViewerPage() {
             </div>
           </div>
         </section>
+
+        <p className={viewerStyles.chatHint}>Rotate for chat</p>
       </main>
 
       {match ? (
