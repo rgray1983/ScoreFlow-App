@@ -39,30 +39,7 @@
   letter-spacing: -0.05em;
 }
 
-.matchup {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.matchup strong {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.matchup span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.endedMatchup {
+.logoMatchup {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -231,7 +208,7 @@
     font-size: clamp(26px, 8vh, 40px);
   }
 
-  .endedMatchup {
+  .logoMatchup {
     margin-top: 6px;
     gap: 4px 6px;
   }

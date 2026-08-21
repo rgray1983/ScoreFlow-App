@@ -76,11 +76,15 @@ export function PrematchOverlay({ match, ended, onWatch, homeLogo = "", awayLogo
   const home = match?.homeName || "Team 1";
   const away = match?.awayName || "Team 2";
   const matchup = endedMatchup(match, { homeLogo, awayLogo });
-  const winnerName = matchup.home.winner ? home : matchup.away.winner ? away : "";
+  const homeSide = ended ? matchup.home : { ...matchup.home, winner: false };
+  const awaySide = ended ? matchup.away : { ...matchup.away, winner: false };
+  const winnerName = homeSide.winner ? home : awaySide.winner ? away : "";
   const setScore = `${matchup.homeSets}-${matchup.awaySets}`;
-  const matchupLabel = winnerName
-    ? `${home} vs ${away}, ${setScore}. ${winnerName} won.`
-    : `${home} vs ${away}, ${setScore}`;
+  const matchupLabel = ended
+    ? winnerName
+      ? `${home} vs ${away}, ${setScore}. ${winnerName} won.`
+      : `${home} vs ${away}, ${setScore}`
+    : `${home} vs ${away}`;
 
   return (
     <div
@@ -92,29 +96,20 @@ export function PrematchOverlay({ match, ended, onWatch, homeLogo = "", awayLogo
       <div className={styles.card}>
         <p className={styles.chip}>Live Match</p>
         <h2 id="prematch-title">{title}</h2>
-        {ended ? (
-          <div
-            className={styles.endedMatchup}
-            aria-label={matchupLabel}
-          >
-            <EndedSide {...matchup.home} />
-            <div className={styles.center}>
-              <span className={styles.vs}>VS</span>
+        <div className={styles.logoMatchup} aria-label={matchupLabel}>
+          <EndedSide {...homeSide} />
+          <div className={styles.center}>
+            <span className={styles.vs}>VS</span>
+            {ended ? (
               <p className={styles.setScore} aria-hidden="true">
                 <strong>{matchup.homeSets}</strong>
                 <span>-</span>
                 <strong>{matchup.awaySets}</strong>
               </p>
-            </div>
-            <EndedSide {...matchup.away} />
+            ) : null}
           </div>
-        ) : (
-          <p className={styles.matchup}>
-            <strong>{home}</strong>
-            <span>vs</span>
-            <strong>{away}</strong>
-          </p>
-        )}
+          <EndedSide {...awaySide} />
+        </div>
         <p className={styles.meta}>{prematchMeta(match, ended)}</p>
         {ended ? null : (
           <div className={styles.footer}>

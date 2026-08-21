@@ -51,4 +51,14 @@ describe("endedMatchup", () => {
     expect(matchup.homeSets).toBe(0);
     expect(matchup.awaySets).toBe(0);
   });
+
+  it("stacks welcome-screen names the same way without requiring a winner", () => {
+    const matchup = endedMatchup(
+      createMatch({ homeName: "McBee Panthers", awayName: "Chesterfield Rams" }).match
+    );
+    expect(matchup.home.lines).toEqual(["MCBEE", "PANTHERS"]);
+    expect(matchup.away.lines).toEqual(["CHESTERFIELD", "RAMS"]);
+    expect(matchup.home.winner).toBe(false);
+    expect(matchup.away.winner).toBe(false);
+  });
 });
