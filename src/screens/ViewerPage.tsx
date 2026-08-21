@@ -14,6 +14,7 @@ import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { PrematchOverlay } from "../ui/PrematchOverlay";
+import { BoardFxBanners } from "../ui/BoardFxBanners";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { useBoardFx } from "../ui/useBoardFx";
@@ -114,18 +115,6 @@ export function ViewerPage() {
               <TeamName className={styles.teamName} name={match?.homeName || "Home"} />
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
             </div>
-            {fx.pointSide === "home" && match ? (
-              <span
-                key={fx.pointKey}
-                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
-                style={{ ["--point-banner-color" as string]: match.homeColor }}
-              >
-                POINT {match.homeName}!
-              </span>
-            ) : null}
-            {fx.setWinnerSide === "home" ? (
-              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
-            ) : null}
           </div>
         </section>
 
@@ -134,6 +123,15 @@ export function ViewerPage() {
             <h1 className={styles.title}>{match?.matchTitle || "ScoreFlow"}</h1>
             <p className={styles.setBox}><span>Set <strong>{match?.setNumber ?? 1}</strong></span></p>
             <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>{banner}</p>
+            {match ? (
+              <BoardFxBanners
+                match={match}
+                pointSide={fx.pointSide}
+                pointKey={fx.pointKey}
+                setWinnerSide={fx.setWinnerSide}
+                setWinnerKey={fx.setWinnerKey}
+              />
+            ) : null}
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
             <span className={`${styles.score} ${styles.homeScore}`}>{match?.homeScore ?? 0}</span>
@@ -149,18 +147,6 @@ export function ViewerPage() {
               <TeamName className={styles.teamName} name={match?.awayName || "Visitor"} />
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
             </div>
-            {fx.pointSide === "away" && match ? (
-              <span
-                key={fx.pointKey}
-                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
-                style={{ ["--point-banner-color" as string]: match.awayColor }}
-              >
-                POINT {match.awayName}!
-              </span>
-            ) : null}
-            {fx.setWinnerSide === "away" ? (
-              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
-            ) : null}
           </div>
         </section>
       </main>

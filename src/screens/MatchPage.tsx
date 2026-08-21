@@ -18,6 +18,7 @@ import { FanZone } from "../ui/FanZone";
 import { TeamName } from "../ui/TeamName";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { ResultsSheet } from "../ui/ResultsSheet";
+import { BoardFxBanners } from "../ui/BoardFxBanners";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
@@ -182,18 +183,6 @@ export function MatchPage() {
               <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
-            {fx.pointSide === "home" ? (
-              <span
-                key={fx.pointKey}
-                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
-                style={{ ["--point-banner-color" as string]: match.homeColor }}
-              >
-                POINT {match.homeName}!
-              </span>
-            ) : null}
-            {fx.setWinnerSide === "home" ? (
-              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
-            ) : null}
           </div>
           <div className={styles.pointActions}>
             <button
@@ -224,6 +213,13 @@ export function MatchPage() {
             <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
               {banner}
             </p>
+            <BoardFxBanners
+              match={match}
+              pointSide={fx.pointSide}
+              pointKey={fx.pointKey}
+              setWinnerSide={fx.setWinnerSide}
+              setWinnerKey={fx.setWinnerKey}
+            />
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
             <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
@@ -263,18 +259,6 @@ export function MatchPage() {
               <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
-            {fx.pointSide === "away" ? (
-              <span
-                key={fx.pointKey}
-                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
-                style={{ ["--point-banner-color" as string]: match.awayColor }}
-              >
-                POINT {match.awayName}!
-              </span>
-            ) : null}
-            {fx.setWinnerSide === "away" ? (
-              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
-            ) : null}
           </div>
           <div className={styles.pointActions}>
             <button

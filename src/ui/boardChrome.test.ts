@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { createMatch, point } from "../scoring";
-import { detectBoardFx, boardFxKey, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor, stackTeamNameLines } from "./boardChrome";
+import {
+  detectBoardFx,
+  boardFxKey,
+  pointBannerCopy,
+  setHistoryTickerCopy,
+  setHistoryTickerItems,
+  setWinnerColor,
+  stackTeamNameLines,
+  tickerCopyCount,
+  tickerLoopOffset
+} from "./boardChrome";
 
 describe("stackTeamNameLines", () => {
   it("keeps a short one-word name on a single line", () => {
@@ -42,6 +52,30 @@ describe("setHistoryTickerItems", () => {
     ]);
     expect(setHistoryTickerCopy(items)).toBe("WINNER SET 1: McBee Panthers - 25:18");
     expect(setWinnerColor(engine.match, engine.match.completedSets[0])).toBe("#d62828");
+  });
+});
+
+describe("ticker marquee math", () => {
+  it("duplicates short copy until the track can loop", () => {
+    expect(tickerCopyCount(400, 200)).toBe(2);
+    expect(tickerCopyCount(100, 400)).toBe(8);
+    expect(tickerCopyCount(0, 400)).toBe(2);
+  });
+
+  it("wraps the scroll offset on each copy width", () => {
+    expect(tickerLoopOffset(0, 100)).toBe(0);
+    expect(tickerLoopOffset(-10, 100)).toBe(-10);
+    expect(tickerLoopOffset(-100, 100)).toBe(0);
+    expect(tickerLoopOffset(-101, 100)).toBe(-1);
+    expect(tickerLoopOffset(-250, 100)).toBe(-50);
+    expect(tickerLoopOffset(20, 100)).toBe(-80);
+    expect(tickerLoopOffset(-40, 0)).toBe(0);
+  });
+});
+
+describe("pointBannerCopy", () => {
+  it("matches the current scoreboard POINT TEAM! toast", () => {
+    expect(pointBannerCopy("McBee Panthers")).toBe("POINT McBee Panthers!");
   });
 });
 

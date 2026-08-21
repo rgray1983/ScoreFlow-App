@@ -55,6 +55,22 @@ export function setHistoryTickerCopy(items: SetHistoryTickerItem[]): string {
   return items.map((item) => `${item.label} ${item.detail}`).join("   •   ");
 }
 
+export function tickerCopyCount(contentWidth: number, viewWidth: number): number {
+  if (contentWidth <= 0) return 2;
+  return Math.max(2, Math.ceil((Math.max(0, viewWidth) * 2) / contentWidth));
+}
+
+export function tickerLoopOffset(offset: number, loopWidth: number): number {
+  if (loopWidth <= 0) return 0;
+  const next = offset % loopWidth;
+  if (next > 0) return next - loopWidth;
+  return next === 0 ? 0 : next;
+}
+
+export function pointBannerCopy(name: string): string {
+  return `POINT ${String(name || "").trim()}!`;
+}
+
 export function setWinnerColor(match: MatchState, set: { winner: Side }): string {
   return set.winner === "home" ? match.homeColor : match.awayColor;
 }

@@ -79,9 +79,9 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *:not(.scoreflow-floating-reaction),
-  *:not(.scoreflow-floating-reaction)::before,
-  *:not(.scoreflow-floating-reaction)::after {
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track),
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track)::before,
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
