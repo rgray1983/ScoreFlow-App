@@ -128,10 +128,8 @@
 }
 
 .vs {
-  align-self: start;
   width: 48px;
   min-height: 34px;
-  margin-top: 26px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -141,6 +139,35 @@
   font-size: 13px;
   font-weight: 950;
   letter-spacing: 0.06em;
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.setScore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-score);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.setScore span {
+  color: rgba(255, 255, 255, 0.46);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .meta {
@@ -218,8 +245,20 @@
   .vs {
     width: 36px;
     min-height: 26px;
-    margin-top: 12px;
     font-size: 11px;
+  }
+
+  .center {
+    margin-top: 12px;
+    gap: 5px;
+  }
+
+  .setScore {
+    font-size: 20px;
+  }
+
+  .setScore span {
+    font-size: 12px;
   }
 
   .teamName {

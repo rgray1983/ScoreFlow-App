@@ -17,11 +17,13 @@ describe("prematchMeta", () => {
 });
 
 describe("endedMatchup", () => {
-  it("stacks long names and marks the winner like the results graphic", () => {
+  it("stacks long names, marks the winner, and includes set wins", () => {
     const matchup = endedMatchup(
       {
         ...createMatch({ homeName: "Blazers", awayName: "Savage Gardenville" }).match,
-        winner: "away"
+        winner: "home",
+        homeSets: 2,
+        awaySets: 0
       },
       { homeLogo: "https://example.com/home.png", awayLogo: "https://example.com/away.png" }
     );
@@ -30,19 +32,23 @@ describe("endedMatchup", () => {
       name: "Blazers",
       lines: ["BLAZERS"],
       logo: "https://example.com/home.png",
-      winner: false
+      winner: true
     });
     expect(matchup.away).toMatchObject({
       name: "Savage Gardenville",
       lines: ["SAVAGE", "GARDENVILLE"],
       logo: "https://example.com/away.png",
-      winner: true
+      winner: false
     });
+    expect(matchup.homeSets).toBe(2);
+    expect(matchup.awaySets).toBe(0);
   });
 
   it("does not mark a winner when the live match was ended early", () => {
     const matchup = endedMatchup(createMatch({ homeName: "Blazers", awayName: "Eastside" }).match);
     expect(matchup.home.winner).toBe(false);
     expect(matchup.away.winner).toBe(false);
+    expect(matchup.homeSets).toBe(0);
+    expect(matchup.awaySets).toBe(0);
   });
 });

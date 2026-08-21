@@ -20,6 +20,13 @@ export type EndedMatchupSide = {
   winner: boolean;
 };
 
+export type EndedMatchup = {
+  home: EndedMatchupSide;
+  away: EndedMatchupSide;
+  homeSets: number;
+  awaySets: number;
+};
+
 export function prematchMeta(match: MatchState | null, ended: boolean): string {
   if (ended) return "This live match has ended.";
   if (!match) return "Connecting…";
@@ -29,7 +36,7 @@ export function prematchMeta(match: MatchState | null, ended: boolean): string {
 export function endedMatchup(
   match: MatchState | null,
   logos: { homeLogo?: string; awayLogo?: string } = {}
-): { home: EndedMatchupSide; away: EndedMatchupSide } {
+): EndedMatchup {
   const homeName = match?.homeName || "Team 1";
   const awayName = match?.awayName || "Team 2";
   return {
@@ -44,7 +51,9 @@ export function endedMatchup(
       lines: resultsTeamNameLines(awayName),
       logo: logos.awayLogo || "",
       winner: match?.winner === "away"
-    }
+    },
+    homeSets: match?.homeSets ?? 0,
+    awaySets: match?.awaySets ?? 0
   };
 }
 
@@ -68,6 +77,10 @@ export function PrematchOverlay({ match, ended, onWatch, homeLogo = "", awayLogo
   const away = match?.awayName || "Team 2";
   const matchup = endedMatchup(match, { homeLogo, awayLogo });
   const winnerName = matchup.home.winner ? home : matchup.away.winner ? away : "";
+  const setScore = `${matchup.homeSets}-${matchup.awaySets}`;
+  const matchupLabel = winnerName
+    ? `${home} vs ${away}, ${setScore}. ${winnerName} won.`
+    : `${home} vs ${away}, ${setScore}`;
 
   return (
     <div
@@ -82,10 +95,17 @@ export function PrematchOverlay({ match, ended, onWatch, homeLogo = "", awayLogo
         {ended ? (
           <div
             className={styles.endedMatchup}
-            aria-label={winnerName ? `${home} vs ${away}. ${winnerName} won.` : `${home} vs ${away}`}
+            aria-label={matchupLabel}
           >
             <EndedSide {...matchup.home} />
-            <span className={styles.vs}>VS</span>
+            <div className={styles.center}>
+              <span className={styles.vs}>VS</span>
+              <p className={styles.setScore} aria-hidden="true">
+                <strong>{matchup.homeSets}</strong>
+                <span>-</span>
+                <strong>{matchup.awaySets}</strong>
+              </p>
+            </div>
             <EndedSide {...matchup.away} />
           </div>
         ) : (
