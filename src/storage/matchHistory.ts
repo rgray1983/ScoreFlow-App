@@ -145,6 +145,12 @@ export function saveMatches(matches: HistoryMatch[], storage?: JsonStorage, limi
   return next;
 }
 
+export function removeMatch(id: string, storage?: JsonStorage): HistoryMatch[] {
+  const next = loadMatches(storage).filter((item) => item.id !== id);
+  writeJson(MATCH_HISTORY_KEY, next, storage);
+  return next;
+}
+
 export function mergeMatchHistory(local: HistoryMatch[], cloud: HistoryMatch[], limit = FREE_MATCH_HISTORY_LIMIT): HistoryMatch[] {
   const merged = [...cloud];
   local.forEach((match) => {

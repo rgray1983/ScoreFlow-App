@@ -16,6 +16,8 @@ import { isMatchOver } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
 import { withBase } from "../lib/base";
+import { toast } from "../state/toast";
+import { deleteHistoryMatch } from "../live/backup";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -74,6 +76,13 @@ export function HomePage() {
     dismissReturnPrompt();
     markResumeIntent();
     navigate("/match");
+  }
+
+  function deleteMatch(match: HistoryMatch) {
+    const next = deleteHistoryMatch(match.id);
+    setHistory(next.slice(0, 3));
+    if (recap?.id === match.id) setRecap(null);
+    toast("Match deleted");
   }
 
   const resumeHint = recovery?.summary
@@ -141,7 +150,7 @@ export function HomePage() {
           {history.length ? (
             <div className={styles.historyList}>
               {history.map((match) => (
-                <MatchHistoryCard key={match.id} match={match} onOpen={setRecap} />
+                <MatchHistoryCard key={match.id} match={match} onOpen={setRecap} onDelete={deleteMatch} />
               ))}
             </div>
           ) : (
