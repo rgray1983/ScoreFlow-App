@@ -1,3 +1,4 @@
+import { withBase } from "../lib/base";
 import { readJson, writeJson, type JsonStorage } from "./local";
 import { FREE_MATCH_HISTORY_LIMIT } from "./matchHistory";
 
@@ -98,7 +99,7 @@ export function normalizeResultBackground(backgroundId: unknown, isPro: boolean)
 }
 
 export function resultsBackgroundSrc(backgroundId: unknown): string {
-  return `/images/results/${resultBackgroundById(backgroundId).file}`;
+  return withBase(`/images/results/${resultBackgroundById(backgroundId).file}`);
 }
 
 export function parsePremium(value: unknown): PremiumSettings {

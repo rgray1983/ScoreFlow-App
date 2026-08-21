@@ -9,13 +9,14 @@ import "@fontsource/inter/900.css";
 import "@fontsource/anton/400.css";
 import "./ui/base.css";
 import { App } from "./App";
+import { routerBasename } from "./lib/base";
 import { registerPwa } from "./pwa/register";
 
 registerPwa();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename()}>
       <App />
     </BrowserRouter>
   </StrictMode>

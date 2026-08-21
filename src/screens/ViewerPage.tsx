@@ -18,6 +18,7 @@ import { BoardFxBanners } from "../ui/BoardFxBanners";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { useBoardFx } from "../ui/useBoardFx";
+import { withBase } from "../lib/base";
 import styles from "./MatchPage.module.css";
 import viewerStyles from "./ViewerPage.module.css";
 
@@ -99,7 +100,7 @@ export function ViewerPage() {
     >
       <header className={styles.topBar}>
         <span className={styles.left} />
-        <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
+        <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         <div className={styles.status}>
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{viewers}</span>
           <LivePill status={status} />
@@ -134,9 +135,9 @@ export function ViewerPage() {
             ) : null}
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore}`}>{match?.homeScore ?? 0}</span>
+            <span className={`${styles.score} ${styles.homeScore}`} data-testid="home-score">{match?.homeScore ?? 0}</span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${styles.awayScore}`}>{match?.awayScore ?? 0}</span>
+            <span className={`${styles.score} ${styles.awayScore}`} data-testid="away-score">{match?.awayScore ?? 0}</span>
           </div>
         </section>
 

@@ -1,3 +1,5 @@
+import { withBase } from "../lib/base";
+
 export function createGameId(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -13,5 +15,5 @@ export function viewerPath(gameId: string): string {
 }
 
 export function viewerUrl(gameId: string, origin = typeof location === "undefined" ? "" : location.origin): string {
-  return `${origin}${viewerPath(gameId)}`;
+  return `${origin}${withBase(viewerPath(gameId))}`;
 }

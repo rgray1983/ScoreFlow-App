@@ -8,7 +8,7 @@ Update this file when a phase lands or when a locked decision changes. Do not st
 
 ## Status
 
-Phase 8 is merged. The current ScoreFlow scoreboard (`index.html` / `app.js` / `style.css`) remains the live product and the source of truth. **Phase 10 polish ships before Phase 9 Cutover.** Production stays on the current app until the rebuild looks right and Richie has signed off side-by-side.
+Phase 10 is merged. **Phase 9 — Cutover** is in progress on `cursor/phase-9-cutover-feac`: GitHub Pages should serve the Vite production build. The old root `index.html` / `app.js` / `style.css` app is removed. Local testing stays on http://localhost:5173.
 
 ## Why rebuild
 
@@ -23,18 +23,18 @@ The rebuild keeps the same product and replaces the foundation.
 | Decision | Choice |
 |---|---|
 | Product | Volleyball scoreboard + live viewer. Nothing else. |
-| Source of truth | The live ScoreFlow scoreboard in root `index.html` / `app.js` / `style.css`. When older `/docs` disagree, the current app wins. Do not invent UX from Coach docs or from a phase blurb. |
+| Source of truth | The Vite ScoreFlow app in `src/`. The old root `index.html` / `app.js` app is gone after Cutover. |
 | Language | TypeScript |
 | App | Vite + React + React Router + Vite PWA |
 | Styling | Copy the current ScoreFlow look. Tokens + CSS modules. Self-hosted Anton + Inter. Feature phases copy the current app's behavior for that feature. Phase 10 is remaining visual polish (scale, ticks, tokens) — not a new brand. |
 | Scoring | Pure TypeScript reducer with Vitest. No DOM. No Firebase. |
 | State | Scoring reducer + a thin UI store (Zustand). |
 | Backend | Same Firebase project: Auth, Firestore, Storage, later Functions |
-| Hosting | Same as today until after Phase 10 polish is signed off, then Cutover serves the Vite production build |
+| Hosting | GitHub Pages serves the Vite production build at `/ScoreFlow-App/` |
 | Payments | Not in the first rebuild. Pro may keep a clearly labeled Preview. |
 | Native / App Store | Not now. PWA only. |
 | Coach | Separate repo. This app may later expose a live game ID. That is all. |
-| Local test | Checkout the PR branch, then run the rebuild on `http://localhost:5173`. Do not serve the current `index.html` app locally. |
+| Local test | Checkout the PR branch, then run the app on `http://localhost:5173`. |
 
 ## Product boundary
 
@@ -86,7 +86,7 @@ Rules:
 - Screens never write Firestore documents by hand. They call `live/`.
 - Portrait and landscape share one Match screen.
 - Viewer is a route, not the scorer with buttons disabled.
-- The current root `app.js` stays until Cutover. Do not port by copying functions into React one-for-one without going through `scoring/` and `live/`.
+- The current root `app.js` is gone after Cutover. Do not port by copying functions into React one-for-one without going through `scoring/` and `live/`.
 
 ## Routes
 
@@ -202,17 +202,11 @@ These are the upgrades. Feature phases should not invent a new look. **Phase 10*
 
 ## Migration rule
 
-The current ScoreFlow app keeps shipping from the current root files until Cutover.
-
-Each phase adds new code beside the old app, or ports one screen onto the new kernel, without breaking `index.html`.
-
-Cutover is a dedicated phase after polish: Vite becomes the production entry. Keep `app.js` through Phase 10 as the live product and the look-and-feel reference. Delete the old CSS/HTML only after Cutover.
+Cutover makes Vite the production entry. The old root `index.html` / `app.js` / `style.css` files are deleted in Phase 9. Old `?game=` viewer links redirect to `/g/:gameId`.
 
 ## Local testing
 
-Richie tests every rebuild PR locally before merge. The agent does not require production hosting for these phases.
-
-The current ScoreFlow app already runs from this repo as it does today. Do not start a second local server for `index.html` / `app.js`. Rebuild PRs only need the new Vite app (and tests).
+Richie tests every rebuild PR locally before merge.
 
 Every rebuild PR and every agent message that expects local testing must include a **Run in VS Code** block that starts with fetching and checking out that PR's branch.
 
@@ -220,11 +214,12 @@ Every rebuild PR and every agent message that expects local testing must include
 
 | App | Command | URL |
 |---|---|---|
-| Rebuild (Vite) | `npm run dev -- --port 5173` | http://localhost:5173 |
+| ScoreFlow (Vite) | `npm run dev -- --port 5173` | http://localhost:5173 |
 | Scoring tests | `npm test` | terminal output |
-| Firestore rules tests (unchanged) | `npm run test:firestore-rules` | emulator |
+| Playwright | `npm run test:e2e` | terminal output |
+| Firestore rules tests | `npm run test:firestore-rules` | emulator |
 
-Until Cutover, `npm run dev` is the Vite rebuild on 5173. The current ScoreFlow scoreboard is still the existing `index.html` app in the repo.
+`npm run dev` is the ScoreFlow app on 5173. Production after Cutover is the GitHub Pages Vite build.
 
 ### Run in VS Code — template
 
@@ -252,7 +247,7 @@ Then open http://localhost:5173 when the phase has UI to click.
 4. If a phase needs a schema change, update this file and `docs/Architecture/Firebase Collections.md` in the same PR.
 5. Test on a phone/iPad as well as the desktop preview when the UI exists.
 6. Do not “quickly” add a Coach link, roster, or stat button because it would be cool on the board.
-7. Do not ask Richie to locally serve the current `index.html` app. That app stays in the repo until Cutover.
+7. Do not ask Richie to locally serve a removed `index.html` app. Local testing is always the Vite app on 5173.
 
 ## Build order
 
@@ -368,15 +363,17 @@ Ships **before** Cutover. The rebuild must look and feel like the current ScoreF
 
 ### Phase 9 — Cutover
 
-Do not start until Phase 10 is merged.
+Do not start until Phase 10 is merged. This phase is `cursor/phase-9-cutover-feac` / `docs/PRs/PR-027.md`.
 
-- Production hosting serves the Vite build
-- Redirect or replace the old `app.js` entry
+- Production hosting serves the Vite build (`VITE_BASE=/ScoreFlow-App/` on GitHub Pages)
+- Redirect old `?game=` / `mode=view` links to `/g/:gameId`
 - Then delete `app.js` and unused current-app CSS/HTML
+- Unregister the old `service-worker.js` so installed PWAs pick up the Vite app
 - Keep Firestore rules tests green
-- Add one Playwright (or similar) test: scorer point appears on viewer
+- Add one Playwright test: scorer point appears on viewer
+- After merge: GitHub repo Settings → Pages → Source must be **GitHub Actions** (not “branch / root”)
 
-**Done when:** A live match still works on a hard refresh of the PWA served from the Vite build. The old tournament files are gone.
+**Done when:** A live match still works on a hard refresh of the PWA served from the Vite build. The old tournament files are gone. Richie has tested locally.
 
 ## Later, after cutover and polish (still scoreboard, still not Coach)
 
@@ -400,4 +397,4 @@ For scoreboard work, this file wins. If a Coach-oriented doc disagrees with this
 
 ## Next code PR
 
-After this polish is merged: Phase 9 Cutover. Do not start Cutover until Richie has signed off side-by-side.
+After Cutover merges: later scoreboard work from the list above. Do not start those in the Cutover PR.

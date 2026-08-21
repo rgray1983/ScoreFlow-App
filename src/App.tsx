@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { HomePage } from "./screens/HomePage";
 import { SetupPage } from "./screens/SetupPage";
 import { MatchPage } from "./screens/MatchPage";
@@ -10,15 +10,27 @@ import { SettingsGraphicsPage, SettingsPage, SettingsThemesPage } from "./screen
 import { useAccount } from "./state/account";
 import { usePremium } from "./state/premium";
 import { ToastHost } from "./ui/Toast";
+import { legacyLivePath } from "./live/legacy";
 
 export function App() {
   const hydratePremium = usePremium((state) => state.hydrate);
   const bootAccount = useAccount((state) => state.boot);
+  const [params] = useSearchParams();
+  const legacyTo = legacyLivePath(params);
 
   useEffect(() => {
     hydratePremium();
     bootAccount();
   }, [hydratePremium, bootAccount]);
+
+  if (legacyTo) {
+    return (
+      <>
+        <Navigate to={legacyTo} replace />
+        <ToastHost />
+      </>
+    );
+  }
 
   return (
     <>

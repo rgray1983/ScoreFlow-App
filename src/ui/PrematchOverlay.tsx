@@ -3,6 +3,7 @@ import { pointsToWin, type MatchState } from "../scoring";
 import { Button } from "./Button";
 import { PlayIcon } from "./icons";
 import { LogoMark } from "./LogoMark";
+import { withBase } from "../lib/base";
 import styles from "./PrematchOverlay.module.css";
 
 type PrematchOverlayProps = {
@@ -118,13 +119,13 @@ export function PrematchOverlay({ match, ended, onWatch, homeLogo = "", awayLogo
               Watch Live Score
             </Button>
             <small className={styles.powered}>
-              Powered by <img src="/scoreflow-logo.png" alt="ScoreFlow" />
+              Powered by <img src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
             </small>
           </div>
         )}
         {ended ? (
           <small className={styles.powered}>
-            Powered by <img src="/scoreflow-logo.png" alt="ScoreFlow" />
+            Powered by <img src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
           </small>
         ) : null}
       </div>

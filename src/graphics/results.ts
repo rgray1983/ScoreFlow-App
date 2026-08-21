@@ -1,3 +1,4 @@
+import { withBase } from "../lib/base";
 import { DEFAULT_AWAY_COLOR, DEFAULT_HOME_COLOR, normalizeHex } from "../lib/color";
 import {
   formatMatchDate,
@@ -9,8 +10,8 @@ import { stackTeamNameLines } from "../ui/boardChrome";
 
 export const RESULTS_WIDTH = 1080;
 export const RESULTS_HEIGHT = 1920;
-export const DEFAULT_RESULTS_BACKGROUND = "/images/results/default.jpg";
-export const BRAND_LOGO_SRC = "/scoreflow-logo.png";
+export const DEFAULT_RESULTS_BACKGROUND = withBase("/images/results/default.jpg");
+export const BRAND_LOGO_SRC = withBase("/scoreflow-logo.png");
 
 function loadCanvasImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {

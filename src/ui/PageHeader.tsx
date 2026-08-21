@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BackIcon } from "./icons";
+import { withBase } from "../lib/base";
 import styles from "./PageHeader.module.css";
 
 type PageHeaderProps = {
@@ -27,7 +28,7 @@ export function PageHeader({
           <BackIcon className={styles.backIcon} />
           {backLabel}
         </Link>
-        <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
+        <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         {action ?? <span className={styles.spacer} />}
       </div>
       <div className={styles.copy}>
