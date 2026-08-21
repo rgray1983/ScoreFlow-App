@@ -31,10 +31,10 @@ export function parseMatchDraft(value: unknown): MatchDraft {
   if (!value || typeof value !== "object") return { ...EMPTY_MATCH_DRAFT };
   const record = value as Record<string, unknown>;
   return {
-    title: record.title == null ? EMPTY_MATCH_DRAFT.title : String(record.title).trim(),
+    title: record.title == null ? EMPTY_MATCH_DRAFT.title : String(record.title),
     format: record.format === "highschool" ? "highschool" : "club",
-    homeName: record.homeName == null ? EMPTY_MATCH_DRAFT.homeName : String(record.homeName).trim(),
-    awayName: record.awayName == null ? EMPTY_MATCH_DRAFT.awayName : String(record.awayName).trim(),
+    homeName: record.homeName == null ? EMPTY_MATCH_DRAFT.homeName : String(record.homeName),
+    awayName: record.awayName == null ? EMPTY_MATCH_DRAFT.awayName : String(record.awayName),
     homeColor: normalizeHex(String(record.homeColor || ""), DEFAULT_HOME_COLOR),
     awayColor: normalizeHex(String(record.awayColor || ""), DEFAULT_AWAY_COLOR),
     homeLogo: typeof record.homeLogo === "string" ? record.homeLogo : "",

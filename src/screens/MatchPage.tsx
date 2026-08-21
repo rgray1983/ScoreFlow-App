@@ -6,20 +6,25 @@ import {
   matchBanner,
   type Side
 } from "../scoring";
-import { matchFormatLabel } from "../storage/matchSetup";
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
-import { consumeResumeIntent } from "../state/homeResume";
+import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
+import { BoardLogoPicker } from "../ui/BoardLogoPicker";
 import { Button } from "../ui/Button";
+import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
-import { FloatingReactions } from "../ui/FloatingReactions";
+import { FanZone } from "../ui/FanZone";
+import { TeamName } from "../ui/TeamName";
+import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { ResultsSheet } from "../ui/ResultsSheet";
+import { BoardFxBanners } from "../ui/BoardFxBanners";
+import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
-import { LogoMark } from "../ui/LogoMark";
+import { useBoardFx } from "../ui/useBoardFx";
 import styles from "./MatchPage.module.css";
 
 function useScorePop(score: number) {
@@ -40,6 +45,7 @@ export function MatchPage() {
   const draft = useWorkspace((state) => state.draft);
   const engine = useWorkspace((state) => state.engine);
   const dispatch = useWorkspace((state) => state.dispatch);
+  const updateDraft = useWorkspace((state) => state.updateDraft);
   const live = useLiveSession();
   const match = engine.match;
   const over = isMatchOver(match);
@@ -47,37 +53,42 @@ export function MatchPage() {
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON");
   const homePop = useScorePop(match.homeScore);
   const awayPop = useScorePop(match.awayScore);
+  const fx = useBoardFx(match);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
+  const [matchCardOpen, setMatchCardOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
-  const [setFlash, setSetFlash] = useState("");
-  const previousSets = useRef(match.completedSets.length);
 
   useEffect(() => {
-    setWinnerOpen(Boolean(match.winner));
+    if (match.winner) {
+      setWinnerOpen(true);
+      setMatchCardOpen(false);
+      return;
+    }
+    setWinnerOpen(false);
+    setMatchCardOpen(false);
   }, [match.winner]);
 
   useEffect(() => {
-    const count = match.completedSets.length;
-    if (count > previousSets.current && !match.winner) {
-      const last = match.completedSets[count - 1];
-      const name = last.winner === "home" ? match.homeName : match.awayName;
-      setSetFlash(`${name} wins Set ${last.set}`);
-      const timer = window.setTimeout(() => setSetFlash(""), 1400);
-      previousSets.current = count;
-      return () => window.clearTimeout(timer);
-    }
-    previousSets.current = count;
-    return undefined;
-  }, [match.completedSets, match.winner, match.homeName, match.awayName]);
-
-  useEffect(() => {
     live.dismissReturnPrompt();
-    if (consumeResumeIntent() && live.recovery?.gameId && !live.active) {
-      void live.resumeLive(match, draft);
+    const session = useLiveSession.getState();
+    if (
+      shouldResumeLiveOnMatchPage({
+        hasRecovery: Boolean(session.recovery?.gameId),
+        liveActive: session.active,
+        resumeIntent: consumeResumeIntent(),
+        documentReload: isDocumentReload()
+      })
+    ) {
+      void session.resumeLive(match, draft);
     }
   }, []);
+
+  function setTeamLogo(side: Side, logo: string) {
+    updateDraft(side === "home" ? { homeLogo: logo } : { awayLogo: logo });
+    live.publishBranding(match, useWorkspace.getState().draft);
+  }
 
   function score(side: Side) {
     dispatch({ type: "point", side });
@@ -91,8 +102,8 @@ export function MatchPage() {
     dispatch({ type: "newMatch" });
     setConfirmOpen(false);
     setWinnerOpen(false);
+    setMatchCardOpen(false);
     setRecapOpen(false);
-    setSetFlash("");
   }
 
   function requestNewMatch() {
@@ -115,14 +126,22 @@ export function MatchPage() {
     void useLiveSession.getState().goLive(match, draft);
   }
 
-  function openRecap() {
+  function showResults() {
     setWinnerOpen(false);
+    setMatchCardOpen(true);
+  }
+
+  function openRecap() {
     setRecapOpen(true);
   }
 
-  function closeWinner() {
-    setWinnerOpen(false);
-    if (match.winner) setRecapOpen(true);
+  function closeRecap() {
+    setRecapOpen(false);
+    if (match.winner) setMatchCardOpen(true);
+  }
+
+  function endMatch() {
+    void live.endLive().finally(() => navigate("/"));
   }
 
   const recapMatch = historyMatchFromLive({
@@ -133,7 +152,7 @@ export function MatchPage() {
 
   return (
     <div
-      className={styles.page}
+      className={`${styles.page} ${styles.scorer}`}
       style={{ ["--home" as string]: match.homeColor, ["--away" as string]: match.awayColor }}
     >
       <header className={styles.topBar}>
@@ -159,14 +178,23 @@ export function MatchPage() {
           ) : null}
           <LivePill status={live.status} />
         </div>
+        <SetHistoryTicker match={match} />
       </header>
 
       <main className={styles.board} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
+            <BoardLogoPicker
+              name={match.homeName}
+              logo={draft.homeLogo}
+              color={match.homeColor}
+              label={`Upload ${match.homeName} logo`}
+              wrapClassName={styles.logoPick}
+              markClassName={styles.teamLogo}
+              onChange={(logo) => setTeamLogo("home", logo)}
+            />
             <div>
-              <span className={styles.teamName}>{match.homeName}</span>
+              <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
           </div>
@@ -193,33 +221,64 @@ export function MatchPage() {
         </section>
 
         <section className={styles.center}>
-          <span className={styles.pill}>{matchFormatLabel(match.matchFormat)}</span>
-          <h1 className={styles.title}>{match.matchTitle}</h1>
-          <p className={styles.setLabel}>SET {match.setNumber}</p>
-          <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
-            {setFlash || banner}
-          </p>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>{match.matchTitle}</h1>
+            <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
+            <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
+              {banner}
+            </p>
+            <BoardFxBanners
+              match={match}
+              pointSide={fx.pointSide}
+              pointKey={fx.pointKey}
+              setWinnerSide={fx.setWinnerSide}
+              setWinnerKey={fx.setWinnerKey}
+            />
+          </div>
           <div className={styles.scoreRow} aria-label="Current score">
             <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
-            <span className={styles.colon} aria-hidden="true">:</span>
+            <span className={styles.colon} aria-hidden="true" />
             <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
           </div>
-          <button
-            className={`${styles.point} ${styles.undo}`}
-            type="button"
-            disabled={!canUndo(engine)}
-            onClick={() => dispatch({ type: "undo" })}
-          >
-            <UndoIcon className={styles.controlIcon} />
-            Undo
-          </button>
+          <div className={styles.controls}>
+            <button
+              className={styles.undo}
+              type="button"
+              disabled={!canUndo(engine)}
+              onClick={() => dispatch({ type: "undo" })}
+            >
+              <UndoIcon className={styles.controlIcon} />
+              Undo
+            </button>
+            <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
+              New Match
+            </Button>
+            {over ? (
+              <Button type="button" tone="quiet" onClick={endMatch}>
+                End Match
+              </Button>
+            ) : (
+              <Button type="button" tone="gold" onClick={requestShare}>
+                <ShareIcon className={styles.controlIcon} />
+                {live.status === "error" ? "Retry Live" : "Share Live"}
+              </Button>
+            )}
+          </div>
         </section>
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
+            <BoardLogoPicker
+              name={match.awayName}
+              logo={draft.awayLogo}
+              color={match.awayColor}
+              label={`Upload ${match.awayName} logo`}
+              wrapClassName={styles.logoPick}
+              markClassName={styles.teamLogo}
+              onChange={(logo) => setTeamLogo("away", logo)}
+            />
             <div>
-              <span className={styles.teamName}>{match.awayName}</span>
+              <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
           </div>
@@ -246,44 +305,36 @@ export function MatchPage() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <Button tone={over ? "primary" : "quiet"} onClick={requestNewMatch}>
-          New Match
-        </Button>
-        <Button type="button" tone="gold" onClick={requestShare}>
-          <ShareIcon className={styles.controlIcon} />
-          {live.status === "error" ? "Retry Live" : "Share Live"}
-        </Button>
-      </footer>
+      <ConfettiBurst
+        active={fx.confetti}
+        colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
+      />
 
-      {winnerOpen && match.winner ? (
+      {winnerOpen && match.winner && !matchCardOpen && !recapOpen ? (
+        <WinnerCelebration
+          name={match.winner === "home" ? match.homeName : match.awayName}
+          colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
+          onShowResults={showResults}
+        />
+      ) : null}
+
+      {matchCardOpen && match.winner ? (
         <div className={styles.winner} role="dialog" aria-labelledby="winner-title">
-          <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={closeWinner} />
-          <div className={styles.winnerCard}>
-            <p className={styles.winnerEyebrow}>Match won</p>
-            <h2 id="winner-title">{match.winner === "home" ? match.homeName : match.awayName}</h2>
-            <ul className={styles.setList}>
-              {match.completedSets.map((set) => (
-                <li key={set.set}>
-                  <span>Set {set.set}</span>
-                  <strong>{set.homeScore}–{set.awayScore}</strong>
-                </li>
-              ))}
-            </ul>
+          <button className={styles.winnerShade} type="button" aria-hidden="true" tabIndex={-1} />
+          <MatchWonCard match={match}>
             <div className={styles.winnerActions}>
               <Button type="button" tone="gold" onClick={openRecap}>
                 Share Results
               </Button>
-              <Button type="button" tone="quiet" onClick={requestShare}>
-                <ShareIcon className={styles.controlIcon} />
-                Share Live
+              <Button type="button" tone="quiet" onClick={endMatch}>
+                End Match
               </Button>
-              <Button onClick={startNewMatch}>New Match</Button>
+              <Button tone="quiet" onClick={startNewMatch}>New Match</Button>
               <Button tone="quiet" disabled={!canUndo(engine)} onClick={() => dispatch({ type: "undo" })}>
                 Undo last point
               </Button>
             </div>
-          </div>
+          </MatchWonCard>
         </div>
       ) : null}
 
@@ -332,8 +383,14 @@ export function MatchPage() {
         onCancel={() => useLiveSession.setState({ error: "" })}
       />
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
-      <ResultsSheet open={recapOpen} match={recapMatch} onClose={() => setRecapOpen(false)} />
-      {live.gameId ? <FloatingReactions gameId={live.gameId} /> : null}
+      <ResultsSheet open={recapOpen} match={recapMatch} onClose={closeRecap} />
+      <FanZone
+        gameId={live.gameId}
+        chatPaused={live.chatPaused}
+        ended={!live.active}
+        role="scorer"
+        onToggleChat={live.active ? () => void live.setChatPaused(!live.chatPaused) : undefined}
+      />
     </div>
   );
 }

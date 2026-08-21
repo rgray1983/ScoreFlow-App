@@ -12,6 +12,7 @@ import { useAccount } from "../state/account";
 import { useLiveSession } from "../state/liveSession";
 import { usePremium } from "../state/premium";
 import { useWorkspace } from "../state/workspace";
+import { isMatchOver } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
 import styles from "./HomePage.module.css";
@@ -30,7 +31,8 @@ export function HomePage() {
   const showResume = shouldShowResumeMatch({
     liveActive,
     hasRecovery: Boolean(recovery),
-    matchHasProgress: matchHasProgress(engine)
+    matchHasProgress: matchHasProgress(engine),
+    matchOver: isMatchOver(match)
   });
   const promptOpen = shouldPromptLiveReturn({
     liveActive,
@@ -96,7 +98,7 @@ export function HomePage() {
           <p>Set your home team once. Start scoring in seconds.</p>
         </div>
         <div className={`${styles.primaryAction} ${showResume ? styles.withResume : ""}`}>
-          <Button to="/setup">Start a Match</Button>
+          <Button to="/setup">Start A Match</Button>
           {showResume ? (
             <Button tone="gold" onClick={resumeMatch}>Resume Match</Button>
           ) : null}

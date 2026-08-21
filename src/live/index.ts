@@ -6,7 +6,7 @@ export { ensureAnonymousAuth, authErrorMessage, firebaseReady, hasCloudAccount, 
 export { createLiveGame, updateLiveScore, updateLiveBranding, endLiveGame, listenLiveGame, readLiveGame, parseLiveGame, setLiveChatPaused } from "./games";
 export type { LiveGameView } from "./games";
 export { writePresence, listenViewerCount } from "./presence";
-export { uploadMatchLogos } from "./logos";
+export { uploadMatchLogos, resolveLiveLogos, compactLiveLogos } from "./logos";
 export { qrDataUrl } from "./qr";
 export {
   REACTION_EMOJIS,

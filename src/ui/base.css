@@ -7,6 +7,7 @@ html {
   height: var(--scoreflow-vh);
   background: var(--bg);
   overflow: hidden;
+  color-scheme: dark;
 }
 
 body {
@@ -34,6 +35,12 @@ input,
 select {
   font: inherit;
   color: inherit;
+}
+
+select,
+select option,
+select optgroup {
+  color-scheme: dark;
 }
 
 button {
@@ -67,10 +74,21 @@ a {
   outline-offset: 3px;
 }
 
+@media (orientation: portrait) {
+  html.viewer-mode,
+  html.viewer-mode body,
+  html.viewer-mode #root {
+    height: auto;
+    min-height: var(--scoreflow-vh);
+    overflow: auto;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *:not(.scoreflow-floating-reaction),
-  *:not(.scoreflow-floating-reaction)::before,
-  *:not(.scoreflow-floating-reaction)::after {
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track),
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track)::before,
+  *:not(.scoreflow-floating-reaction):not(.scoreflow-board-fx):not(.scoreflow-ticker-track)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -120,11 +138,11 @@ a {
   }
 }
 
-html.viewer-mode,
-html.viewer-mode body,
-html.viewer-mode #root {
-  height: auto;
-  min-height: var(--scoreflow-vh);
-  overflow: auto;
-  touch-action: pan-x pan-y pinch-zoom;
+@media (orientation: landscape) {
+  html.viewer-mode,
+  html.viewer-mode body,
+  html.viewer-mode #root {
+    height: var(--scoreflow-vh);
+    overflow: hidden;
+  }
 }

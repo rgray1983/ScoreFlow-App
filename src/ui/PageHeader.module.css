@@ -17,14 +17,16 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-height: 36px;
-  padding: 8px 12px 8px 8px;
+  height: var(--button-height);
+  min-height: var(--button-height);
+  padding: 0 12px 0 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.06);
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .backIcon {

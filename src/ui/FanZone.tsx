@@ -24,11 +24,21 @@ type FanZoneProps = {
   gameId: string;
   chatPaused: boolean;
   ended: boolean;
+  askName?: boolean;
+  role?: "viewer" | "scorer";
+  onToggleChat?: () => void;
 };
 
 type Toast = ChatMessage & { leaving?: boolean };
 
-export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
+export function FanZone({
+  gameId,
+  chatPaused,
+  ended,
+  askName = false,
+  role = "viewer",
+  onToggleChat
+}: FanZoneProps) {
   const sessionId = useRef(viewerSessionId()).current;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -37,16 +47,42 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   const [nameDraft, setNameDraft] = useState(name);
   const [nameOpen, setNameOpen] = useState(false);
   const [hint, setHint] = useState("");
+  const askedEntry = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const chatCool = useRef(0);
   const reactionCool = useRef(0);
   const seenChat = useRef(new Set<string>());
 
   useEffect(() => {
-    setName(loadViewerChatName(gameId, sessionId));
-  }, [gameId, sessionId]);
+    if (role === "scorer") return;
+    askedEntry.current = false;
+    const existing = loadViewerChatName(gameId, sessionId);
+    setName(existing);
+    setNameDraft(existing);
+  }, [gameId, sessionId, role]);
 
   useEffect(() => {
+    if (role === "scorer" || !askName || askedEntry.current) return;
+    askedEntry.current = true;
+    const existing = loadViewerChatName(gameId, sessionId);
+    if (existing) {
+      setName(existing);
+      return;
+    }
+    setNameDraft("");
+    setNameOpen(true);
+  }, [askName, gameId, sessionId, role]);
+
+  useEffect(() => {
+    if (ended) setNameOpen(false);
+  }, [ended]);
+
+  useEffect(() => {
+    if (!gameId) {
+      setMessages([]);
+      setToasts([]);
+      return undefined;
+    }
     seenChat.current.clear();
     setMessages([]);
     setToasts([]);
@@ -74,14 +110,18 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   async function submitChat(event: FormEvent) {
     event.preventDefault();
     if (ended) return;
+    if (!gameId) {
+      setHint("Share Live to open chat");
+      return;
+    }
     if (chatPaused) {
       setHint("Scorer paused chat");
       return;
     }
     const text = draft.trim();
     if (!text) return;
-    const chatName = name || loadViewerChatName(gameId, sessionId);
-    if (!chatName) {
+    const chatName = role === "scorer" ? "Scorer" : name || loadViewerChatName(gameId, sessionId);
+    if (role !== "scorer" && !chatName) {
       setNameDraft("");
       setNameOpen(true);
       return;
@@ -98,8 +138,8 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
         gameId,
         text,
         name: chatName,
-        role: "viewer",
-        sessionId
+        role,
+        sessionId: role === "scorer" ? "scorer" : sessionId
       });
     } catch {
       chatCool.current = 0;
@@ -108,7 +148,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
   }
 
   async function react(emoji: string) {
-    if (ended) return;
+    if (ended || !gameId) return;
     spawnFloatingReaction(emoji);
     if (Date.now() < reactionCool.current) return;
     reactionCool.current = Date.now() + REACTION_COOLDOWN_MS;
@@ -130,18 +170,29 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
     setHint("");
   }
 
-  const locked = ended || chatPaused;
+  const locked = ended || chatPaused || !gameId;
   const empty = messages.length === 0;
+  const copy = !gameId
+    ? "Share Live to open chat with families"
+    : chatPaused
+      ? "Chat is paused by the scorer"
+      : "Cheer live with chat and reactions";
 
   return (
-    <section className={styles.fanZone} aria-label="Live fan zone">
+    <section className={`${styles.fanZone} ${role === "scorer" ? styles.scorer : ""}`} aria-label="Live fan zone">
       <div className={styles.dock}>
         <div className={styles.head}>
           <div>
             <strong>Fan Zone</strong>
-            <span>{chatPaused ? "Chat is paused by the scorer" : "Cheer live with chat and reactions"}</span>
+            <span>{copy}</span>
           </div>
-          <span className={styles.livePill}>Live</span>
+          {onToggleChat ? (
+            <button className={styles.chatToggle} type="button" onClick={onToggleChat}>
+              {chatPaused ? "Chat Off" : "Chat On"}
+            </button>
+          ) : (
+            <span className={styles.livePill}>{gameId && !ended ? "Live" : "Off"}</span>
+          )}
         </div>
         <div className={styles.feed} ref={feedRef} aria-live="polite">
           {empty ? <p className={styles.empty}>Be the first fan to cheer!</p> : null}
@@ -169,7 +220,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           maxLength={CHAT_TEXT_MAX}
           autoComplete="off"
           disabled={locked}
-          placeholder={chatPaused ? "Chat is paused" : ended ? "Match has ended" : "Cheer on your team..."}
+          placeholder={!gameId ? "Share Live to chat" : chatPaused ? "Chat is paused" : ended ? "Match has ended" : "Cheer on your team..."}
           aria-label="Chat message"
           onChange={(event) => setDraft(event.target.value)}
         />
@@ -188,13 +239,16 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           </article>
         ))}
       </div>
-      <FloatingReactions gameId={gameId} />
+      {gameId ? <FloatingReactions gameId={gameId} /> : null}
+      {role === "viewer" ? (
       <Dialog
         open={nameOpen}
+        eyebrow="Fan Zone"
         title="What name should show in chat?"
         copy="Pick a name for this device only. Other viewers can choose their own."
         confirmLabel="Start Chatting"
-        confirmTone="gold"
+        variant="fan"
+        hideCancel
         onConfirm={saveName}
         onCancel={() => setNameOpen(false)}
       >
@@ -208,6 +262,7 @@ export function FanZone({ gameId, chatPaused, ended }: FanZoneProps) {
           />
         </Field>
       </Dialog>
+      ) : null}
     </section>
   );
 }

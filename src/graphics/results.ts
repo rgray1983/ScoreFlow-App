@@ -5,6 +5,7 @@ import {
   type HistoryMatch
 } from "../storage/matchHistory";
 import { resultsBackgroundSrc } from "../storage/premium";
+import { stackTeamNameLines } from "../ui/boardChrome";
 
 export const RESULTS_WIDTH = 1080;
 export const RESULTS_HEIGHT = 1920;
@@ -45,20 +46,8 @@ export function canvasInitials(value: string, fallback = "T"): string {
   return clean.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
-function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-  const words = String(text).split(" ");
-  let line = "";
-  for (const word of words) {
-    const testLine = line ? `${line} ${word}` : word;
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      ctx.fillText(line, x, y);
-      line = word;
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
+export function resultsTeamNameLines(name: string): string[] {
+  return stackTeamNameLines(String(name || "").trim() || "Team").map((line) => line.toUpperCase());
 }
 
 function drawCanvasLogo(
@@ -87,8 +76,13 @@ function drawCanvasLogo(
     ctx.shadowColor = "transparent";
   }
   if (img) {
-    const inset = options.noBadge ? 0 : size * 0.1;
+    const inset = options.noBadge ? 0 : size * 0.08;
     const drawSize = size - inset * 2;
+    if (!options.noBadge) {
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2 - 3, 0, Math.PI * 2);
+      ctx.clip();
+    }
     ctx.drawImage(img, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
   } else {
     ctx.fillStyle = options.noBadge ? "#ffffff" : "#07101e";
@@ -98,6 +92,121 @@ function drawCanvasLogo(
     ctx.fillText(canvasInitials(fallback), x, y + 2);
   }
   ctx.restore();
+}
+
+function drawWinnerRing(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, size / 2 + 8, 0, Math.PI * 2);
+  ctx.strokeStyle = "#fbbf24";
+  ctx.lineWidth = 10;
+  ctx.shadowColor = "rgba(251, 191, 36, 0.45)";
+  ctx.shadowBlur = 18;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawWinnerChip(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const label = "WINNER";
+  ctx.save();
+  ctx.font = "900 18px Inter, Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const width = Math.max(96, ctx.measureText(label).width + 28);
+  const height = 28;
+  ctx.fillStyle = "#fbbf24";
+  ctx.shadowColor = "rgba(0,0,0,.28)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  canvasRoundRect(ctx, x - width / 2, y - height / 2, width, height, 14);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.fillStyle = "#07101e";
+  ctx.fillText(label, x, y);
+  ctx.restore();
+}
+
+function drawTeamNameBlock(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+  maxWidth: number
+) {
+  const lines = resultsTeamNameLines(name);
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,.45)";
+  ctx.shadowBlur = 12;
+  let size = 36;
+  ctx.font = `900 ${size}px Inter, Arial`;
+  while (size > 22 && lines.some((line) => ctx.measureText(line).width > maxWidth)) {
+    size -= 2;
+    ctx.font = `900 ${size}px Inter, Arial`;
+  }
+  const lineHeight = size + 8;
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+  ctx.restore();
+}
+
+function drawResultsMatchup(
+  ctx: CanvasRenderingContext2D,
+  match: HistoryMatch,
+  homeLogo: HTMLImageElement | null,
+  awayLogo: HTMLImageElement | null
+) {
+  const w = ctx.canvas.width;
+  const homeName = match.homeName || "Team 1";
+  const awayName = match.awayName || "Team 2";
+  const logoY = 748;
+  const logoSize = 176;
+  const leftX = 268;
+  const rightX = w - 268;
+  const homeWins = match.winnerSide === "home";
+  const awayWins = match.winnerSide === "away";
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,.30)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(leftX + logoSize / 2 + 16, logoY);
+  ctx.lineTo(w / 2 - 68, logoY);
+  ctx.moveTo(w / 2 + 68, logoY);
+  ctx.lineTo(rightX - logoSize / 2 - 16, logoY);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = "rgba(8, 11, 18, 0.82)";
+  ctx.shadowColor = "rgba(0,0,0,.28)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  canvasRoundRect(ctx, w / 2 - 54, logoY - 32, 108, 64, 18);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "950 28px Inter, Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VS", w / 2, logoY);
+  ctx.restore();
+
+  if (homeWins) drawWinnerRing(ctx, leftX, logoY, logoSize);
+  if (awayWins) drawWinnerRing(ctx, rightX, logoY, logoSize);
+
+  const logoBottom = logoY + logoSize / 2;
+  drawTeamNameBlock(ctx, homeName, leftX, logoBottom + (homeWins ? 44 : 14), 400);
+  drawTeamNameBlock(ctx, awayName, rightX, logoBottom + (awayWins ? 44 : 14), 400);
+
+  drawCanvasLogo(ctx, homeLogo, homeName, leftX, logoY, logoSize);
+  drawCanvasLogo(ctx, awayLogo, awayName, rightX, logoY, logoSize);
+
+  if (homeWins) drawWinnerChip(ctx, leftX, logoBottom + 16);
+  if (awayWins) drawWinnerChip(ctx, rightX, logoBottom + 16);
 }
 
 export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanvasElement> {
@@ -110,7 +219,6 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
   const w = canvas.width;
   const h = canvas.height;
   const homeName = match.homeName || "Team 1";
-  const awayName = match.awayName || "Team 2";
   const homeColor = normalizeHex(match.homeColor, DEFAULT_HOME_COLOR);
   const awayColor = normalizeHex(match.awayColor, DEFAULT_AWAY_COLOR);
   const [bgImg, homeLogo, awayLogo, brandLogo] = await Promise.all([
@@ -153,57 +261,32 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff1a6";
-  ctx.font = "950 96px Inter, Arial";
+  ctx.font = "900 56px Inter, Arial";
   ctx.shadowColor = "rgba(0,0,0,.34)";
-  ctx.shadowBlur = 18;
-  ctx.fillText("MATCH RESULT", w / 2, 520);
+  ctx.shadowBlur = 16;
+  ctx.fillText("MATCH RESULT", w / 2, 500);
   ctx.shadowColor = "transparent";
 
-  ctx.fillStyle = "rgba(255,255,255,.84)";
-  ctx.font = "900 32px Inter, Arial";
-  ctx.fillText(String(match.title || "Game Night").toUpperCase(), w / 2, 575);
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  const matchTitle = String(match.title || "Game Night").toUpperCase();
+  let titleSize = 48;
+  ctx.font = `900 ${titleSize}px Inter, Arial`;
+  while (titleSize > 30 && ctx.measureText(matchTitle).width > w - 140) {
+    titleSize -= 2;
+    ctx.font = `900 ${titleSize}px Inter, Arial`;
+  }
+  ctx.fillText(matchTitle, w / 2, 580);
 
-  const barY = 720;
-  const barH = 76;
-  const leftLogoX = 156;
-  const rightLogoX = w - 156;
-  ctx.fillStyle = "rgba(255,255,255,.94)";
-  ctx.shadowColor = "rgba(0,0,0,.20)";
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 8;
-  canvasRoundRect(ctx, 150, barY, 350, barH, 8);
-  ctx.fill();
-  canvasRoundRect(ctx, w - 500, barY, 350, barH, 8);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-
-  ctx.fillStyle = "#07101e";
-  ctx.font = "900 32px Inter, Arial";
-  wrapCanvasText(ctx, homeName.toUpperCase(), 330, barY + 48, 260, 34);
-  wrapCanvasText(ctx, awayName.toUpperCase(), w - 330, barY + 48, 260, 34);
-
-  drawCanvasLogo(ctx, homeLogo, homeName, leftLogoX, barY + barH / 2, 138);
-  drawCanvasLogo(ctx, awayLogo, awayName, rightLogoX, barY + barH / 2, 138);
-
-  ctx.fillStyle = "#2258af";
-  ctx.shadowColor = "rgba(0,0,0,.24)";
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetY = 8;
-  canvasRoundRect(ctx, w / 2 - 62, barY - 12, 124, 100, 28);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "950 40px Inter, Arial";
-  ctx.fillText("VS", w / 2, barY + 40);
+  drawResultsMatchup(ctx, match, homeLogo, awayLogo);
 
   const completed = match.completedSets;
   const rowCount = matchSetCount(match);
-  const tableTop = 910;
-  const rowGap = rowCount > 3 ? 118 : 140;
+  const tableTop = 1080;
+  const rowGap = rowCount > 3 ? 110 : 128;
   ctx.strokeStyle = "rgba(255,255,255,.34)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(w / 2, barY + 88);
+  ctx.moveTo(w / 2, 1008);
   ctx.lineTo(w / 2, tableTop + rowGap * (rowCount - 1) + 54);
   ctx.stroke();
 

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { shareResultsGraphic } from "../graphics/results";
+import { shareResultsGraphic, resultsTeamNameLines } from "../graphics/results";
 import {
   formatMatchDate,
   matchSetCount,
@@ -9,6 +9,7 @@ import {
 import { resultsBackgroundSrc } from "../storage/premium";
 import { Button } from "./Button";
 import { LogoMark } from "./LogoMark";
+import { usePortraitLock } from "./portraitLock";
 import styles from "./ResultsSheet.module.css";
 
 type ResultsSheetProps = {
@@ -21,6 +22,8 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState("");
+
+  usePortraitLock(open);
 
   useLayoutEffect(() => {
     const node = ref.current;
@@ -71,6 +74,11 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
       <button className={styles.close} type="button" aria-label="Close results" onClick={onClose}>
         ×
       </button>
+      <div className={styles.rotatePrompt}>
+        <p>Turn your phone upright</p>
+        <strong>Match Results is portrait-only</strong>
+        <small>Rotate to see the recap graphic and share it.</small>
+      </div>
       <article
         className={styles.card}
         style={{
@@ -88,11 +96,17 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
           <h3 id="results-title">{match.title}</h3>
         </div>
         <div className={styles.matchup}>
-          <LogoMark className={styles.logo} name={match.homeName} logo={match.homeLogo} />
-          <strong className={`${styles.bar} ${styles.homeBar}`}>{match.homeName}</strong>
+          <ResultsSide
+            name={match.homeName}
+            logo={match.homeLogo}
+            winner={match.winnerSide === "home"}
+          />
           <span className={styles.vs}>VS</span>
-          <strong className={`${styles.bar} ${styles.awayBar}`}>{match.awayName}</strong>
-          <LogoMark className={styles.logo} name={match.awayName} logo={match.awayLogo} />
+          <ResultsSide
+            name={match.awayName}
+            logo={match.awayLogo}
+            winner={match.winnerSide === "away"}
+          />
         </div>
         <div className={styles.table} aria-label="Set scores">
           {rows.map((set, index) => (
@@ -119,5 +133,27 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
       </div>
     </dialog>,
     document.body
+  );
+}
+
+function ResultsSide({
+  name,
+  logo,
+  winner
+}: {
+  name: string;
+  logo: string;
+  winner: boolean;
+}) {
+  return (
+    <div className={`${styles.side} ${winner ? styles.winner : ""}`}>
+      <LogoMark className={styles.logo} name={name} logo={logo} />
+      {winner ? <span className={styles.winnerChip}>Winner</span> : null}
+      <strong className={styles.teamName}>
+        {resultsTeamNameLines(name).map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </strong>
+    </div>
   );
 }

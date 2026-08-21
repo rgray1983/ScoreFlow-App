@@ -7,9 +7,12 @@ type DialogProps = {
   open: boolean;
   title: string;
   copy?: string;
+  eyebrow?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmTone?: "primary" | "gold" | "quiet";
+  hideCancel?: boolean;
+  variant?: "default" | "fan";
   onConfirm?: () => void;
   onCancel: () => void;
   children?: ReactNode;
@@ -20,9 +23,12 @@ export function Dialog({
   open,
   title,
   copy,
+  eyebrow,
   confirmLabel,
   cancelLabel = "Cancel",
   confirmTone = "primary",
+  hideCancel = false,
+  variant = "default",
   onConfirm,
   onCancel,
   children,
@@ -68,7 +74,8 @@ export function Dialog({
         if (event.target === event.currentTarget) onCancel();
       }}
     >
-      <div className={styles.card} onClick={(event) => event.stopPropagation()}>
+      <div className={`${styles.card} ${variant === "fan" ? styles.fan : ""}`} onClick={(event) => event.stopPropagation()}>
+        {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
         <h2 id="dialog-title">{title}</h2>
         {copy ? <p>{copy}</p> : null}
         {children}
@@ -76,7 +83,7 @@ export function Dialog({
           {actions ?? (
             <>
               {onConfirm && confirmLabel ? <Button tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Button> : null}
-              <Button tone="quiet" onClick={onCancel}>{cancelLabel}</Button>
+              {hideCancel ? null : <Button tone="quiet" onClick={onCancel}>{cancelLabel}</Button>}
             </>
           )}
         </div>

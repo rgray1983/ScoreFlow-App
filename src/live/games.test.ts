@@ -25,7 +25,7 @@ describe("parseLiveGame", () => {
     expect(game?.match.homeScore).toBe(12);
     expect(game?.match.homeName).toBe("Blazers");
     expect(game?.homeLogo).toBe("https://example.com/home.png");
-    expect(game?.awayLogo).toBe("");
+    expect(game?.awayLogo).toBe("data:image/png;base64,xx");
     expect(game?.ended).toBe(false);
     expect(game?.chatPaused).toBe(false);
     expect(game?.ownerId).toBe("uid-1");

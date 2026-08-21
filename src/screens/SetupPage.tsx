@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { ColorPicker } from "../ui/ColorPicker";
 import { Dialog } from "../ui/Dialog";
 import { Field, SelectInput, TextInput } from "../ui/Field";
-import { Swatches } from "../ui/Swatches";
 import { InnerScreen } from "./InnerScreen";
 import { matchHasProgress } from "../storage/matchEngine";
+import { useLiveSession } from "../state/liveSession";
 import { useWorkspace } from "../state/workspace";
 import styles from "./InnerScreen.module.css";
 import setupStyles from "./SetupPage.module.css";
@@ -19,15 +20,30 @@ export function SetupPage() {
   const applyHomeTeamToDraft = useWorkspace((state) => state.applyHomeTeamToDraft);
   const startMatch = useWorkspace((state) => state.startMatch);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingLive, setPendingLive] = useState(false);
 
   useEffect(() => {
     applyHomeTeamToDraft();
   }, [applyHomeTeamToDraft]);
 
-  function beginMatch() {
-    startMatch();
+  function beginMatch(goLive = false) {
+    const committed = startMatch();
     setConfirmOpen(false);
+    setPendingLive(false);
     navigate("/match");
+    if (goLive) {
+      const engine = useWorkspace.getState().engine;
+      void useLiveSession.getState().goLive(engine.match, committed);
+    }
+  }
+
+  function requestStart(goLive = false) {
+    if (matchHasProgress(engine)) {
+      setPendingLive(goLive);
+      setConfirmOpen(true);
+      return;
+    }
+    beginMatch(goLive);
   }
 
   return (
@@ -60,25 +76,38 @@ export function SetupPage() {
             <Field label="Home team">
               <TextInput value={draft.homeName} onChange={(event) => updateDraft({ homeName: event.target.value })} />
             </Field>
-            <Swatches label="Home Color" value={draft.homeColor} onChange={(homeColor) => updateDraft({ homeColor })} />
+            <ColorPicker
+              className={setupStyles.picker}
+              label="Home Color"
+              value={draft.homeColor}
+              onChange={(homeColor) => updateDraft({ homeColor })}
+            />
           </div>
           <div>
             <Field label="Visitor team">
               <TextInput value={draft.awayName} onChange={(event) => updateDraft({ awayName: event.target.value })} />
             </Field>
-            <Swatches label="Visitor Color" value={draft.awayColor} onChange={(awayColor) => updateDraft({ awayColor })} />
+            <ColorPicker
+              className={setupStyles.picker}
+              label="Visitor Color"
+              value={draft.awayColor}
+              onChange={(awayColor) => updateDraft({ awayColor })}
+            />
           </div>
         </div>
       </section>
 
+      <p className={styles.note}>
+        Start Scoreboard opens Scoreboard.
+        <br />
+        Start Live Scoreboard opens Link Sharing then Scoreboard.
+      </p>
       <div className={styles.actions}>
-        <Button
-          onClick={() => {
-            if (matchHasProgress(engine)) setConfirmOpen(true);
-            else beginMatch();
-          }}
-        >
+        <Button onClick={() => requestStart(false)}>
           Start Scoreboard
+        </Button>
+        <Button tone="gold" onClick={() => requestStart(true)}>
+          Start Live Scoreboard
         </Button>
         <Button to={fromMatch ? "/match" : "/"} tone="quiet">{fromMatch ? "Back to Match" : "Back Home"}</Button>
       </div>
@@ -87,9 +116,12 @@ export function SetupPage() {
         open={confirmOpen}
         title="Replace the current match?"
         copy="Scores and sets on the board will be cleared. Names and colors from this screen will be used."
-        confirmLabel="Start Scoreboard"
-        onConfirm={beginMatch}
-        onCancel={() => setConfirmOpen(false)}
+        confirmLabel={pendingLive ? "Start Live Scoreboard" : "Start Scoreboard"}
+        onConfirm={() => beginMatch(pendingLive)}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setPendingLive(false);
+        }}
       />
     </InnerScreen>
   );

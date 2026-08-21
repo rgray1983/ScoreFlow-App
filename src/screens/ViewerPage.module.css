@@ -2,6 +2,10 @@
   overflow: hidden;
 }
 
+.chatHint {
+  display: none;
+}
+
 @media (orientation: portrait) {
   .page {
     grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
@@ -17,6 +21,38 @@
 
 @media (orientation: landscape) {
   .page {
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
     grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .page :global(main) {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .chatHint {
+    display: block;
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    z-index: 6;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .chatHint {
+    right: 8px;
+    bottom: 6px;
+    font-size: 9px;
   }
 }

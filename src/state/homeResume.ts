@@ -4,8 +4,10 @@ export function shouldShowResumeMatch(input: {
   liveActive: boolean;
   hasRecovery: boolean;
   matchHasProgress: boolean;
+  matchOver?: boolean;
 }): boolean {
-  return input.liveActive || input.hasRecovery || input.matchHasProgress;
+  if (input.liveActive || input.hasRecovery) return true;
+  return input.matchHasProgress && !input.matchOver;
 }
 
 export function shouldPromptLiveReturn(input: {
@@ -40,6 +42,26 @@ export function isDocumentReload(): boolean {
   const nav = performance.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
   if (nav?.type === "reload") return true;
   return (performance as Performance & { navigation?: { type: number } }).navigation?.type === 1;
+}
+
+export function shouldResumeLiveOnMatchPage(input: {
+  hasRecovery: boolean;
+  liveActive: boolean;
+  resumeIntent: boolean;
+  documentReload: boolean;
+}): boolean {
+  return input.hasRecovery && !input.liveActive && (input.resumeIntent || input.documentReload);
+}
+
+export function shouldReuseLiveGameId(input: {
+  reuseRequested?: boolean;
+  endedThisSession: boolean;
+  gameId: string;
+  recoveryId: string;
+}): boolean {
+  if (input.reuseRequested === true) return true;
+  if (input.endedThisSession) return false;
+  return Boolean(input.gameId || input.recoveryId);
 }
 
 function defaultSessionStorage(): Storage | null {

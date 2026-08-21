@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { MatchState } from "../scoring";
 import type { MatchDraft } from "../storage/matchSetup";
+import { shouldReuseLiveGameId } from "./homeResume";
 import {
   clearLiveRecovery,
   createGameId,
@@ -14,6 +15,8 @@ import {
   updateLiveBranding,
   updateLiveScore,
   uploadMatchLogos,
+  resolveLiveLogos,
+  compactLiveLogos,
   viewerUrl,
   writePresence,
   setLiveChatPaused,
@@ -37,6 +40,7 @@ type LiveSessionState = {
   recovery: LiveRecovery | null;
   returnPrompt: boolean;
   chatPaused: boolean;
+  endedThisSession: boolean;
   goLive: (match: MatchState, draft: MatchDraft, options?: GoLiveOptions) => Promise<void>;
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
@@ -88,6 +92,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   recovery: loadLiveRecovery(),
   returnPrompt: Boolean(loadLiveRecovery()),
   chatPaused: false,
+  endedThisSession: false,
   openShare() {
     set({ shareOpen: true });
   },
@@ -113,9 +118,15 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       return;
     }
 
-    const reuseId = options?.reuseId === true;
+    const recoveredId = get().gameId || get().recovery?.gameId || "";
+    const reuseId = shouldReuseLiveGameId({
+      reuseRequested: options?.reuseId,
+      endedThisSession: get().endedThisSession,
+      gameId: get().gameId,
+      recoveryId: get().recovery?.gameId || ""
+    });
     const gameId = reuseId
-      ? get().gameId || get().recovery?.gameId || createGameId()
+      ? recoveredId || createGameId()
       : createGameId();
     const epoch = get().epoch + 1;
     set({
@@ -124,12 +135,15 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       gameId,
       active: false,
       epoch,
-      shareOpen: true
+      shareOpen: true,
+      endedThisSession: false
     });
     stopPresence();
     clearScoreTimer();
     try {
-      await createLiveGame(gameId, match, { homeLogo: "", awayLogo: "" });
+      const liveLogos = await compactLiveLogos(draft);
+      if (get().epoch !== epoch) return;
+      await createLiveGame(gameId, match, liveLogos);
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
@@ -156,12 +170,14 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       });
       void (async () => {
         try {
-          const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+          const uploaded = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
           if (!sessionStillOpen(epoch, gameId, get())) return;
+          const logos = resolveLiveLogos(uploaded, liveLogos);
           if (!logos.homeLogo && !logos.awayLogo) return;
+          if (logos.homeLogo === liveLogos.homeLogo && logos.awayLogo === liveLogos.awayLogo) return;
           await updateLiveBranding(gameId, match, logos);
         } catch {
-          // Logos are optional. The live game and QR already exist.
+          // Logos already went out on create when a compact data URL existed.
         }
       })();
     } catch (error) {
@@ -197,7 +213,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       shareOpen: false,
       recovery: null,
       returnPrompt: false,
-      chatPaused: false
+      chatPaused: false,
+      endedThisSession: true
     });
     if (gameId) {
       try {
@@ -253,8 +270,11 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     const startedId = gameId;
     void (async () => {
       try {
-        const logos = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+        const compact = await compactLiveLogos(draft);
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
+        const uploaded = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
+        const logos = resolveLiveLogos(uploaded, compact);
         await updateLiveBranding(startedId, match, logos);
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({ status: "live", error: "" });

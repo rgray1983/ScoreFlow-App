@@ -25,6 +25,7 @@
   --font-ui: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-score: Anton, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   --tap: 44px;
+  --button-height: 40px;
   --secondary-action: rgba(255, 255, 255, 0.1);
   --secondary-action-border: rgba(255, 255, 255, 0.16);
 }

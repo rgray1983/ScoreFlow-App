@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import styles from "./LogoMark.module.css";
 
 type LogoMarkProps = {
@@ -8,13 +9,24 @@ type LogoMarkProps = {
 };
 
 export function LogoMark({ name, logo, color, className = "" }: LogoMarkProps) {
+  const [broken, setBroken] = useState(false);
+  const showImage = Boolean(logo) && !broken;
   const initial = (name || "T").charAt(0).toUpperCase();
+
+  useEffect(() => {
+    setBroken(false);
+  }, [logo]);
+
   return (
     <span
-      className={`${styles.mark} ${logo ? styles.hasLogo : ""} ${className}`}
+      className={`${styles.mark} ${showImage ? styles.hasLogo : ""} ${className}`}
       style={color ? { background: color } : undefined}
     >
-      {logo ? <img src={logo} alt="" /> : <span className={styles.initial}>{initial}</span>}
+      {showImage ? (
+        <img src={logo || ""} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+      ) : (
+        <span className={styles.initial}>{initial}</span>
+      )}
     </span>
   );
 }

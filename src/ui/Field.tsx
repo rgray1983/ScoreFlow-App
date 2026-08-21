@@ -19,6 +19,6 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={styles.control} {...props} />;
 }
 
-export function SelectInput(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={styles.control} {...props} />;
+export function SelectInput({ className = "", ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={`${styles.control} ${styles.select} ${className}`} {...props} />;
 }

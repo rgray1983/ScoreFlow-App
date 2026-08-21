@@ -59,6 +59,7 @@
 .primaryAction {
   display: grid;
   gap: 10px;
+  align-items: start;
 }
 
 .primaryAction.withResume {
@@ -68,6 +69,12 @@
 .primaryAction :global(a),
 .primaryAction :global(button) {
   width: 100%;
+}
+
+.primaryAction.withResume :global(a),
+.primaryAction.withResume :global(button) {
+  padding: 0 12px;
+  font-size: 13px;
 }
 
 .resumeHint {

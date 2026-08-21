@@ -75,7 +75,8 @@ function resetSession(): void {
     shareOpen: false,
     recovery: null,
     returnPrompt: false,
-    chatPaused: false
+    chatPaused: false,
+    endedThisSession: false
   });
 }
 
@@ -105,6 +106,19 @@ describe("live session", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("writes compact logos on create so the viewer has them immediately", async () => {
+    const withLogos = {
+      ...EMPTY_MATCH_DRAFT,
+      homeLogo: "data:image/png;base64,xx",
+      awayLogo: "https://example.com/away.png"
+    };
+    await useLiveSession.getState().goLive(match, withLogos);
+    expect(liveMocks.createLiveGame).toHaveBeenCalledWith("id-a", match, {
+      homeLogo: "data:image/png;base64,xx",
+      awayLogo: "https://example.com/away.png"
+    });
   });
 
   it("mints a new game id after endLive so the next share is not the ended game", async () => {
@@ -147,10 +161,12 @@ describe("live session", () => {
     expect(useLiveSession.getState().gameId).toBe("id-a");
   });
 
-  it("lets Share Live start even if a previous start is still in flight", async () => {
+  it("lets a second Share Live tap keep the in-flight game instead of minting a new id", async () => {
     let finishFirst: (() => void) | undefined;
-    liveMocks.createLiveGame.mockImplementation((gameId: string) => {
-      if (gameId === "id-a") {
+    let starts = 0;
+    liveMocks.createLiveGame.mockImplementation(() => {
+      starts += 1;
+      if (starts === 1) {
         return new Promise<void>((resolve) => {
           finishFirst = resolve;
         });
@@ -163,11 +179,11 @@ describe("live session", () => {
     }
     expect(liveMocks.createLiveGame).toHaveBeenCalled();
     await useLiveSession.getState().goLive(match, draft);
-    expect(useLiveSession.getState().gameId).toBe("id-b");
-    expect(useLiveSession.getState().status).toBe("live");
+    expect(useLiveSession.getState().gameId).toBe("id-a");
+    expect(liveMocks.createGameId).toHaveBeenCalledTimes(1);
     finishFirst?.();
     await first;
-    expect(useLiveSession.getState().gameId).toBe("id-b");
+    expect(useLiveSession.getState().gameId).toBe("id-a");
     expect(useLiveSession.getState().status).toBe("live");
   });
 
@@ -209,6 +225,20 @@ describe("live session", () => {
     useLiveSession.setState({ recovery: liveMocks.stored() });
     await useLiveSession.getState().resumeLive(match, draft);
     expect(useLiveSession.getState().gameId).toBe("id-a");
+    expect(liveMocks.createLiveGame).toHaveBeenCalledWith("id-a", match, { homeLogo: "", awayLogo: "" });
+  });
+
+  it("reuses the recovered game id when Share Live is tapped after a scorer reload", async () => {
+    liveMocks.setStored({ gameId: "id-a", active: true, savedAtMs: 1, summary: "Live" });
+    useLiveSession.setState({
+      recovery: liveMocks.stored(),
+      active: false,
+      gameId: "",
+      endedThisSession: false
+    });
+    await useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().gameId).toBe("id-a");
+    expect(liveMocks.createGameId).not.toHaveBeenCalled();
     expect(liveMocks.createLiveGame).toHaveBeenCalledWith("id-a", match, { homeLogo: "", awayLogo: "" });
   });
 
