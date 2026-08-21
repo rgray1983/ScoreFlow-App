@@ -1,10 +1,15 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { FocusEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import styles from "./Field.module.css";
 
 type FieldProps = {
   label: string;
   children: ReactNode;
 };
+
+export function selectInputText(event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void {
+  const field = event.currentTarget;
+  window.requestAnimationFrame(() => field.select());
+}
 
 export function Field({ label, children }: FieldProps) {
   return (
@@ -15,8 +20,17 @@ export function Field({ label, children }: FieldProps) {
   );
 }
 
-export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={styles.control} {...props} />;
+export function TextInput({ onFocus, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className={styles.control}
+      {...props}
+      onFocus={(event) => {
+        selectInputText(event);
+        onFocus?.(event);
+      }}
+    />
+  );
 }
 
 export function SelectInput({ className = "", ...props }: SelectHTMLAttributes<HTMLSelectElement>) {

@@ -7,6 +7,44 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.collapsed {
+  padding: 12px 14px;
+}
+
+.swatch {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.swatchMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.swatchMeta strong {
+  font-size: 15px;
+}
+
+.swatchMeta span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.swatchBar {
+  height: 36px;
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
 .head {
   display: flex;
   align-items: center;
@@ -20,12 +58,12 @@
 }
 
 .hex {
-  width: 104px;
-  min-width: 104px;
+  width: 118px;
+  min-width: 118px;
   padding: 9px 10px;
   border-radius: 12px;
   text-align: center;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   text-transform: uppercase;
   border: 1px solid var(--line);
@@ -67,4 +105,8 @@
 
 .hueThumb {
   top: 50%;
+}
+
+.save {
+  width: 100%;
 }

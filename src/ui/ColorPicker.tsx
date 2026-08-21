@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { hexToHsv, hsvToHex, normalizeHex } from "../lib/color";
+import { Button } from "./Button";
+import { selectInputText } from "./Field";
 import styles from "./ColorPicker.module.css";
 
 type ColorPickerProps = {
@@ -12,6 +14,7 @@ type ColorPickerProps = {
 export function ColorPicker({ value, onChange, label = "Team Color", className = "" }: ColorPickerProps) {
   const color = normalizeHex(value);
   const hsv = hexToHsv(color);
+  const [open, setOpen] = useState(false);
   const [hexText, setHexText] = useState(color);
   const fieldRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
@@ -23,6 +26,7 @@ export function ColorPicker({ value, onChange, label = "Team Color", className =
   }, [color]);
 
   useEffect(() => {
+    if (!open) return;
     const bind = (target: HTMLDivElement | null, handler: (event: PointerEvent) => void) => {
       if (!target) return () => undefined;
       const onDown = (event: PointerEvent) => {
@@ -66,7 +70,27 @@ export function ColorPicker({ value, onChange, label = "Team Color", className =
       unbindField();
       unbindHue();
     };
-  }, [onChange]);
+  }, [onChange, open]);
+
+  if (!open) {
+    return (
+      <section className={`${styles.picker} ${styles.collapsed} ${className}`} aria-label={`${label} picker`}>
+        <button
+          className={styles.swatch}
+          type="button"
+          aria-expanded="false"
+          aria-label={`Edit ${label}, currently ${color}`}
+          onClick={() => setOpen(true)}
+        >
+          <span className={styles.swatchMeta}>
+            <strong>{label}</strong>
+            <span>{color}</span>
+          </span>
+          <span className={styles.swatchBar} style={{ background: color }} />
+        </button>
+      </section>
+    );
+  }
 
   return (
     <section className={`${styles.picker} ${className}`} aria-label={`${label} picker`}>
@@ -77,6 +101,7 @@ export function ColorPicker({ value, onChange, label = "Team Color", className =
           maxLength={7}
           value={hexText}
           aria-label={`${label} hex value`}
+          onFocus={selectInputText}
           onChange={(event) => {
             const next = event.target.value.trim();
             setHexText(next);
@@ -113,6 +138,7 @@ export function ColorPicker({ value, onChange, label = "Team Color", className =
           }}
         />
       </div>
+      <Button className={styles.save} tone="quiet" onClick={() => setOpen(false)}>Save Color</Button>
     </section>
   );
 }

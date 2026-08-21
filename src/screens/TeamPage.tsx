@@ -37,10 +37,10 @@ export function TeamPage() {
           onError={setError}
         />
         <Field label="Team Name">
-          <TextInput value={name} placeholder="Sandhills Blazers" onChange={(event) => setName(event.target.value)} />
+          <TextInput value={name} placeholder="Team Name" onChange={(event) => setName(event.target.value)} />
         </Field>
         <Field label="City, State">
-          <TextInput value={location} placeholder="Sandhills, SC" onChange={(event) => setLocation(event.target.value)} />
+          <TextInput value={location} placeholder="City, State" onChange={(event) => setLocation(event.target.value)} />
         </Field>
         <ColorPicker value={color} onChange={setColor} />
       </section>
