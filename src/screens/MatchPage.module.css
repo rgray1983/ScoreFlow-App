@@ -217,14 +217,15 @@
 .team {
   position: relative;
   z-index: 2;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(92px, 1fr) auto;
-  gap: clamp(6px, 1.25vh, 12px);
-  padding: clamp(16px, 3.6vh, 36px) clamp(16px, 2.7vw, 48px) clamp(12px, 2.5vh, 24px);
-  align-items: center;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(4px, 0.8vh, 8px);
+  padding: clamp(10px, 2.2vh, 22px) clamp(12px, 2.2vw, 40px) clamp(8px, 1.5vh, 16px);
+  align-items: stretch;
   justify-items: center;
   text-align: center;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .identity {
@@ -232,7 +233,7 @@
 }
 
 .pointActions {
-  grid-row: 3;
+  grid-row: 2;
 }
 
 .home { grid-area: home; }
@@ -260,11 +261,14 @@
   z-index: 2;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-areas: "meta" "logo";
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
-  gap: 8px;
-  overflow: visible;
+  align-content: center;
+  gap: clamp(2px, 0.5vh, 6px);
+  overflow: hidden;
 }
 
 .identity > div {
@@ -275,13 +279,19 @@
 
 .teamLogo {
   grid-area: logo;
-  width: clamp(104px, min(17.5vw, 34vh), 235px) !important;
-  height: clamp(104px, min(17.5vw, 34vh), 235px) !important;
+  align-self: center;
+  width: auto !important;
+  height: auto !important;
+  max-width: min(100%, clamp(72px, min(15vw, 28vh), 200px));
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
   border: 0;
   border-radius: 0;
   background: transparent !important;
   color: #05070c;
-  font-size: clamp(48px, min(8vw, 15vh), 108px);
+  font-size: clamp(40px, min(7vw, 12vh), 96px);
   filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.32));
 }
 
@@ -316,7 +326,7 @@
   min-width: 0;
   color: #05070c;
   font-weight: 900;
-  font-size: clamp(22px, min(4.2vw, 7.6vh), 52px);
+  font-size: clamp(18px, min(3.4vw, 6.2vh), 42px);
   line-height: 0.92;
   letter-spacing: -0.055em;
   text-transform: uppercase;
@@ -339,7 +349,7 @@
 }
 
 .teamName:has(span:nth-child(2)) {
-  font-size: clamp(20px, min(3.6vw, 6.6vh), 42px);
+  font-size: clamp(16px, min(2.8vw, 5vh), 32px);
 }
 
 .pointBanner {
@@ -395,7 +405,7 @@
 }
 
 .sets {
-  margin-top: 4px;
+  margin-top: 1px;
   color: rgba(5, 7, 12, 0.55);
   font-size: 11px;
   font-weight: 800;
@@ -407,13 +417,15 @@
   grid-area: center;
   position: relative;
   z-index: 3;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(4px, 1vh, 10px);
   align-items: center;
   justify-items: center;
-  padding: clamp(14px, 3.5vh, 34px) clamp(10px, 1.7vw, 22px) clamp(12px, 2.4vh, 24px);
+  padding: clamp(10px, 2.4vh, 24px) clamp(10px, 1.7vw, 22px) clamp(8px, 1.6vh, 16px);
   text-align: center;
+  overflow: hidden;
 }
 
 .titleBlock {
@@ -919,15 +931,19 @@
 
   .identity {
     grid-template-areas: "logo" "meta";
+    grid-template-rows: auto auto;
     gap: 4px;
     padding: 7px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.12);
+    overflow: visible;
   }
 
   .teamLogo {
     width: clamp(54px, 14svh, 86px) !important;
     height: clamp(54px, 14svh, 86px) !important;
+    max-width: none;
+    max-height: none;
     font-size: clamp(28px, 8vw, 42px);
   }
 
@@ -1008,18 +1024,17 @@
   }
 
   .team {
-    gap: 5px;
-    padding: clamp(9px, 2.7vh, 16px) clamp(10px, 2.2vw, 28px) clamp(7px, 1.8vh, 14px);
+    gap: 4px;
+    padding: clamp(6px, 1.8vh, 12px) clamp(8px, 1.8vw, 22px) clamp(6px, 1.4vh, 10px);
   }
 
   .teamName,
   .teamName:has(span:nth-child(2)) {
-    font-size: clamp(18px, min(3.6vw, 7.2vh), 36px);
+    font-size: clamp(14px, min(2.6vw, 5.4vh), 26px);
   }
 
   .teamLogo {
-    width: clamp(74px, min(14.5vw, 29vh), 154px) !important;
-    height: clamp(74px, min(14.5vw, 29vh), 154px) !important;
+    max-width: min(100%, clamp(56px, min(12vw, 24vh), 120px));
   }
 
   .score {
