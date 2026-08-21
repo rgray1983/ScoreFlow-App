@@ -1,5 +1,6 @@
 .page {
   position: relative;
+  isolation: isolate;
   height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -7,6 +8,22 @@
   min-width: 0;
   overflow-x: hidden;
   padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: #05070c;
+}
+
+.page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.5)),
+    radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--home), transparent 78%), transparent 24%),
+    radial-gradient(circle at 82% 10%, color-mix(in srgb, var(--away), transparent 80%), transparent 26%),
+    url("../../images/scoreboard-bg.jpg") center / cover no-repeat,
+    #05070c;
+  opacity: 0.92;
 }
 
 .topBar,
@@ -22,6 +39,7 @@
 
 .topBar {
   position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;

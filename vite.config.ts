@@ -1,6 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: "src",
@@ -34,7 +38,10 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    fs: {
+      allow: [projectRoot]
+    }
   },
   preview: {
     port: 5173,
