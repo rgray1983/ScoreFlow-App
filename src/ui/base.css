@@ -30,6 +30,49 @@ body {
   overflow: hidden;
 }
 
+/*
+  Browser tabs keep 100dvh so the URL bar does not leave a gap.
+  iOS home-screen PWAs with viewport-fit=cover report 100dvh short of the
+  physical screen (WebKit). 100vh includes that home-indicator band.
+*/
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --scoreflow-vh: 100vh;
+  }
+
+  html,
+  body {
+    height: 100vh;
+    min-height: 100vh;
+  }
+
+  #root {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+}
+
+html.scoreflow-standalone {
+  --scoreflow-vh: 100vh;
+}
+
+html.scoreflow-standalone,
+html.scoreflow-standalone body {
+  height: 100vh;
+  min-height: 100vh;
+}
+
+html.scoreflow-standalone #root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
 button,
 input,
 select {
