@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { isMatchOver, matchBanner } from "../scoring";
+import { matchBanner } from "../scoring";
 import {
   ensureAnonymousAuth,
   listenLiveGame,
@@ -12,6 +12,7 @@ import { FanZone } from "../ui/FanZone";
 import { FitText } from "../ui/FitText";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
+import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { PrematchOverlay } from "../ui/PrematchOverlay";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
@@ -26,9 +27,11 @@ export function ViewerPage() {
   const [status, setStatus] = useState<"offline" | "live" | "error">("offline");
   const [viewers, setViewers] = useState(0);
   const [watching, setWatching] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
 
   useEffect(() => {
     setWatching(false);
+    setResultsOpen(false);
   }, [gameId]);
 
   useEffect(() => {
@@ -80,10 +83,13 @@ export function ViewerPage() {
 
   const match = game?.match;
   const ended = Boolean(game?.ended);
+  const matchWon = Boolean(match?.winner);
+  const showCelebration = watching && matchWon && !ended;
   const showPrematch = !watching || ended;
   const banner = match ? matchBanner(match) : missing ? "GAME NOT FOUND" : "CONNECTING";
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON") || banner === "GAME NOT FOUND";
   const fx = useBoardFx(watching && !ended ? match : null);
+  const winnerName = match?.winner === "home" ? match.homeName : match?.awayName || "";
 
   return (
     <div
@@ -160,24 +166,20 @@ export function ViewerPage() {
       </main>
 
       {match ? (
-        <ConfettiBurst active={fx.confetti} colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff"]} />
+        <ConfettiBurst
+          active={fx.confetti || (showCelebration && !resultsOpen)}
+          colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
+        />
       ) : null}
 
-      {match && isMatchOver(match) && match.winner && !showPrematch ? (
+      {showCelebration && !resultsOpen ? (
+        <WinnerCelebration name={winnerName} onShowResults={() => setResultsOpen(true)} />
+      ) : null}
+
+      {showCelebration && resultsOpen && match ? (
         <div className={styles.winner} role="status">
           <div className={styles.winnerShade} />
-          <div className={styles.winnerCard}>
-            <p className={styles.winnerEyebrow}>Match won</p>
-            <h2>{match.winner === "home" ? match.homeName : match.awayName}</h2>
-            <ul className={styles.setList}>
-              {match.completedSets.map((set) => (
-                <li key={set.set}>
-                  <span>Set {set.set}</span>
-                  <strong>{set.homeScore}–{set.awayScore}</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <MatchWonCard match={match} />
         </div>
       ) : null}
 

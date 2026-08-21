@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMatch, point } from "../scoring";
-import { detectBoardFx, fitFontSize, setHistoryTickerItems } from "./boardChrome";
+import { detectBoardFx, fitFontSize, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor } from "./boardChrome";
 
 describe("fitFontSize", () => {
   it("keeps the starting size when the name already fits", () => {
@@ -24,7 +24,8 @@ describe("setHistoryTickerItems", () => {
     for (let i = 0; i < 18; i += 1) engine = point(engine, "away");
     for (let i = 0; i < 24; i += 1) engine = point(engine, "home");
     engine = point(engine, "home");
-    expect(setHistoryTickerItems(engine.match)).toEqual([
+    const items = setHistoryTickerItems(engine.match);
+    expect(items).toEqual([
       {
         key: "1-home-25-18",
         setNumber: 1,
@@ -36,6 +37,8 @@ describe("setHistoryTickerItems", () => {
         detail: "McBee Panthers - 25:18"
       }
     ]);
+    expect(setHistoryTickerCopy(items)).toBe("WINNER SET 1: McBee Panthers - 25:18");
+    expect(setWinnerColor(engine.match, engine.match.completedSets[0])).toBe("#d62828");
   });
 });
 

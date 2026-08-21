@@ -12,6 +12,7 @@ import { useAccount } from "../state/account";
 import { useLiveSession } from "../state/liveSession";
 import { usePremium } from "../state/premium";
 import { useWorkspace } from "../state/workspace";
+import { isMatchOver } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
 import styles from "./HomePage.module.css";
@@ -30,7 +31,8 @@ export function HomePage() {
   const showResume = shouldShowResumeMatch({
     liveActive,
     hasRecovery: Boolean(recovery),
-    matchHasProgress: matchHasProgress(engine)
+    matchHasProgress: matchHasProgress(engine),
+    matchOver: isMatchOver(match)
   });
   const promptOpen = shouldPromptLiveReturn({
     liveActive,

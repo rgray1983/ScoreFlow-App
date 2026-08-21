@@ -16,6 +16,7 @@ import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
 import { FanZone } from "../ui/FanZone";
 import { FitText } from "../ui/FitText";
+import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { ResultsSheet } from "../ui/ResultsSheet";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
@@ -54,10 +55,17 @@ export function MatchPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
+  const [matchCardOpen, setMatchCardOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
 
   useEffect(() => {
-    setWinnerOpen(Boolean(match.winner));
+    if (match.winner) {
+      setWinnerOpen(true);
+      setMatchCardOpen(false);
+      return;
+    }
+    setWinnerOpen(false);
+    setMatchCardOpen(false);
   }, [match.winner]);
 
   useEffect(() => {
@@ -87,6 +95,7 @@ export function MatchPage() {
     dispatch({ type: "newMatch" });
     setConfirmOpen(false);
     setWinnerOpen(false);
+    setMatchCardOpen(false);
     setRecapOpen(false);
   }
 
@@ -110,18 +119,18 @@ export function MatchPage() {
     void useLiveSession.getState().goLive(match, draft);
   }
 
-  function openRecap() {
+  function showResults() {
     setWinnerOpen(false);
-    setRecapOpen(true);
+    setMatchCardOpen(true);
   }
 
-  function closeWinner() {
-    setWinnerOpen(false);
+  function openRecap() {
+    setRecapOpen(true);
   }
 
   function closeRecap() {
     setRecapOpen(false);
-    if (match.winner) setWinnerOpen(true);
+    if (match.winner) setMatchCardOpen(true);
   }
 
   function endMatch() {
@@ -290,24 +299,22 @@ export function MatchPage() {
         </section>
       </main>
 
-      <ConfettiBurst active={fx.confetti} colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff"]} />
+      <ConfettiBurst
+        active={fx.confetti || (Boolean(match.winner) && winnerOpen && !matchCardOpen && !recapOpen)}
+        colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff", "#ff3b30"]}
+      />
 
-      {winnerOpen && match.winner ? (
+      {winnerOpen && match.winner && !matchCardOpen && !recapOpen ? (
+        <WinnerCelebration
+          name={match.winner === "home" ? match.homeName : match.awayName}
+          onShowResults={showResults}
+        />
+      ) : null}
+
+      {matchCardOpen && match.winner ? (
         <div className={styles.winner} role="dialog" aria-labelledby="winner-title">
-          <button className={styles.winnerShade} type="button" aria-label="Close winner overlay" onClick={closeWinner} />
-          <div className={styles.winnerCard}>
-            <p className={styles.winnerEyebrow}>Match won</p>
-            <h2 className={styles.winnerName} id="winner-title">
-              {match.winner === "home" ? match.homeName : match.awayName}
-            </h2>
-            <ul className={styles.setList}>
-              {match.completedSets.map((set) => (
-                <li key={set.set}>
-                  <span>Set {set.set}</span>
-                  <strong>{set.homeScore}–{set.awayScore}</strong>
-                </li>
-              ))}
-            </ul>
+          <button className={styles.winnerShade} type="button" aria-hidden="true" tabIndex={-1} />
+          <MatchWonCard match={match}>
             <div className={styles.winnerActions}>
               <Button type="button" tone="gold" onClick={openRecap}>
                 Share Results
@@ -320,7 +327,7 @@ export function MatchPage() {
                 Undo last point
               </Button>
             </div>
-          </div>
+          </MatchWonCard>
         </div>
       ) : null}
 

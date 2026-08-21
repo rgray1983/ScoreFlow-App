@@ -117,30 +117,27 @@
   pointer-events: none;
   transform: translateY(-50%);
   opacity: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
 }
 
 .tickerOn {
   opacity: 1;
 }
 
-.ticker::after {
-  content: "";
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: 42px;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.78));
+.tickerTrack {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation: tickerMarquee var(--ticker-duration, 18s) linear infinite;
 }
 
-.tickerText {
+.tickerCopy {
+  display: flex;
+  align-items: center;
   margin: 0;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0;
-  transform: translateX(-18px);
-  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding-right: 0.55em;
+  gap: 0.55em;
   color: rgba(245, 248, 252, 0.7);
   font-size: clamp(12px, min(1.55vw, 3vh), 22px);
   font-weight: 900;
@@ -148,11 +145,14 @@
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
 }
 
-.tickerShowing {
-  opacity: 1;
-  transform: none;
+.tickerItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45em;
+  white-space: nowrap;
 }
 
 .tickerLabel {
@@ -162,6 +162,10 @@
 .tickerWinner {
   color: var(--ticker-team-color, #fff);
   font-weight: 1000;
+}
+
+.tickerDot {
+  color: rgba(245, 248, 252, 0.35);
 }
 
 .viewers {
@@ -606,7 +610,7 @@
 .winner {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 70;
   display: grid;
   place-items: center;
   padding: 18px;
@@ -658,13 +662,42 @@
   list-style: none;
 }
 
+.winnerCelebrate {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 460px);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 24px;
+  background: rgba(13, 20, 34, 0.96);
+  text-align: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.winnerTrophy {
+  font-size: 58px;
+  line-height: 1;
+  animation: trophyPop 0.6s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.winnerHint {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
 .setList li {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
+  color: var(--set-winner-color, #fff);
+  font-weight: 800;
 }
 
 .winnerActions {
@@ -730,13 +763,28 @@
   }
 }
 
+@keyframes tickerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes trophyPop {
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(1.12) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scorePop,
   .colon,
   .raceAlert,
   .pointBannerShow,
   .setWinShow,
-  .tickerText {
+  .winnerTrophy {
+    animation: none;
+  }
+
+  .tickerTrack {
     animation: none;
   }
 }
@@ -937,7 +985,7 @@
     height: calc(100% - 8px);
   }
 
-  .tickerText {
+  .tickerCopy {
     font-size: clamp(10px, min(1.35vw, 2.7vh), 16px);
   }
 
@@ -1009,8 +1057,8 @@
   }
 
   .setList li {
-    padding: 6px 10px;
-    border-radius: 10px;
+    padding: 6px 14px;
+    border-radius: 999px;
   }
 
   .winnerActions {

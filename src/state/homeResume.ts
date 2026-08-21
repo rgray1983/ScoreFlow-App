@@ -4,8 +4,10 @@ export function shouldShowResumeMatch(input: {
   liveActive: boolean;
   hasRecovery: boolean;
   matchHasProgress: boolean;
+  matchOver?: boolean;
 }): boolean {
-  return input.liveActive || input.hasRecovery || input.matchHasProgress;
+  if (input.liveActive || input.hasRecovery) return true;
+  return input.matchHasProgress && !input.matchOver;
 }
 
 export function shouldPromptLiveReturn(input: {

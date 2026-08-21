@@ -8,6 +8,27 @@ describe("shouldShowResumeMatch", () => {
     expect(shouldShowResumeMatch({ liveActive: false, hasRecovery: false, matchHasProgress: true })).toBe(true);
     expect(shouldShowResumeMatch({ liveActive: false, hasRecovery: false, matchHasProgress: false })).toBe(false);
   });
+
+  it("hides Resume Match when there is no current match to return to", () => {
+    expect(shouldShowResumeMatch({
+      liveActive: false,
+      hasRecovery: false,
+      matchHasProgress: true,
+      matchOver: true
+    })).toBe(false);
+    expect(shouldShowResumeMatch({
+      liveActive: true,
+      hasRecovery: false,
+      matchHasProgress: true,
+      matchOver: true
+    })).toBe(true);
+    expect(shouldShowResumeMatch({
+      liveActive: false,
+      hasRecovery: false,
+      matchHasProgress: true,
+      matchOver: false
+    })).toBe(true);
+  });
 });
 
 describe("shouldPromptLiveReturn", () => {

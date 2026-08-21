@@ -38,6 +38,14 @@ export function setHistoryTickerItems(match: MatchState): SetHistoryTickerItem[]
     });
 }
 
+export function setHistoryTickerCopy(items: SetHistoryTickerItem[]): string {
+  return items.map((item) => `${item.label} ${item.detail}`).join("   •   ");
+}
+
+export function setWinnerColor(match: MatchState, set: { winner: Side }): string {
+  return set.winner === "home" ? match.homeColor : match.awayColor;
+}
+
 export type BoardFx = {
   pointSide: Side | null;
   setWinnerSide: Side | null;
