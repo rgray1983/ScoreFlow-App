@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { ColorPicker } from "../ui/ColorPicker";
 import { Dialog } from "../ui/Dialog";
 import { Field, SelectInput, TextInput } from "../ui/Field";
-import { Swatches } from "../ui/Swatches";
 import { InnerScreen } from "./InnerScreen";
 import { matchHasProgress } from "../storage/matchEngine";
 import { useLiveSession } from "../state/liveSession";
@@ -76,13 +76,23 @@ export function SetupPage() {
             <Field label="Home team">
               <TextInput value={draft.homeName} onChange={(event) => updateDraft({ homeName: event.target.value })} />
             </Field>
-            <Swatches label="Home Color" value={draft.homeColor} onChange={(homeColor) => updateDraft({ homeColor })} />
+            <ColorPicker
+              className={setupStyles.picker}
+              label="Home Color"
+              value={draft.homeColor}
+              onChange={(homeColor) => updateDraft({ homeColor })}
+            />
           </div>
           <div>
             <Field label="Visitor team">
               <TextInput value={draft.awayName} onChange={(event) => updateDraft({ awayName: event.target.value })} />
             </Field>
-            <Swatches label="Visitor Color" value={draft.awayColor} onChange={(awayColor) => updateDraft({ awayColor })} />
+            <ColorPicker
+              className={setupStyles.picker}
+              label="Visitor Color"
+              value={draft.awayColor}
+              onChange={(awayColor) => updateDraft({ awayColor })}
+            />
           </div>
         </div>
       </section>

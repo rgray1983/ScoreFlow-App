@@ -15,6 +15,30 @@
   outline: none;
 }
 
+.select {
+  appearance: none;
+  color-scheme: dark;
+  padding-right: 42px;
+  background-color: #101827;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23f7fbff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px;
+  color: var(--text);
+}
+
+.select option,
+.select optgroup {
+  background-color: #101827;
+  color: #f7fbff;
+}
+
+.select option:checked,
+.select option:hover {
+  background-color: #1565c0;
+  color: #ffffff;
+}
+
 .control:focus {
   border-color: rgba(255, 255, 255, 0.28);
 }

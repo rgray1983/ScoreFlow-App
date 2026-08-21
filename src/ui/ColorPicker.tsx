@@ -5,9 +5,11 @@ import styles from "./ColorPicker.module.css";
 type ColorPickerProps = {
   value: string;
   onChange: (value: string) => void;
+  label?: string;
+  className?: string;
 };
 
-export function ColorPicker({ value, onChange }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, label = "Team Color", className = "" }: ColorPickerProps) {
   const color = normalizeHex(value);
   const hsv = hexToHsv(color);
   const [hexText, setHexText] = useState(color);
@@ -67,14 +69,14 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   }, [onChange]);
 
   return (
-    <section className={styles.picker} aria-label="Team color picker">
+    <section className={`${styles.picker} ${className}`} aria-label={`${label} picker`}>
       <div className={styles.head}>
-        <h3>Team Color</h3>
+        <h3>{label}</h3>
         <input
           className={styles.hex}
           maxLength={7}
           value={hexText}
-          aria-label="Team color hex value"
+          aria-label={`${label} hex value`}
           onChange={(event) => {
             const next = event.target.value.trim();
             setHexText(next);

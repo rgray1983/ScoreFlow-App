@@ -277,8 +277,18 @@
   min-width: 0;
 }
 
-.teamLogo {
+.logoPick {
   grid-area: logo;
+  display: grid;
+  justify-items: center;
+  cursor: pointer;
+}
+
+.logoPick input {
+  display: none;
+}
+
+.teamLogo {
   width: clamp(88px, min(16vw, 28vh), 210px) !important;
   height: clamp(88px, min(16vw, 28vh), 210px) !important;
   border: 0;

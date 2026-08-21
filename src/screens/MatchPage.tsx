@@ -11,6 +11,7 @@ import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
+import { BoardLogoPicker } from "../ui/BoardLogoPicker";
 import { Button } from "../ui/Button";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
@@ -23,7 +24,6 @@ import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
-import { LogoMark } from "../ui/LogoMark";
 import { useBoardFx } from "../ui/useBoardFx";
 import styles from "./MatchPage.module.css";
 
@@ -45,6 +45,7 @@ export function MatchPage() {
   const draft = useWorkspace((state) => state.draft);
   const engine = useWorkspace((state) => state.engine);
   const dispatch = useWorkspace((state) => state.dispatch);
+  const updateDraft = useWorkspace((state) => state.updateDraft);
   const live = useLiveSession();
   const match = engine.match;
   const over = isMatchOver(match);
@@ -83,6 +84,11 @@ export function MatchPage() {
       void session.resumeLive(match, draft);
     }
   }, []);
+
+  function setTeamLogo(side: Side, logo: string) {
+    updateDraft(side === "home" ? { homeLogo: logo } : { awayLogo: logo });
+    live.publishBranding(match, useWorkspace.getState().draft);
+  }
 
   function score(side: Side) {
     dispatch({ type: "point", side });
@@ -178,7 +184,15 @@ export function MatchPage() {
       <main className={styles.board} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
+            <BoardLogoPicker
+              name={match.homeName}
+              logo={draft.homeLogo}
+              color={match.homeColor}
+              label={`Upload ${match.homeName} logo`}
+              wrapClassName={styles.logoPick}
+              markClassName={styles.teamLogo}
+              onChange={(logo) => setTeamLogo("home", logo)}
+            />
             <div>
               <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
@@ -254,7 +268,15 @@ export function MatchPage() {
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
+            <BoardLogoPicker
+              name={match.awayName}
+              logo={draft.awayLogo}
+              color={match.awayColor}
+              label={`Upload ${match.awayName} logo`}
+              wrapClassName={styles.logoPick}
+              markClassName={styles.teamLogo}
+              onChange={(logo) => setTeamLogo("away", logo)}
+            />
             <div>
               <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
