@@ -15,6 +15,7 @@ import {
   updateLiveBranding,
   updateLiveScore,
   uploadMatchLogos,
+  resolveLiveLogos,
   viewerUrl,
   writePresence,
   setLiveChatPaused,
@@ -166,8 +167,9 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       });
       void (async () => {
         try {
-          const logos = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+          const uploaded = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
           if (!sessionStillOpen(epoch, gameId, get())) return;
+          const logos = resolveLiveLogos(uploaded, draft);
           if (!logos.homeLogo && !logos.awayLogo) return;
           await updateLiveBranding(gameId, match, logos);
         } catch {
@@ -264,8 +266,9 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     const startedId = gameId;
     void (async () => {
       try {
-        const logos = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
+        const uploaded = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
+        const logos = resolveLiveLogos(uploaded, draft);
         await updateLiveBranding(startedId, match, logos);
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({ status: "live", error: "" });

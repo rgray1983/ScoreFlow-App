@@ -1,0 +1,23 @@
+.burst {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  animation-name: confettiFall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confettiFall {
+  to {
+    transform: translateY(110%) rotate(220deg);
+    opacity: 0;
+  }
+}

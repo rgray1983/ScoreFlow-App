@@ -9,7 +9,7 @@ import {
 import type { MatchState } from "../scoring";
 import { parseMatchState } from "../storage/matchEngine";
 import { ensureAnonymousAuth, getFirebase } from "./firebase";
-import { brandingFields, scoreFields } from "./payload";
+import { brandingFields, parseLiveLogo, scoreFields } from "./payload";
 
 export type LiveGameView = {
   match: MatchState;
@@ -32,8 +32,8 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
   if (!match) return null;
   return {
     match,
-    homeLogo: typeof record.homeLogo === "string" && !record.homeLogo.startsWith("data:") ? record.homeLogo : "",
-    awayLogo: typeof record.awayLogo === "string" && !record.awayLogo.startsWith("data:") ? record.awayLogo : "",
+    homeLogo: parseLiveLogo(record.homeLogo),
+    awayLogo: parseLiveLogo(record.awayLogo),
     ended: Boolean(record.ended),
     chatPaused: Boolean(record.chatPaused),
     ownerId: String(record.ownerId || "")
@@ -54,7 +54,7 @@ export async function createLiveGame(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     updatedAtMs: Date.now()
-  });
+  }, { merge: true });
 }
 
 export async function updateLiveScore(gameId: string, match: MatchState): Promise<void> {

@@ -9,9 +9,13 @@ import {
   type LiveGameView
 } from "../live";
 import { FanZone } from "../ui/FanZone";
+import { FitText } from "../ui/FitText";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import { PrematchOverlay } from "../ui/PrematchOverlay";
+import { SetHistoryTicker } from "../ui/SetHistoryTicker";
+import { ConfettiBurst } from "../ui/ConfettiBurst";
+import { useBoardFx } from "../ui/useBoardFx";
 import styles from "./MatchPage.module.css";
 import viewerStyles from "./ViewerPage.module.css";
 
@@ -79,6 +83,7 @@ export function ViewerPage() {
   const showPrematch = !watching || ended;
   const banner = match ? matchBanner(match) : missing ? "GAME NOT FOUND" : "CONNECTING";
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON") || banner === "GAME NOT FOUND";
+  const fx = useBoardFx(watching && !ended ? match : null);
 
   return (
     <div
@@ -92,6 +97,7 @@ export function ViewerPage() {
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{viewers}</span>
           <LivePill status={status} />
         </div>
+        <SetHistoryTicker match={match} />
       </header>
 
       <main className={styles.board} aria-label="Live volleyball scoreboard">
@@ -99,9 +105,21 @@ export function ViewerPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
             <div>
-              <span className={styles.teamName}>{match?.homeName || "Home"}</span>
+              <FitText className={styles.teamName} text={match?.homeName || "Home"} minPx={11} />
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
             </div>
+            {fx.pointSide === "home" && match ? (
+              <span
+                key={fx.pointKey}
+                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
+                style={{ ["--point-banner-color" as string]: match.homeColor }}
+              >
+                POINT {match.homeName}!
+              </span>
+            ) : null}
+            {fx.setWinnerSide === "home" ? (
+              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
+            ) : null}
           </div>
         </section>
 
@@ -122,12 +140,28 @@ export function ViewerPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
             <div>
-              <span className={styles.teamName}>{match?.awayName || "Visitor"}</span>
+              <FitText className={styles.teamName} text={match?.awayName || "Visitor"} minPx={11} />
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
             </div>
+            {fx.pointSide === "away" && match ? (
+              <span
+                key={fx.pointKey}
+                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
+                style={{ ["--point-banner-color" as string]: match.awayColor }}
+              >
+                POINT {match.awayName}!
+              </span>
+            ) : null}
+            {fx.setWinnerSide === "away" ? (
+              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
+            ) : null}
           </div>
         </section>
       </main>
+
+      {match ? (
+        <ConfettiBurst active={fx.confetti} colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff"]} />
+      ) : null}
 
       {match && isMatchOver(match) && match.winner && !showPrematch ? (
         <div className={styles.winner} role="status">

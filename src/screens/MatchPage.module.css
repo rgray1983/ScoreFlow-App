@@ -1,4 +1,5 @@
 .page {
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -102,6 +103,67 @@
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.55));
 }
 
+.ticker {
+  position: absolute;
+  left: clamp(98px, 9.5vw, 150px);
+  right: calc(50% + clamp(92px, 10vw, 150px));
+  top: 50%;
+  z-index: 3;
+  min-width: 0;
+  height: calc(100% - 12px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+
+.tickerOn {
+  opacity: 1;
+}
+
+.ticker::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 42px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.78));
+}
+
+.tickerText {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateX(-18px);
+  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: rgba(245, 248, 252, 0.7);
+  font-size: clamp(12px, min(1.55vw, 3vh), 22px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+}
+
+.tickerShowing {
+  opacity: 1;
+  transform: none;
+}
+
+.tickerLabel {
+  color: rgba(245, 248, 252, 0.7);
+}
+
+.tickerWinner {
+  color: var(--ticker-team-color, #fff);
+  font-weight: 1000;
+}
+
 .viewers {
   min-height: 30px;
   padding: 6px 10px;
@@ -158,6 +220,7 @@
   align-items: center;
   justify-items: center;
   text-align: center;
+  overflow: visible;
 }
 
 .identity {
@@ -191,14 +254,19 @@
 .identity {
   position: relative;
   z-index: 2;
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-areas: "meta" "logo";
   justify-items: center;
   gap: 8px;
+  overflow: visible;
 }
 
 .identity > div {
   grid-area: meta;
+  width: 100%;
+  min-width: 0;
 }
 
 .teamLogo {
@@ -232,7 +300,10 @@
 }
 
 .teamName {
+  display: block;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   color: #05070c;
   font-weight: 900;
   font-size: clamp(24px, min(4.5vw, 8.8vh), 58px);
@@ -240,7 +311,8 @@
   letter-spacing: -0.055em;
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .home .teamName {
@@ -249,6 +321,58 @@
 
 .away .teamName {
   color: var(--away);
+}
+
+.pointBanner {
+  position: absolute;
+  left: 50%;
+  top: clamp(92px, 34%, 210px);
+  z-index: 18;
+  max-width: min(92%, 360px);
+  padding: 0.46em 0.84em;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.86)),
+    var(--point-banner-color, var(--brand));
+  color: #05070c;
+  font-size: clamp(12px, 1.7vw, 22px);
+  font-weight: 950;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 12px 30px color-mix(in srgb, var(--point-banner-color, var(--brand)), transparent 44%),
+    0 4px 14px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 2px color-mix(in srgb, var(--point-banner-color, var(--brand)), transparent 55%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.88);
+}
+
+.pointBannerShow {
+  animation: pointTeamBannerFlash 1.15s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}
+
+.setWinBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 19;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-weight: 900;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.86);
+}
+
+.setWinShow {
+  animation: setWinBadgeFlash 3s ease both;
 }
 
 .sets {
@@ -568,15 +692,67 @@
   to { transform: scale(1.04); filter: drop-shadow(0 0 10px rgba(255, 20, 20, 0.36)); }
 }
 
+@keyframes pointTeamBannerFlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(0.96);
+  }
+}
+
+@keyframes setWinBadgeFlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.86);
+  }
+  8% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scorePop,
   .colon,
-  .raceAlert {
+  .raceAlert,
+  .pointBannerShow,
+  .setWinShow,
+  .tickerText {
     animation: none;
   }
 }
 
 @media (orientation: portrait) {
+  .ticker {
+    display: none !important;
+  }
+
+  .pointBanner {
+    top: 44%;
+    max-width: 154%;
+    font-size: clamp(9px, 2.75vw, 13px);
+    padding: 0.42em 0.68em;
+  }
+
   .scorer {
     grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
     gap: 8px;
@@ -753,6 +929,16 @@
   .logo {
     width: clamp(104px, 14vw, 168px);
     max-height: 34px;
+  }
+
+  .ticker {
+    left: clamp(84px, 9vw, 128px);
+    right: calc(50% + clamp(78px, 9vw, 126px));
+    height: calc(100% - 8px);
+  }
+
+  .tickerText {
+    font-size: clamp(10px, min(1.35vw, 2.7vh), 16px);
   }
 
   .board {

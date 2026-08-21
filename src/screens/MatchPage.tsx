@@ -12,13 +12,17 @@ import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } fr
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { Button } from "../ui/Button";
+import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
 import { FanZone } from "../ui/FanZone";
+import { FitText } from "../ui/FitText";
 import { ResultsSheet } from "../ui/ResultsSheet";
+import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
+import { useBoardFx } from "../ui/useBoardFx";
 import styles from "./MatchPage.module.css";
 
 function useScorePop(score: number) {
@@ -46,30 +50,15 @@ export function MatchPage() {
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON");
   const homePop = useScorePop(match.homeScore);
   const awayPop = useScorePop(match.awayScore);
+  const fx = useBoardFx(match);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
   const [recapOpen, setRecapOpen] = useState(false);
-  const [setFlash, setSetFlash] = useState("");
-  const previousSets = useRef(match.completedSets.length);
 
   useEffect(() => {
     setWinnerOpen(Boolean(match.winner));
   }, [match.winner]);
-
-  useEffect(() => {
-    const count = match.completedSets.length;
-    if (count > previousSets.current && !match.winner) {
-      const last = match.completedSets[count - 1];
-      const name = last.winner === "home" ? match.homeName : match.awayName;
-      setSetFlash(`${name} wins Set ${last.set}`);
-      const timer = window.setTimeout(() => setSetFlash(""), 1400);
-      previousSets.current = count;
-      return () => window.clearTimeout(timer);
-    }
-    previousSets.current = count;
-    return undefined;
-  }, [match.completedSets, match.winner, match.homeName, match.awayName]);
 
   useEffect(() => {
     live.dismissReturnPrompt();
@@ -99,7 +88,6 @@ export function MatchPage() {
     setConfirmOpen(false);
     setWinnerOpen(false);
     setRecapOpen(false);
-    setSetFlash("");
   }
 
   function requestNewMatch() {
@@ -174,6 +162,7 @@ export function MatchPage() {
           ) : null}
           <LivePill status={live.status} />
         </div>
+        <SetHistoryTicker match={match} />
       </header>
 
       <main className={styles.board} aria-label="Volleyball scoreboard">
@@ -181,9 +170,21 @@ export function MatchPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
             <div>
-              <span className={styles.teamName}>{match.homeName}</span>
+              <FitText className={styles.teamName} text={match.homeName} minPx={11} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
+            {fx.pointSide === "home" ? (
+              <span
+                key={fx.pointKey}
+                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
+                style={{ ["--point-banner-color" as string]: match.homeColor }}
+              >
+                POINT {match.homeName}!
+              </span>
+            ) : null}
+            {fx.setWinnerSide === "home" ? (
+              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
+            ) : null}
           </div>
           <div className={styles.pointActions}>
             <button
@@ -212,7 +213,7 @@ export function MatchPage() {
             <h1 className={styles.title}>{match.matchTitle}</h1>
             <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
             <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
-              {setFlash || banner}
+              {banner}
             </p>
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
@@ -250,9 +251,21 @@ export function MatchPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
             <div>
-              <span className={styles.teamName}>{match.awayName}</span>
+              <FitText className={styles.teamName} text={match.awayName} minPx={11} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
+            {fx.pointSide === "away" ? (
+              <span
+                key={fx.pointKey}
+                className={`${styles.pointBanner} ${styles.pointBannerShow}`}
+                style={{ ["--point-banner-color" as string]: match.awayColor }}
+              >
+                POINT {match.awayName}!
+              </span>
+            ) : null}
+            {fx.setWinnerSide === "away" ? (
+              <div key={fx.setWinnerKey} className={`${styles.setWinBadge} ${styles.setWinShow}`}>Winner!</div>
+            ) : null}
           </div>
           <div className={styles.pointActions}>
             <button
@@ -276,6 +289,8 @@ export function MatchPage() {
           </div>
         </section>
       </main>
+
+      <ConfettiBurst active={fx.confetti} colors={[match.homeColor, match.awayColor, "#ffd166", "#ffffff"]} />
 
       {winnerOpen && match.winner ? (
         <div className={styles.winner} role="dialog" aria-labelledby="winner-title">

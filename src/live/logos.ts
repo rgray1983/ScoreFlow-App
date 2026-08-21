@@ -1,6 +1,6 @@
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { getFirebase } from "./firebase";
-import { isHttpUrl } from "./payload";
+import { isHttpUrl, liveLogoValue } from "./payload";
 
 function extensionFor(dataUrl: string): string {
   if (dataUrl.startsWith("data:image/webp")) return "webp";
@@ -28,4 +28,14 @@ export async function uploadMatchLogos(
     uploadTeamLogo(gameId, "away", logos.awayLogo).catch(() => "")
   ]);
   return { homeLogo, awayLogo };
+}
+
+export function resolveLiveLogos(
+  uploaded: { homeLogo: string; awayLogo: string },
+  draft: { homeLogo: string; awayLogo: string }
+): { homeLogo: string; awayLogo: string } {
+  return {
+    homeLogo: uploaded.homeLogo || liveLogoValue(draft.homeLogo),
+    awayLogo: uploaded.awayLogo || liveLogoValue(draft.awayLogo)
+  };
 }
