@@ -30,8 +30,18 @@ type PremiumState = PremiumSettings & {
   clearProFocus: () => void;
 };
 
+function premiumSnapshot(state: Pick<PremiumSettings, keyof PremiumSettings>): PremiumSettings {
+  return {
+    isPro: state.isPro,
+    theme: state.theme,
+    posterStyle: state.posterStyle,
+    resultBackground: state.resultBackground,
+    cloudBackup: state.cloudBackup
+  };
+}
+
 function persistPremium(premium: PremiumSettings, sync: boolean): PremiumSettings {
-  const next = savePremium(premium);
+  const next = savePremium(premiumSnapshot(premium));
   applyPremiumToDocument(next);
   if (sync) {
     void syncPremiumToCloud(next);
@@ -58,18 +68,12 @@ export const usePremium = create<PremiumState>((set, get) => {
       set({ ...next });
     },
     persist(sync = true) {
-      const next = persistPremium({
-        isPro: get().isPro,
-        theme: get().theme,
-        posterStyle: get().posterStyle,
-        resultBackground: get().resultBackground,
-        cloudBackup: get().cloudBackup
-      }, sync);
+      const next = persistPremium(premiumSnapshot(get()), sync);
       set({ ...next });
       return next;
     },
     togglePro() {
-      const next = persistPremium(toggleProPreview(get()), true);
+      const next = persistPremium(toggleProPreview(premiumSnapshot(get())), true);
       set({ ...next });
       toast(next.isPro ? "ScoreFlow Pro preview unlocked" : "Returned to Free plan");
     },
@@ -80,7 +84,7 @@ export const usePremium = create<PremiumState>((set, get) => {
         get().requestProFocus();
         return false;
       }
-      const next = persistPremium({ ...get(), theme: themeId }, true);
+      const next = persistPremium({ ...premiumSnapshot(get()), theme: themeId }, true);
       set({ ...next });
       toast(`${themeById(themeId).name} theme applied`);
       return true;
@@ -92,7 +96,7 @@ export const usePremium = create<PremiumState>((set, get) => {
         get().requestProFocus();
         return false;
       }
-      const next = persistPremium({ ...get(), resultBackground: backgroundId }, true);
+      const next = persistPremium({ ...premiumSnapshot(get()), resultBackground: backgroundId }, true);
       set({ ...next });
       toast(`${resultBackgroundById(backgroundId).name} background selected`);
       return true;
@@ -103,7 +107,7 @@ export const usePremium = create<PremiumState>((set, get) => {
         get().requestProFocus();
         return false;
       }
-      const next = persistPremium({ ...get(), cloudBackup: on }, true);
+      const next = persistPremium({ ...premiumSnapshot(get()), cloudBackup: on }, true);
       set({ ...next });
       toast(next.cloudBackup ? "Cloud backup enabled" : "Cloud backup paused");
       return true;

@@ -5,6 +5,7 @@ import {
   DEFAULT_PREMIUM,
   PREMIUM_KEY,
   PRO_MATCH_HISTORY_LIMIT,
+  applyResultBackground,
   loadPremium,
   matchHistoryLimit,
   normalizeResultBackground,
@@ -52,6 +53,28 @@ describe("premium settings", () => {
     expect(normalizeResultBackground("nope", true)).toBe("default");
     expect(resultsBackgroundSrc("blue-wave")).toBe("/images/results/blue-wave.png");
     expect(resultsBackgroundSrc("missing")).toBe("/images/results/default.jpg");
+  });
+
+  it("keeps the free Default Blue graphic without Pro", () => {
+    expect(normalizeResultBackground("default-blue", false)).toBe("default-blue");
+    const storage = memoryStorage();
+    const saved = savePremium({
+      ...DEFAULT_PREMIUM,
+      resultBackground: "default-blue"
+    }, storage);
+    expect(saved.resultBackground).toBe("default-blue");
+    expect(loadPremium(storage).resultBackground).toBe("default-blue");
+  });
+
+  it("applies the current Settings graphic onto a saved recap", () => {
+    expect(applyResultBackground(
+      { resultBackground: "default" },
+      "default-blue"
+    )).toEqual({ resultBackground: "default-blue" });
+    expect(applyResultBackground(
+      { resultBackground: "default-blue" },
+      "power-hitter"
+    ).resultBackground).toBe("power-hitter");
   });
 
   it("round-trips local storage with the current-app key", () => {

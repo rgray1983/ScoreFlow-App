@@ -9,6 +9,7 @@ import {
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
+import { usePremium } from "../state/premium";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { BoardLogoPicker } from "../ui/BoardLogoPicker";
@@ -47,6 +48,7 @@ export function MatchPage() {
   const engine = useWorkspace((state) => state.engine);
   const dispatch = useWorkspace((state) => state.dispatch);
   const updateDraft = useWorkspace((state) => state.updateDraft);
+  const resultBackground = usePremium((state) => state.resultBackground);
   const live = useLiveSession();
   const match = engine.match;
   const over = isMatchOver(match);
@@ -148,7 +150,8 @@ export function MatchPage() {
   const recapMatch = historyMatchFromLive({
     match,
     homeLogo: draft.homeLogo,
-    awayLogo: draft.awayLogo
+    awayLogo: draft.awayLogo,
+    resultBackground
   });
 
   return (

@@ -144,12 +144,13 @@ describe("match history", () => {
     const engine = reduce(createMatch({ homeName: "Blazers", matchTitle: "Rumble" }), { type: "point", side: "home" });
     const record = historyMatchFromLive({
       match: { ...engine.match, winner: "home", homeSets: 2, awaySets: 0 },
-      homeLogo: "x"
+      homeLogo: "x",
+      resultBackground: "default-blue"
     });
     expect(record?.title).toBe("Rumble");
     expect(record?.winner).toBe("Blazers");
     expect(record?.homeLogo).toBe("x");
-    expect(record?.resultBackground).toBe("default");
+    expect(record?.resultBackground).toBe("default-blue");
   });
 
   it("keeps more than 3 matches when the Pro limit is passed", () => {
