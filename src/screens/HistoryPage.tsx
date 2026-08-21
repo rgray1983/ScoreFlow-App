@@ -5,6 +5,8 @@ import { ResultsSheet } from "../ui/ResultsSheet";
 import { useAccount } from "../state/account";
 import { usePremium } from "../state/premium";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
+import { toast } from "../state/toast";
+import { deleteHistoryMatch } from "../live/backup";
 import styles from "./InnerScreen.module.css";
 import historyStyles from "./HistoryPage.module.css";
 
@@ -18,16 +20,23 @@ export function HistoryPage() {
     setMatches(loadMatches());
   }, [historyRevision, isPro]);
 
+  function deleteMatch(match: HistoryMatch) {
+    const next = deleteHistoryMatch(match.id);
+    setMatches(next);
+    if (recap?.id === match.id) setRecap(null);
+    toast("Match deleted");
+  }
+
   return (
     <InnerScreen
       eyebrow="Match History"
       title="Your Matches. Your Flow."
-      copy="Review your saved match results, quickly spot wins and losses, and keep your team history organized."
+      copy="Review your saved match results, quickly spot wins and losses, and keep your team history organized. Swipe a match left to delete it from this device."
     >
       {matches.length ? (
         <div className={historyStyles.list}>
           {matches.map((match) => (
-            <MatchHistoryCard key={match.id} match={match} onOpen={setRecap} />
+            <MatchHistoryCard key={match.id} match={match} onOpen={setRecap} onDelete={deleteMatch} />
           ))}
         </div>
       ) : (

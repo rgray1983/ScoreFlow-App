@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   limit,
@@ -14,6 +15,7 @@ import {
   loadMatches,
   mergeMatchHistory,
   parseHistoryMatch,
+  removeMatch,
   saveMatches,
   type HistoryMatch
 } from "../storage/matchHistory";
@@ -136,6 +138,24 @@ export async function pullCloudMatches(limitCount: number): Promise<HistoryMatch
   return snap.docs
     .map((item) => parseHistoryMatch({ id: item.id, ...item.data() }))
     .filter((item): item is HistoryMatch => Boolean(item));
+}
+
+export async function deleteCloudMatch(matchId: string): Promise<void> {
+  if (!firebaseReady() || !matchId) return;
+  const user = cloudUser();
+  if (!user) return;
+  try {
+    const { db } = getFirebase();
+    await deleteDoc(doc(db, "users", user.uid, "matches", matchId));
+  } catch (error) {
+    console.warn("Match history delete failed", error);
+  }
+}
+
+export function deleteHistoryMatch(matchId: string): HistoryMatch[] {
+  const next = removeMatch(matchId);
+  void deleteCloudMatch(matchId);
+  return next;
 }
 
 export async function mergeCloudHistory(limitCount: number): Promise<HistoryMatch[]> {
