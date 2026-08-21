@@ -18,6 +18,7 @@ html {
   background: var(--bg);
   overflow: hidden;
   color-scheme: dark;
+  touch-action: manipulation;
 }
 
 body {
@@ -32,12 +33,14 @@ body {
     var(--bg);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
 }
 
 #root {
   min-height: var(--scoreflow-vh);
   height: var(--scoreflow-vh);
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 /*
@@ -134,7 +137,7 @@ a {
     height: auto;
     min-height: var(--scoreflow-vh);
     overflow: auto;
-    touch-action: pan-x pan-y pinch-zoom;
+    touch-action: pan-x pan-y;
   }
 }
 
