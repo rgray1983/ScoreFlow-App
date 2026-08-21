@@ -1,3 +1,26 @@
+.row {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  touch-action: pan-y;
+  background: #101827;
+}
+
+.delete {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 88px;
+  min-height: var(--tap);
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .card {
   width: 100%;
   min-height: 50px;
@@ -12,18 +35,25 @@
   text-align: left;
   overflow: hidden;
   position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  transition: transform 180ms ease;
+}
+
+.dragging {
+  transition: none;
 }
 
 .win {
   background:
     linear-gradient(180deg, rgba(34, 197, 94, 0.28), rgba(34, 197, 94, 0.05) 70%, rgba(16, 24, 39, 0.1)),
-    rgba(16, 24, 39, 0.86);
+    #101827;
 }
 
 .loss {
   background:
     linear-gradient(180deg, rgba(255, 20, 20, 0.3), rgba(255, 20, 20, 0.06) 70%, rgba(16, 24, 39, 0.1)),
-    rgba(16, 24, 39, 0.86);
+    #101827;
 }
 
 .team {

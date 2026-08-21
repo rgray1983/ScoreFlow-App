@@ -11,6 +11,7 @@ import {
   mergeMatchHistory,
   parseHistoryMatch,
   recordCompletedMatch,
+  removeMatch,
   resetHistorySaveGuard,
   winnerSaveKey,
   type HistoryMatch
@@ -168,5 +169,24 @@ describe("match history", () => {
     const matches = loadMatches(storage);
     expect(matches).toHaveLength(5);
     expect(matches[0]?.resultBackground).toBe("neon-lights");
+  });
+
+  it("removes one saved match from this device", () => {
+    const storage = memoryStorage();
+    resetHistorySaveGuard();
+    let first = createMatch({ homeName: "Keep", awayName: "Visitor" });
+    first = winSet(first, "home");
+    first = winSet(first, "home");
+    const kept = recordCompletedMatch({ match: first.match, now: 1 }, storage);
+    resetHistorySaveGuard();
+    let second = createMatch({ homeName: "Drop", awayName: "Visitor" });
+    second = winSet(second, "home");
+    second = winSet(second, "home");
+    const dropped = recordCompletedMatch({ match: second.match, now: 2 }, storage);
+    expect(loadMatches(storage)).toHaveLength(2);
+    const next = removeMatch(dropped!.id, storage);
+    expect(next.map((item) => item.id)).toEqual([kept!.id]);
+    expect(loadMatches(storage)).toHaveLength(1);
+    expect(loadMatches(storage)[0]?.homeName).toBe("Keep");
   });
 });
