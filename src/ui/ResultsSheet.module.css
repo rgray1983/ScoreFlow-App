@@ -1,10 +1,11 @@
 .dialog {
-  position: relative;
-  width: min(94vw, 430px);
-  max-width: min(94vw, 430px);
-  max-height: 92svh;
-  margin: auto;
-  padding: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
   border: 0;
   background: transparent;
   color: inherit;
@@ -13,7 +14,18 @@
 
 .dialog:modal {
   display: grid;
+  place-items: center;
+  place-content: center;
+}
+
+.sheet {
+  position: relative;
+  width: min(94vw, 430px);
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 12px;
+  justify-items: stretch;
 }
 
 .dialog::backdrop {
@@ -42,11 +54,12 @@
 
 .card {
   position: relative;
-  overflow: hidden;
+  overflow: auto;
   display: grid;
   justify-items: center;
   gap: 16px;
-  min-height: min(78svh, 680px);
+  min-height: min(70svh, 640px);
+  max-height: 100%;
   padding: 42px 18px 18px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 30px;
@@ -364,14 +377,7 @@
 }
 
 @media (orientation: landscape) and (max-height: 560px) {
-  .dialog {
-    width: min(92vw, 420px);
-    max-height: 88svh;
-    overflow: hidden;
-  }
-
-  .card,
-  .actions {
+  .sheet {
     display: none;
   }
 

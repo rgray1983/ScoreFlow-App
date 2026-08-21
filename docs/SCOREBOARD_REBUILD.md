@@ -329,6 +329,7 @@ Copy the current ScoreFlow history and results graphic from `index.html` / `app.
 - Save completed matches locally first under `scoreflowMatchHistoryV2`
 - Home shows the latest 3. `/history` lists saved matches. Tap a card to open the recap
 - After match point, the winner overlay can open the recap. Share/Download Results makes the PNG
+- Recap and share graphics use the background currently selected in Settings → Background Graphics
 - Names render as React text. Do not use `innerHTML` for team names
 - Cloud backup and Pro unlimited history stay Phase 8
 

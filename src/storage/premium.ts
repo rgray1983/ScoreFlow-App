@@ -102,6 +102,16 @@ export function resultsBackgroundSrc(backgroundId: unknown): string {
   return withBase(`/images/results/${resultBackgroundById(backgroundId).file}`);
 }
 
+export function applyResultBackground<T extends { resultBackground: string }>(
+  match: T,
+  backgroundId: unknown
+): T {
+  return {
+    ...match,
+    resultBackground: resultBackgroundById(backgroundId).id
+  };
+}
+
 export function parsePremium(value: unknown): PremiumSettings {
   const record = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const isPro = Boolean(record.isPro);

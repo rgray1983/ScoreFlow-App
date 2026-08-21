@@ -191,7 +191,7 @@ export function SettingsGraphicsPage() {
     <InnerScreen
       eyebrow="Background Graphics"
       title="Results That Pop."
-      copy="Pick the background used for Match Results and future social share graphics."
+      copy="This graphic is used on Match Results and when you share or download. Your pick is saved on this device."
       backTo="/settings"
     >
       <div className={settingsStyles.choiceGrid}>
