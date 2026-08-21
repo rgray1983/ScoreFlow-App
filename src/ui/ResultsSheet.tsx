@@ -148,7 +148,7 @@ function ResultsSide({
   return (
     <div className={`${styles.side} ${winner ? styles.winner : ""}`}>
       <LogoMark className={styles.logo} name={name} logo={logo} />
-      {winner ? <span className={styles.winnerChip}>Winner</span> : <span className={styles.chipSlot} />}
+      {winner ? <span className={styles.winnerChip}>Winner</span> : null}
       <strong className={styles.teamName}>
         {resultsTeamNameLines(name).map((line) => (
           <span key={line}>{line}</span>

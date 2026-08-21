@@ -92,7 +92,7 @@
 .titleBlock {
   display: grid;
   justify-items: center;
-  gap: 2px;
+  gap: 10px;
   text-align: center;
   z-index: 1;
 }
@@ -100,20 +100,22 @@
 .titleBlock span {
   color: #fff1a6;
   text-transform: uppercase;
-  font-size: clamp(35px, 9.4vw, 48px);
-  font-weight: 950;
-  line-height: 0.92;
-  letter-spacing: -0.055em;
+  font-size: clamp(18px, 5.2vw, 24px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.14em;
   white-space: nowrap;
   text-shadow: 0 3px 16px rgba(0, 0, 0, 0.32);
 }
 
 .titleBlock h3 {
-  margin: -8px 0 0;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  margin: 0;
+  max-width: 92%;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(18px, 5.4vw, 26px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.05;
   text-transform: uppercase;
 }
 
@@ -131,9 +133,9 @@
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-rows: auto 18px auto;
   justify-items: center;
-  gap: 6px;
+  align-content: start;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -176,22 +178,22 @@
   object-fit: contain;
 }
 
-.winnerChip,
-.chipSlot {
-  min-height: 16px;
-}
-
 .winnerChip {
   z-index: 6;
-  padding: 2px 8px;
+  display: grid;
+  place-items: center;
+  height: 18px;
+  padding: 0 10px;
   border-radius: 999px;
   background: #fbbf24;
   color: #07101e;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.08em;
-  line-height: 1.2;
+  line-height: 1;
   text-transform: uppercase;
+  text-align: center;
+  translate: -0.04em 0;
 }
 
 .teamName {

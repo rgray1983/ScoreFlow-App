@@ -122,7 +122,7 @@ function drawWinnerChip(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.fill();
   ctx.shadowColor = "transparent";
   ctx.fillStyle = "#07101e";
-  ctx.fillText(label, x, y + 1);
+  ctx.fillText(label, x, y);
   ctx.restore();
 }
 
@@ -198,15 +198,15 @@ function drawResultsMatchup(
   if (homeWins) drawWinnerRing(ctx, leftX, logoY, logoSize);
   if (awayWins) drawWinnerRing(ctx, rightX, logoY, logoSize);
 
-  const nameY = logoY + logoSize / 2 + 52;
-  drawTeamNameBlock(ctx, homeName, leftX, nameY, 400);
-  drawTeamNameBlock(ctx, awayName, rightX, nameY, 400);
+  const logoBottom = logoY + logoSize / 2;
+  drawTeamNameBlock(ctx, homeName, leftX, logoBottom + (homeWins ? 44 : 14), 400);
+  drawTeamNameBlock(ctx, awayName, rightX, logoBottom + (awayWins ? 44 : 14), 400);
 
   drawCanvasLogo(ctx, homeLogo, homeName, leftX, logoY, logoSize);
   drawCanvasLogo(ctx, awayLogo, awayName, rightX, logoY, logoSize);
 
-  if (homeWins) drawWinnerChip(ctx, leftX, logoY + logoSize / 2 + 18);
-  if (awayWins) drawWinnerChip(ctx, rightX, logoY + logoSize / 2 + 18);
+  if (homeWins) drawWinnerChip(ctx, leftX, logoBottom + 16);
+  if (awayWins) drawWinnerChip(ctx, rightX, logoBottom + 16);
 }
 
 export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanvasElement> {
@@ -261,15 +261,21 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff1a6";
-  ctx.font = "950 96px Inter, Arial";
+  ctx.font = "900 56px Inter, Arial";
   ctx.shadowColor = "rgba(0,0,0,.34)";
-  ctx.shadowBlur = 18;
-  ctx.fillText("MATCH RESULT", w / 2, 520);
+  ctx.shadowBlur = 16;
+  ctx.fillText("MATCH RESULT", w / 2, 500);
   ctx.shadowColor = "transparent";
 
-  ctx.fillStyle = "rgba(255,255,255,.84)";
-  ctx.font = "900 32px Inter, Arial";
-  ctx.fillText(String(match.title || "Game Night").toUpperCase(), w / 2, 575);
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  const matchTitle = String(match.title || "Game Night").toUpperCase();
+  let titleSize = 48;
+  ctx.font = `900 ${titleSize}px Inter, Arial`;
+  while (titleSize > 30 && ctx.measureText(matchTitle).width > w - 140) {
+    titleSize -= 2;
+    ctx.font = `900 ${titleSize}px Inter, Arial`;
+  }
+  ctx.fillText(matchTitle, w / 2, 580);
 
   drawResultsMatchup(ctx, match, homeLogo, awayLogo);
 
