@@ -26,10 +26,22 @@ describe("match draft storage", () => {
     expect(loadMatchDraft(memoryStorage()).awayColor).toBe(DEFAULT_AWAY_COLOR);
   });
 
-  it("keeps an in-progress empty home name until start", () => {
+  it("keeps spaces in an in-progress name until start", () => {
     const storage = memoryStorage();
-    const saved = saveMatchDraft({ ...EMPTY_MATCH_DRAFT, homeName: "  " }, storage);
-    expect(saved.homeName).toBe("");
+    const saved = saveMatchDraft({
+      ...EMPTY_MATCH_DRAFT,
+      title: "Friday Night ",
+      homeName: "McBee "
+    }, storage);
+    expect(saved.title).toBe("Friday Night ");
+    expect(saved.homeName).toBe("McBee ");
+    expect(commitMatchDraft(saved).title).toBe("Friday Night");
+    expect(commitMatchDraft(saved).homeName).toBe("McBee");
+  });
+
+  it("fills a whitespace-only name with the default at start", () => {
+    const saved = saveMatchDraft({ ...EMPTY_MATCH_DRAFT, homeName: "  " }, memoryStorage());
+    expect(saved.homeName).toBe("  ");
     expect(commitMatchDraft(saved).homeName).toBe("Team 1");
   });
 
