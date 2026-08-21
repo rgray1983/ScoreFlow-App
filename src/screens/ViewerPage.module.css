@@ -17,6 +17,13 @@
 
 @media (orientation: landscape) {
   .page {
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
     grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .page :global(main) {
+    min-height: 0;
+    height: 100%;
   }
 }

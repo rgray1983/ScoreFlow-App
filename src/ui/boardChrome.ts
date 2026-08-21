@@ -59,6 +59,11 @@ export function setWinnerColor(match: MatchState, set: { winner: Side }): string
   return set.winner === "home" ? match.homeColor : match.awayColor;
 }
 
+export function boardFxKey(match?: MatchState | null): string {
+  if (!match) return "";
+  return `${match.homeScore}:${match.awayScore}:${match.homeSets}:${match.awaySets}:${match.setNumber}:${match.completedSets.length}:${match.winner}`;
+}
+
 export type BoardFx = {
   pointSide: Side | null;
   setWinnerSide: Side | null;

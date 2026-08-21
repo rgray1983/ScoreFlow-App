@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMatch, point } from "../scoring";
-import { detectBoardFx, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor, stackTeamNameLines } from "./boardChrome";
+import { detectBoardFx, boardFxKey, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor, stackTeamNameLines } from "./boardChrome";
 
 describe("stackTeamNameLines", () => {
   it("keeps a short one-word name on a single line", () => {
@@ -42,6 +42,15 @@ describe("setHistoryTickerItems", () => {
     ]);
     expect(setHistoryTickerCopy(items)).toBe("WINNER SET 1: McBee Panthers - 25:18");
     expect(setWinnerColor(engine.match, engine.match.completedSets[0])).toBe("#d62828");
+  });
+});
+
+describe("boardFxKey", () => {
+  it("changes when a point is scored so the toast can fire", () => {
+    const start = createMatch().match;
+    const scored = point(createMatch(), "away").match;
+    expect(boardFxKey(start)).not.toBe(boardFxKey(scored));
+    expect(boardFxKey(null)).toBe("");
   });
 });
 

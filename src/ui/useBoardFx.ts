@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { MatchState, Side } from "../scoring";
-import { detectBoardFx } from "./boardChrome";
+import { detectBoardFx, boardFxKey } from "./boardChrome";
 
 export function useBoardFx(match?: MatchState | null) {
   const previous = useRef<MatchState | null>(null);
@@ -9,9 +9,13 @@ export function useBoardFx(match?: MatchState | null) {
   const [setWinnerSide, setSetWinnerSide] = useState<Side | null>(null);
   const [setWinnerKey, setSetWinnerKey] = useState(0);
   const [confetti, setConfetti] = useState(false);
+  const key = boardFxKey(match);
 
   useEffect(() => {
-    if (!match) return;
+    if (!match) {
+      previous.current = null;
+      return;
+    }
     const prev = previous.current;
     previous.current = match;
     if (!prev) return;
@@ -25,7 +29,7 @@ export function useBoardFx(match?: MatchState | null) {
       setSetWinnerKey(Date.now());
       setConfetti(!match.winner);
     }
-  }, [match]);
+  }, [key, match]);
 
   useEffect(() => {
     if (!pointKey) return;

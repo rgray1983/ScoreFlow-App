@@ -184,13 +184,14 @@
 @media (orientation: landscape) {
   .fanZone {
     position: fixed;
-    inset: 0;
+    left: 0;
+    top: 0;
     z-index: 32;
     display: block;
-    height: auto;
+    width: 0;
+    height: 0;
     min-height: 0;
-    grid-row: 2;
-    grid-column: 1;
+    overflow: visible;
     pointer-events: none;
   }
 
