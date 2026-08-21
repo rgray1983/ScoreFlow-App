@@ -175,7 +175,13 @@ export function ViewerPage() {
       ) : null}
 
       {showPrematch ? (
-        <PrematchOverlay match={match ?? null} ended={ended} onWatch={() => setWatching(true)} />
+        <PrematchOverlay
+          match={match ?? null}
+          ended={ended}
+          homeLogo={game?.homeLogo}
+          awayLogo={game?.awayLogo}
+          onWatch={() => setWatching(true)}
+        />
       ) : null}
 
       {gameId ? (
