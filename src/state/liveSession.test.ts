@@ -187,6 +187,27 @@ describe("live session", () => {
     expect(useLiveSession.getState().status).toBe("live");
   });
 
+  it("does not reopen the share sheet if the scorer closed it while the game was being created", async () => {
+    let finish: (() => void) | undefined;
+    liveMocks.createLiveGame.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const pending = useLiveSession.getState().goLive(match, draft);
+    expect(useLiveSession.getState().shareOpen).toBe(true);
+    useLiveSession.getState().closeShare();
+    expect(useLiveSession.getState().shareOpen).toBe(false);
+    for (let i = 0; i < 20 && !finish; i += 1) {
+      await Promise.resolve();
+    }
+    finish?.();
+    await pending;
+    expect(useLiveSession.getState().shareOpen).toBe(false);
+    expect(useLiveSession.getState().status).toBe("live");
+  });
+
   it("opens the QR sheet after the game exists even if presence never returns", async () => {
     liveMocks.writePresence.mockImplementation(() => new Promise(() => {}));
     await useLiveSession.getState().goLive(match, draft);

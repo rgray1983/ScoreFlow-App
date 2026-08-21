@@ -49,11 +49,11 @@ export function ShareSheet({ open, url, onClose }: ShareSheetProps) {
   }
 
   return (
-    <div className={styles.shade} role="presentation" onClick={onClose}>
+    <div className={styles.shade} data-testid="share-shade" role="presentation" onClick={onClose}>
       <div className={styles.card} role="dialog" aria-modal="true" aria-labelledby="share-title" onClick={(event) => event.stopPropagation()}>
         <div className={styles.head}>
           <h2 id="share-title">Share Live</h2>
-          <button className={styles.close} type="button" aria-label="Close" onClick={onClose}>
+          <button className={styles.close} type="button" aria-label="Close" data-testid="share-close" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>

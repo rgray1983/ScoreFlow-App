@@ -15,6 +15,7 @@ import { useWorkspace } from "../state/workspace";
 import { isMatchOver } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
+import { withBase } from "../lib/base";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -82,7 +83,7 @@ export function HomePage() {
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.topline}>
-          <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
+          <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
           <div className={styles.actions}>
             <span className={liveActive ? `${styles.chip} ${styles.liveChip}` : styles.chip}>
               {liveActive ? "Live" : "Scorer"}

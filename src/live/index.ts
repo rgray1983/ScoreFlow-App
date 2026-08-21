@@ -1,4 +1,5 @@
 export { createGameId, isGameId, viewerPath, viewerUrl } from "./ids";
+export { legacyLivePath } from "./legacy";
 export { scoreFields, brandingFields, isHttpUrl } from "./payload";
 export { parseLiveRecovery, loadLiveRecovery, saveLiveRecovery, clearLiveRecovery, liveRecoverySummary } from "./recovery";
 export type { LiveRecovery } from "./recovery";

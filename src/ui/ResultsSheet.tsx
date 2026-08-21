@@ -9,6 +9,7 @@ import {
 import { resultsBackgroundSrc } from "../storage/premium";
 import { Button } from "./Button";
 import { LogoMark } from "./LogoMark";
+import { withBase } from "../lib/base";
 import { usePortraitLock } from "./portraitLock";
 import styles from "./ResultsSheet.module.css";
 
@@ -122,7 +123,7 @@ export function ResultsSheet({ open, match, onClose }: ResultsSheetProps) {
           ))}
         </div>
         <small className={styles.powered}>
-          Presented by <img src="/scoreflow-logo.png" alt="ScoreFlow" />
+          Presented by <img src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         </small>
       </article>
       <div className={styles.actions}>

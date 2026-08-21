@@ -156,7 +156,6 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         active: true,
         gameId,
         error: "",
-        shareOpen: true,
         recovery: loadLiveRecovery(),
         chatPaused: false
       });

@@ -25,6 +25,7 @@ import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
 import { useBoardFx } from "../ui/useBoardFx";
+import { withBase } from "../lib/base";
 import styles from "./MatchPage.module.css";
 
 function useScorePop(score: number) {
@@ -164,7 +165,7 @@ export function MatchPage() {
             <SettingsIcon className={styles.icon} />
           </Link>
         </div>
-        <img className={styles.logo} src="/scoreflow-logo.png" alt="ScoreFlow" />
+        <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         <div className={styles.status}>
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{live.viewerCount}</span>
           {live.active ? (
@@ -236,9 +237,9 @@ export function MatchPage() {
             />
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`}>{match.homeScore}</span>
+            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`} data-testid="home-score">{match.homeScore}</span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`}>{match.awayScore}</span>
+            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`} data-testid="away-score">{match.awayScore}</span>
           </div>
           <div className={styles.controls}>
             <button

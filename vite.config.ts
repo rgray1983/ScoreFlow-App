@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -6,9 +7,22 @@ import { VitePWA } from "vite-plugin-pwa";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+function copySpaFallback() {
+  return {
+    name: "copy-spa-404",
+    closeBundle() {
+      const index = path.resolve(projectRoot, "dist/index.html");
+      if (fs.existsSync(index)) {
+        fs.copyFileSync(index, path.resolve(projectRoot, "dist/404.html"));
+      }
+    }
+  };
+}
+
 export default defineConfig({
   root: "src",
   publicDir: "public",
+  base: process.env.VITE_BASE || "/",
   plugins: [
     react(),
     VitePWA({
@@ -20,8 +34,8 @@ export default defineConfig({
         name: "ScoreFlow Live",
         short_name: "ScoreFlow",
         description: "Live volleyball scoring with real-time viewer links.",
-        start_url: "/",
-        scope: "/",
+        start_url: "./",
+        scope: "./",
         display: "standalone",
         background_color: "#080b12",
         theme_color: "#080b12",
@@ -34,7 +48,8 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         globIgnores: ["**/images/results/**"]
       }
-    })
+    }),
+    copySpaFallback()
   ],
   server: {
     host: true,
@@ -46,7 +61,8 @@ export default defineConfig({
   },
   preview: {
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    host: true
   },
   build: {
     outDir: "../dist",

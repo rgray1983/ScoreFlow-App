@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createMatch, point } from "../scoring";
 import { parseLiveGame } from "./games";
+import { scoreFields } from "./payload";
 
 describe("parseLiveGame", () => {
   it("reads a live document without logo bytes", () => {
@@ -50,5 +52,13 @@ describe("parseLiveGame", () => {
       chatPaused: true
     });
     expect(game?.chatPaused).toBe(true);
+  });
+
+  it("shows a scorer point on the parsed viewer payload", () => {
+    const scored = point(createMatch({ homeName: "Blazers" }), "home");
+    const view = parseLiveGame({ ...scoreFields(scored.match), ownerId: "uid-1" });
+    expect(view?.match.homeScore).toBe(1);
+    expect(view?.match.awayScore).toBe(0);
+    expect(view?.match.homeName).toBe("Blazers");
   });
 });
