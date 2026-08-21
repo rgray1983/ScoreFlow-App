@@ -1,15 +1,22 @@
 import type { MatchState, Side } from "../scoring";
 
-export function fitFontSize(scrollWidth: number, clientWidth: number, startPx: number, minPx: number): number {
-  if (clientWidth <= 0 || scrollWidth <= clientWidth) return startPx;
-  const delta = Math.ceil(startPx * (1 - clientWidth / scrollWidth));
-  return Math.max(minPx, startPx - Math.max(1, delta));
-}
+export function stackTeamNameLines(name: string): string[] {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [""];
+  if (words.length === 1) return words;
 
-export function shouldRefitName(previousWidth: number, nextWidth: number, epsilonPx = 2): boolean {
-  if (nextWidth <= 0) return false;
-  if (previousWidth < 0) return true;
-  return Math.abs(nextWidth - previousWidth) >= epsilonPx;
+  const letters = words.join("").length;
+  let splitAt = 1;
+  let best = Number.POSITIVE_INFINITY;
+  for (let i = 1; i < words.length; i += 1) {
+    const left = words.slice(0, i).join("").length;
+    const diff = Math.abs(left * 2 - letters);
+    if (diff < best) {
+      best = diff;
+      splitAt = i;
+    }
+  }
+  return [words.slice(0, splitAt).join(" "), words.slice(splitAt).join(" ")];
 }
 
 export type SetHistoryTickerItem = {

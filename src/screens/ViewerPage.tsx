@@ -9,7 +9,7 @@ import {
   type LiveGameView
 } from "../live";
 import { FanZone } from "../ui/FanZone";
-import { FitText } from "../ui/FitText";
+import { TeamName } from "../ui/TeamName";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
@@ -111,7 +111,7 @@ export function ViewerPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
             <div>
-              <FitText className={styles.teamName} text={match?.homeName || "Home"} minPx={11} />
+              <TeamName className={styles.teamName} name={match?.homeName || "Home"} />
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
             </div>
             {fx.pointSide === "home" && match ? (
@@ -146,7 +146,7 @@ export function ViewerPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
             <div>
-              <FitText className={styles.teamName} text={match?.awayName || "Visitor"} minPx={11} />
+              <TeamName className={styles.teamName} name={match?.awayName || "Visitor"} />
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
             </div>
             {fx.pointSide === "away" && match ? (

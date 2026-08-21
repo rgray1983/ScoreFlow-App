@@ -15,7 +15,7 @@ import { Button } from "../ui/Button";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
 import { FanZone } from "../ui/FanZone";
-import { FitText } from "../ui/FitText";
+import { TeamName } from "../ui/TeamName";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { ResultsSheet } from "../ui/ResultsSheet";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
@@ -179,7 +179,7 @@ export function MatchPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match.homeName} logo={draft.homeLogo} color={match.homeColor} />
             <div>
-              <FitText className={styles.teamName} text={match.homeName} minPx={11} />
+              <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
             {fx.pointSide === "home" ? (
@@ -260,7 +260,7 @@ export function MatchPage() {
           <div className={styles.identity}>
             <LogoMark className={styles.teamLogo} name={match.awayName} logo={draft.awayLogo} color={match.awayColor} />
             <div>
-              <FitText className={styles.teamName} text={match.awayName} minPx={11} />
+              <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>
             {fx.pointSide === "away" ? (
