@@ -1,6 +1,6 @@
 import { matchBanner, type MatchState } from "../scoring";
 
-export const MAX_LIVE_DATA_LOGO = 350_000;
+export const MAX_LIVE_DATA_LOGO = 180_000;
 
 export function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());

@@ -16,6 +16,7 @@ import {
   updateLiveScore,
   uploadMatchLogos,
   resolveLiveLogos,
+  compactLiveLogos,
   viewerUrl,
   writePresence,
   setLiveChatPaused,
@@ -140,7 +141,9 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     stopPresence();
     clearScoreTimer();
     try {
-      await createLiveGame(gameId, match, { homeLogo: "", awayLogo: "" });
+      const liveLogos = await compactLiveLogos(draft);
+      if (get().epoch !== epoch) return;
+      await createLiveGame(gameId, match, liveLogos);
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
@@ -169,11 +172,12 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         try {
           const uploaded = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
           if (!sessionStillOpen(epoch, gameId, get())) return;
-          const logos = resolveLiveLogos(uploaded, draft);
+          const logos = resolveLiveLogos(uploaded, liveLogos);
           if (!logos.homeLogo && !logos.awayLogo) return;
+          if (logos.homeLogo === liveLogos.homeLogo && logos.awayLogo === liveLogos.awayLogo) return;
           await updateLiveBranding(gameId, match, logos);
         } catch {
-          // Logos are optional. The live game and QR already exist.
+          // Logos already went out on create when a compact data URL existed.
         }
       })();
     } catch (error) {
@@ -266,9 +270,11 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     const startedId = gameId;
     void (async () => {
       try {
+        const compact = await compactLiveLogos(draft);
+        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         const uploaded = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-        const logos = resolveLiveLogos(uploaded, draft);
+        const logos = resolveLiveLogos(uploaded, compact);
         await updateLiveBranding(startedId, match, logos);
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({ status: "live", error: "" });

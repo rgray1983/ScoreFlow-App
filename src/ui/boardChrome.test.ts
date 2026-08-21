@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMatch, point } from "../scoring";
-import { detectBoardFx, fitFontSize, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor } from "./boardChrome";
+import { detectBoardFx, fitFontSize, setHistoryTickerCopy, setHistoryTickerItems, setWinnerColor, shouldRefitName } from "./boardChrome";
 
 describe("fitFontSize", () => {
   it("keeps the starting size when the name already fits", () => {
@@ -10,6 +10,16 @@ describe("fitFontSize", () => {
   it("shrinks until a long name would fit the slot", () => {
     expect(fitFontSize(240, 120, 32, 10)).toBe(16);
     expect(fitFontSize(800, 100, 32, 12)).toBe(12);
+  });
+});
+
+describe("shouldRefitName", () => {
+  it("ignores height-only jitter so the name does not keep resizing", () => {
+    expect(shouldRefitName(-1, 180)).toBe(true);
+    expect(shouldRefitName(180, 180)).toBe(false);
+    expect(shouldRefitName(180, 181)).toBe(false);
+    expect(shouldRefitName(180, 184)).toBe(true);
+    expect(shouldRefitName(180, 0)).toBe(false);
   });
 });
 

@@ -108,6 +108,19 @@ describe("live session", () => {
     vi.unstubAllGlobals();
   });
 
+  it("writes compact logos on create so the viewer has them immediately", async () => {
+    const withLogos = {
+      ...EMPTY_MATCH_DRAFT,
+      homeLogo: "data:image/png;base64,xx",
+      awayLogo: "https://example.com/away.png"
+    };
+    await useLiveSession.getState().goLive(match, withLogos);
+    expect(liveMocks.createLiveGame).toHaveBeenCalledWith("id-a", match, {
+      homeLogo: "data:image/png;base64,xx",
+      awayLogo: "https://example.com/away.png"
+    });
+  });
+
   it("mints a new game id after endLive so the next share is not the ended game", async () => {
     await useLiveSession.getState().goLive(match, draft);
     const firstId = useLiveSession.getState().gameId;

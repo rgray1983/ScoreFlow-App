@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { fitFontSize } from "./boardChrome";
+import { fitFontSize, shouldRefitName } from "./boardChrome";
 
 type FitTextProps = {
   text: string;
@@ -12,28 +12,49 @@ export function FitText({ text, className = "", minPx = 10 }: FitTextProps) {
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    const slot = el?.parentElement;
+    if (!el || !slot) return undefined;
 
-    function fit() {
-      if (!el) return;
-      if (el.clientWidth <= 0) return;
-      el.style.fontSize = "";
-      const start = Number.parseFloat(getComputedStyle(el).fontSize) || 16;
-      let size = start;
-      let guard = 0;
-      while (el.scrollWidth > el.clientWidth && size > minPx && guard < 40) {
-        size = fitFontSize(el.scrollWidth, el.clientWidth, size, minPx);
-        el.style.fontSize = `${size}px`;
-        guard += 1;
+    const node = el;
+    const box = slot;
+    let fittedWidth = -1;
+
+    function fit(nextWidth = Math.round(box.clientWidth)) {
+      if (!shouldRefitName(fittedWidth, nextWidth)) return;
+      fittedWidth = nextWidth;
+      if (nextWidth <= 0) return;
+
+      if (node.scrollWidth > nextWidth) {
+        let size = Number.parseFloat(node.style.fontSize) || Number.parseFloat(getComputedStyle(node).fontSize) || 16;
+        let guard = 0;
+        while (node.scrollWidth > nextWidth && size > minPx && guard < 24) {
+          size = fitFontSize(node.scrollWidth, nextWidth, size, minPx);
+          node.style.fontSize = `${size}px`;
+          guard += 1;
+        }
+        return;
       }
+
+      if (!node.style.fontSize) return;
+      const kept = node.style.fontSize;
+      node.style.fontSize = "";
+      if (node.scrollWidth > nextWidth) node.style.fontSize = kept;
     }
 
     fit();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const observer = new ResizeObserver(fit);
-    observer.observe(el);
-    if (el.parentElement) observer.observe(el.parentElement);
-    return () => observer.disconnect();
+    const onResize = () => fit();
+    window.addEventListener("resize", onResize);
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", onResize);
+    }
+    const observer = new ResizeObserver((entries) => {
+      fit(Math.round(entries[0]?.contentRect.width ?? box.clientWidth));
+    });
+    observer.observe(box);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
   }, [minPx, text]);
 
   return <span ref={ref} className={className}>{text}</span>;

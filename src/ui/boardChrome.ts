@@ -6,6 +6,12 @@ export function fitFontSize(scrollWidth: number, clientWidth: number, startPx: n
   return Math.max(minPx, startPx - Math.max(1, delta));
 }
 
+export function shouldRefitName(previousWidth: number, nextWidth: number, epsilonPx = 2): boolean {
+  if (nextWidth <= 0) return false;
+  if (previousWidth < 0) return true;
+  return Math.abs(nextWidth - previousWidth) >= epsilonPx;
+}
+
 export type SetHistoryTickerItem = {
   key: string;
   setNumber: number;
