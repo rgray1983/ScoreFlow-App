@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { SettingsIcon } from "../ui/icons";
+import { Avatar } from "../ui/Avatar";
 import { LogoMark } from "../ui/LogoMark";
 import { MatchHistoryCard } from "../ui/MatchHistoryCard";
 import { ProCard } from "../ui/ProCard";
@@ -15,6 +16,7 @@ import { useWorkspace } from "../state/workspace";
 import { isMatchOver } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { loadMatches, type HistoryMatch } from "../storage/matchHistory";
+import { profileInitials } from "../storage/accountProfile";
 import { withBase } from "../lib/base";
 import { toast } from "../state/toast";
 import { deleteHistoryMatch } from "../live/backup";
@@ -45,6 +47,9 @@ export function HomePage() {
   const [history, setHistory] = useState(() => loadMatches().slice(0, 3));
   const [recap, setRecap] = useState<HistoryMatch | null>(null);
   const historyRevision = useAccount((state) => state.historyRevision);
+  const displayName = useAccount((state) => state.displayName);
+  const avatar = useAccount((state) => state.avatar);
+  const email = useAccount((state) => state.user?.email || state.email);
   const isPro = usePremium((state) => state.isPro);
 
   useEffect(() => {
@@ -97,6 +102,15 @@ export function HomePage() {
             <span className={liveActive ? `${styles.chip} ${styles.liveChip}` : styles.chip}>
               {liveActive ? "Live" : "Scorer"}
             </span>
+            <Link className={styles.iconButton} to="/account" aria-label={displayName || "Account"}>
+              <Avatar
+                className={styles.homeAvatar}
+                name={displayName}
+                photo={avatar}
+                initials={profileInitials(displayName, email)}
+                size="sm"
+              />
+            </Link>
             <Link className={styles.iconButton} to="/settings" aria-label="Settings">
               <SettingsIcon className={styles.icon} />
             </Link>

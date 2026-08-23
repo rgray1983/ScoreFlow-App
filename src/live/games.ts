@@ -9,12 +9,14 @@ import {
 import type { MatchState } from "../scoring";
 import { parseMatchState } from "../storage/matchEngine";
 import { ensureAnonymousAuth, getFirebase } from "./firebase";
-import { brandingFields, parseLiveLogo, scoreFields } from "./payload";
+import { brandingFields, parseLiveLogo, scoreFields, type LiveBranding } from "./payload";
 
 export type LiveGameView = {
   match: MatchState;
   homeLogo: string;
   awayLogo: string;
+  scorerName: string;
+  scorerAvatar: string;
   ended: boolean;
   chatPaused: boolean;
   ownerId: string;
@@ -34,6 +36,8 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
     match,
     homeLogo: parseLiveLogo(record.homeLogo),
     awayLogo: parseLiveLogo(record.awayLogo),
+    scorerName: String(record.scorerName || "").trim().slice(0, 32),
+    scorerAvatar: parseLiveLogo(record.scorerAvatar),
     ended: Boolean(record.ended),
     chatPaused: Boolean(record.chatPaused),
     ownerId: String(record.ownerId || "")
@@ -43,7 +47,7 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
 export async function createLiveGame(
   gameId: string,
   match: MatchState,
-  logos: { homeLogo: string; awayLogo: string }
+  logos: LiveBranding
 ): Promise<void> {
   const user = await ensureAnonymousAuth();
   await setDoc(gameRef(gameId), {
@@ -70,7 +74,7 @@ export async function updateLiveScore(gameId: string, match: MatchState): Promis
 export async function updateLiveBranding(
   gameId: string,
   match: MatchState,
-  logos: { homeLogo: string; awayLogo: string }
+  logos: LiveBranding
 ): Promise<void> {
   const user = await ensureAnonymousAuth();
   await setDoc(gameRef(gameId), {

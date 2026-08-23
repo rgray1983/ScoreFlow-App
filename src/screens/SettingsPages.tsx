@@ -5,11 +5,11 @@ import { usePremium } from "../state/premium";
 import { toast } from "../state/toast";
 import { hasCloudAccount } from "../live/firebase";
 import { PREMIUM_THEMES, RESULTS_BACKGROUNDS, resultsBackgroundSrc, type ThemeId } from "../storage/premium";
-import { Button } from "../ui/Button";
-import { Field, TextInput } from "../ui/Field";
 import { ChevronIcon } from "../ui/icons";
+import { Avatar } from "../ui/Avatar";
 import { ProCard } from "../ui/ProCard";
 import { StackedText } from "../ui/StackedText";
+import { profileInitials } from "../storage/accountProfile";
 import { InnerScreen } from "./InnerScreen";
 import styles from "./InnerScreen.module.css";
 import settingsStyles from "./SettingsPages.module.css";
@@ -62,6 +62,21 @@ export function SettingsPage() {
       title="Your ScoreFlow. Your Way."
       copy="Control the look, backups, and premium features that make ScoreFlow feel like your team's app."
     >
+      <Link className={`${styles.card} ${styles.navCard}`} to="/account">
+        <span className={settingsStyles.accountNav}>
+          <Avatar
+            name={account.displayName}
+            photo={account.avatar}
+            initials={profileInitials(account.displayName, account.user?.email || account.email)}
+            size="md"
+          />
+          <StackedText
+            title="Account"
+            copy={signedIn ? account.user?.email || "Signed in" : "Sign in, name, and photo"}
+          />
+        </span>
+        <ChevronIcon className={styles.chevron} />
+      </Link>
       <Link className={`${styles.card} ${styles.navCard}`} to="/settings/themes">
         <StackedText title="Themes" copy="Choose the app's visual style." />
         <ChevronIcon className={styles.chevron} />
@@ -70,57 +85,6 @@ export function SettingsPage() {
         <StackedText title="Background Graphics" copy="Match Results and social share backgrounds." />
         <ChevronIcon className={styles.chevron} />
       </Link>
-
-      <section className={`${styles.card} ${settingsStyles.accountCard}`}>
-        <StackedText
-          title="Account"
-          copy={account.status}
-        />
-        {signedIn ? (
-          <div className={settingsStyles.accountActions}>
-            <Button type="button" tone="quiet" disabled={account.busy} onClick={() => void account.signOut()}>
-              Sign out
-            </Button>
-          </div>
-        ) : (
-          <form
-            className={settingsStyles.accountForm}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void account.signInEmail(false);
-            }}
-          >
-            <Field label="Email">
-              <TextInput
-                type="email"
-                autoComplete="email"
-                value={account.email}
-                onChange={(event) => account.setEmail(event.target.value)}
-              />
-            </Field>
-            <Field label="Password">
-              <TextInput
-                type="password"
-                autoComplete="current-password"
-                value={account.password}
-                onChange={(event) => account.setPassword(event.target.value)}
-              />
-            </Field>
-            <div className={settingsStyles.accountActions}>
-              <Button type="submit" disabled={account.busy}>Sign in</Button>
-              <Button type="button" tone="quiet" disabled={account.busy} onClick={() => void account.signInEmail(true)}>
-                Create account
-              </Button>
-              <Button type="button" tone="quiet" disabled={account.busy} onClick={() => void account.signInProvider("google")}>
-                Continue with Google
-              </Button>
-              <Button type="button" tone="quiet" disabled={account.busy} onClick={() => void account.signInProvider("apple")}>
-                Continue with Apple
-              </Button>
-            </div>
-          </form>
-        )}
-      </section>
 
       <section className={`${styles.card} ${settingsStyles.cloudCard}`}>
         <StackedText title="Cloud Backup" copy={backupCopy} />

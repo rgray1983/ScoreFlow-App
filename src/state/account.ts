@@ -10,10 +10,21 @@ import {
   signOutAccount,
   watchAuth
 } from "../live/firebase";
-import { mergeCloudHistory, syncLocalDataToCloud } from "../live/backup";
+import { mergeCloudHistory, pullCloudAccountProfile, syncAccountProfileToCloud, syncLocalDataToCloud } from "../live/backup";
 import { loadHomeTeam } from "../storage/homeTeam";
 import { loadMatches } from "../storage/matchHistory";
 import { matchHistoryLimit } from "../storage/premium";
+import {
+  loadAccountProfile,
+  mergeAccountProfiles,
+  profileAvatar,
+  profileDisplayName,
+  saveAccountProfile,
+  seedProfileFromUser,
+  type AccountProfile
+} from "../storage/accountProfile";
+import { updateAuthProfile } from "../live/firebase";
+import { uploadUserAvatar } from "../live/logos";
 import { usePremium } from "./premium";
 import { toast } from "./toast";
 
@@ -25,13 +36,52 @@ type AccountState = {
   password: string;
   historyRevision: number;
   status: string;
+  displayName: string;
+  avatar: string;
   setEmail: (email: string) => void;
   setPassword: (password: string) => void;
   boot: () => void;
   signInEmail: (createAccount?: boolean) => Promise<void>;
   signInProvider: (provider: "google" | "apple") => Promise<void>;
   signOut: () => Promise<void>;
+  setDisplayName: (name: string) => Promise<void>;
+  setAvatar: (avatar: string) => Promise<void>;
 };
+
+function profileFields(profile: AccountProfile, user: User | null) {
+  const seeded = seedProfileFromUser(profile, user);
+  return {
+    displayName: profileDisplayName(seeded, user),
+    avatar: profileAvatar(seeded, user)
+  };
+}
+
+async function persistProfile(profile: AccountProfile, user: User | null): Promise<AccountProfile> {
+  const seeded = seedProfileFromUser(profile, user);
+  const saved = saveAccountProfile(seeded);
+  if (hasCloudAccount(user)) {
+    let avatar = saved.avatar;
+    if (saved.avatar) {
+      try {
+        avatar = (await uploadUserAvatar(user.uid, saved.avatar)) || saved.avatar;
+      } catch {
+        avatar = saved.avatar;
+      }
+    }
+    const next = saveAccountProfile({ ...saved, avatar, updatedAtMs: Date.now() });
+    await syncAccountProfileToCloud(next);
+    try {
+      await updateAuthProfile({
+        displayName: next.displayName || user.displayName || undefined,
+        photoURL: next.avatar.startsWith("http") ? next.avatar : undefined
+      });
+    } catch {
+      // Auth profile is best-effort; local and Firestore still hold the scorer card.
+    }
+    return next;
+  }
+  return saved;
+}
 
 let watching = false;
 
@@ -53,6 +103,24 @@ async function afterSignedIn() {
   await mergeCloudHistory(matchHistoryLimit(premium));
 }
 
+async function hydrateCloudProfile(user: User | null): Promise<AccountProfile> {
+  let profile = seedProfileFromUser(loadAccountProfile(), user);
+  if (hasCloudAccount(user)) {
+    try {
+      const cloud = await pullCloudAccountProfile();
+      profile = mergeAccountProfiles(profile, cloud);
+    } catch {
+      // Keep the on-device profile if cloud read fails.
+    }
+    profile = await persistProfile(profile, user);
+  } else {
+    profile = saveAccountProfile(profile);
+  }
+  return profile;
+}
+
+const initialProfile = loadAccountProfile();
+
 export const useAccount = create<AccountState>((set, get) => ({
   user: null,
   ready: !firebaseReady(),
@@ -61,6 +129,7 @@ export const useAccount = create<AccountState>((set, get) => ({
   password: "",
   historyRevision: 0,
   status: accountStatusText(null),
+  ...profileFields(initialProfile, null),
   setEmail(email) {
     set({ email });
   },
@@ -69,7 +138,11 @@ export const useAccount = create<AccountState>((set, get) => ({
   },
   boot() {
     if (!firebaseReady() || watching) {
-      set({ ready: true, status: accountStatusText(get().user) });
+      set({
+        ready: true,
+        status: accountStatusText(get().user),
+        ...profileFields(loadAccountProfile(), get().user)
+      });
       return;
     }
     watching = true;
@@ -78,7 +151,14 @@ export const useAccount = create<AccountState>((set, get) => ({
         user,
         ready: true,
         status: accountStatusText(user),
-        historyRevision: get().historyRevision + (hasCloudAccount(user) ? 1 : 0)
+        historyRevision: get().historyRevision + (hasCloudAccount(user) ? 1 : 0),
+        ...profileFields(loadAccountProfile(), user)
+      });
+      void hydrateCloudProfile(user).then((profile) => {
+        set({
+          ...profileFields(profile, user),
+          historyRevision: get().historyRevision + (hasCloudAccount(user) ? 1 : 0)
+        });
       });
       if (hasCloudAccount(user)) {
         void afterSignedIn().then(() => {
@@ -130,10 +210,12 @@ export const useAccount = create<AccountState>((set, get) => ({
     set({ busy: true });
     try {
       const user = await signOutAccount();
+      const profile = loadAccountProfile();
       set({
         user,
         status: accountStatusText(user),
-        password: ""
+        password: "",
+        ...profileFields(profile, user)
       });
       toast("Signed out");
     } catch (error) {
@@ -141,5 +223,23 @@ export const useAccount = create<AccountState>((set, get) => ({
     } finally {
       set({ busy: false });
     }
+  },
+  async setDisplayName(name) {
+    const profile = await persistProfile({
+      ...loadAccountProfile(),
+      displayName: name,
+      updatedAtMs: Date.now()
+    }, get().user);
+    set(profileFields(profile, get().user));
+    toast("Display name saved");
+  },
+  async setAvatar(avatar) {
+    const profile = await persistProfile({
+      ...loadAccountProfile(),
+      avatar,
+      updatedAtMs: Date.now()
+    }, get().user);
+    set(profileFields(profile, get().user));
+    toast("Photo saved");
   }
 }));

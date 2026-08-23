@@ -72,6 +72,24 @@ export function ChevronIcon({ className }: IconProps) {
   );
 }
 
+export function PersonIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.8 18.6c.9-3 3.3-4.6 6.2-4.6s5.3 1.6 6.2 4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CameraIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M8.2 8.2 9.4 6.4h5.2l1.2 1.8H18a2 2 0 0 1 2 2v7.2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10.2a2 2 0 0 1 2-2h2.2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="13.2" r="2.6" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 export function PlayIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">

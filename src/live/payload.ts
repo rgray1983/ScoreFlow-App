@@ -47,11 +47,27 @@ export function scoreFields(match: MatchState) {
   };
 }
 
-export function brandingFields(logos: { homeLogo: string; awayLogo: string }) {
-  const fields: { homeLogo?: string; awayLogo?: string } = {};
-  const homeLogo = liveLogoValue(logos.homeLogo);
-  const awayLogo = liveLogoValue(logos.awayLogo);
-  if (homeLogo) fields.homeLogo = homeLogo;
-  if (awayLogo) fields.awayLogo = awayLogo;
-  return fields;
+export type LiveBranding = {
+  homeLogo: string;
+  awayLogo: string;
+  scorerName?: string;
+  scorerAvatar?: string;
+};
+
+export function brandingFields(branding: LiveBranding) {
+  const next: {
+    homeLogo?: string;
+    awayLogo?: string;
+    scorerName?: string;
+    scorerAvatar?: string;
+  } = {};
+  const homeLogo = liveLogoValue(branding.homeLogo);
+  const awayLogo = liveLogoValue(branding.awayLogo);
+  const scorerName = branding.scorerName?.trim().slice(0, 32) || "";
+  const scorerAvatar = liveLogoValue(branding.scorerAvatar || "");
+  if (homeLogo) next.homeLogo = homeLogo;
+  if (awayLogo) next.awayLogo = awayLogo;
+  if (scorerName) next.scorerName = scorerName;
+  if (scorerAvatar) next.scorerAvatar = scorerAvatar;
+  return next;
 }

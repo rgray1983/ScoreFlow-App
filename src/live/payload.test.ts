@@ -26,6 +26,15 @@ describe("live payloads", () => {
       awayLogo: "https://example.com/a.png"
     });
     expect(brandingFields({ homeLogo: `data:image/png;base64,${"a".repeat(400_000)}`, awayLogo: "" })).toEqual({});
+    expect(brandingFields({
+      homeLogo: "",
+      awayLogo: "",
+      scorerName: "Richie",
+      scorerAvatar: "https://example.com/scorer.png"
+    })).toEqual({
+      scorerName: "Richie",
+      scorerAvatar: "https://example.com/scorer.png"
+    });
   });
 
   it("lets the viewer display stored data-url logos", () => {
