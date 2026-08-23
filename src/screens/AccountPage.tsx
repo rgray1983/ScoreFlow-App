@@ -72,21 +72,23 @@ export function AccountPage() {
           </span>
         </label>
         <p className={styles.hint}>Tap the photo to change it</p>
-        <Field label="Display name">
-          <TextInput
-            value={name}
-            maxLength={32}
-            placeholder="Name shown on live matches"
-            autoComplete="nickname"
-            onChange={(event) => setName(event.target.value)}
-            onBlur={saveName}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.currentTarget.blur();
-              }
-            }}
-          />
-        </Field>
+        <div className={styles.nameField}>
+          <Field label="Display name">
+            <TextInput
+              value={name}
+              maxLength={32}
+              placeholder="Name shown on live matches"
+              autoComplete="nickname"
+              onChange={(event) => setName(event.target.value)}
+              onBlur={saveName}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          </Field>
+        </div>
       </section>
 
       <section className={`${innerStyles.card} ${settingsStyles.accountCard}`}>

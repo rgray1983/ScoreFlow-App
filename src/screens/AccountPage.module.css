@@ -6,15 +6,14 @@
   text-align: center;
 }
 
-.hero :global(label) {
-  width: 100%;
-  text-align: left;
-}
-
 .photo {
   position: relative;
   display: grid;
+  place-items: center;
   width: 112px;
+  height: 112px;
+  margin-inline: auto;
+  justify-self: center;
   cursor: pointer;
 }
 
@@ -24,8 +23,8 @@
 
 .camera {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
+  right: -2px;
+  bottom: -2px;
   width: 34px;
   height: 34px;
   display: grid;
@@ -47,6 +46,11 @@
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+.nameField {
+  width: 100%;
+  text-align: left;
 }
 
 .identity {
