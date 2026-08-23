@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -20,6 +21,7 @@ import {
   type HistoryMatch
 } from "../storage/matchHistory";
 import type { PremiumSettings } from "../storage/premium";
+import { parseAccountProfile, type AccountProfile } from "../storage/accountProfile";
 import { currentAuthUser, firebaseReady, getFirebase, hasCloudAccount } from "./firebase";
 
 const CLOUD_MATCH_WRITE_LIMIT = 20;
@@ -56,6 +58,33 @@ export async function syncPremiumToCloud(premium: PremiumSettings): Promise<void
   } catch (error) {
     console.warn("Premium settings backup failed", error);
   }
+}
+
+export async function syncAccountProfileToCloud(profile: AccountProfile): Promise<void> {
+  if (!firebaseReady()) return;
+  const user = cloudUser();
+  if (!user) return;
+  const { db } = getFirebase();
+  try {
+    await setDoc(doc(db, "users", user.uid, "settings", "profile"), {
+      displayName: profile.displayName,
+      avatar: profile.avatar,
+      updatedAtMs: profile.updatedAtMs,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.warn("Account profile backup failed", error);
+  }
+}
+
+export async function pullCloudAccountProfile(): Promise<AccountProfile | null> {
+  if (!firebaseReady()) return null;
+  const user = cloudUser();
+  if (!user) return null;
+  const { db } = getFirebase();
+  const snap = await getDoc(doc(db, "users", user.uid, "settings", "profile"));
+  if (!snap.exists()) return null;
+  return parseAccountProfile(snap.data());
 }
 
 async function saveCloudTeam(user: User, team: {

@@ -98,7 +98,8 @@ Rules:
 | `/match` | Scorer | Live scoring |
 | `/g/:gameId` | Viewer | Read-only live board |
 | `/history` | Scorer | Full match history |
-| `/settings` | Scorer | Themes, graphics, backup, account |
+| `/account` | Scorer | Sign in, display name, and scorer photo |
+| `/settings` | Scorer | Themes, graphics, backup |
 | `/settings/themes` | Scorer | Theme picker |
 | `/settings/graphics` | Scorer | Results backgrounds |
 
@@ -382,6 +383,7 @@ Only after Cutover and polish:
 
 - Serving-team indicator
 - Running set-score strip for viewers (25-18, 20-25, 8-7)
+- Scorer name and photo on the live viewer (“who’s scoring”)
 - Custom / NCAA / beach formats in `scoring/`
 - Overlay viewer for livestreams
 - Haptics on +1

@@ -13,6 +13,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updateProfile,
   type Auth,
   type User
 } from "firebase/auth";
@@ -152,6 +153,15 @@ export async function providerSignIn(providerName: "google" | "apple"): Promise<
   } catch (error) {
     throw new Error(signInErrorMessage(error, providerName));
   }
+}
+
+export async function updateAuthProfile(input: {
+  displayName?: string;
+  photoURL?: string;
+}): Promise<void> {
+  const user = currentAuthUser();
+  if (!user || user.isAnonymous) return;
+  await updateProfile(user, input);
 }
 
 export async function signOutAccount(): Promise<User | null> {

@@ -1,0 +1,74 @@
+.hero {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 28px 16px 20px;
+  text-align: center;
+}
+
+.hero :global(label) {
+  width: 100%;
+  text-align: left;
+}
+
+.photo {
+  position: relative;
+  display: grid;
+  width: 112px;
+  cursor: pointer;
+}
+
+.photo input {
+  display: none;
+}
+
+.camera {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #0b1220;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e8c34a, #c9a227);
+  color: #14110a;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+}
+
+.cameraIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.identity {
+  display: grid;
+  gap: 4px;
+}
+
+.identity span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.identity strong {
+  font-size: 16px;
+}
+
+.identity small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}

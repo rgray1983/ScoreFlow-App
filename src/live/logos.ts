@@ -1,6 +1,7 @@
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { getFirebase } from "./firebase";
 import { isHttpUrl, liveLogoValue, MAX_LIVE_DATA_LOGO } from "./payload";
+import { loadAccountProfile } from "../storage/accountProfile";
 
 function extensionFor(dataUrl: string): string {
   if (dataUrl.startsWith("data:image/webp")) return "webp";
@@ -36,6 +37,16 @@ export async function compactLiveLogos(logos: { homeLogo: string; awayLogo: stri
   return { homeLogo, awayLogo };
 }
 
+export async function compactScorerBranding(): Promise<{ scorerName?: string; scorerAvatar?: string }> {
+  const profile = loadAccountProfile();
+  const scorerName = profile.displayName.trim().slice(0, 32);
+  const scorerAvatar = await compactLiveLogo(profile.avatar);
+  return {
+    ...(scorerName ? { scorerName } : {}),
+    ...(scorerAvatar ? { scorerAvatar } : {})
+  };
+}
+
 async function shrinkDataUrl(dataUrl: string): Promise<string> {
   const blob = await fetch(dataUrl).then((response) => response.blob());
   const bitmap = await createImageBitmap(blob);
@@ -62,7 +73,7 @@ async function shrinkDataUrl(dataUrl: string): Promise<string> {
   }
 }
 
-export async function uploadTeamLogo(gameId: string, side: "home" | "away", logo: string): Promise<string> {
+export async function uploadTeamLogo(gameId: string, side: "home" | "away" | "scorer", logo: string): Promise<string> {
   const value = logo.trim();
   if (!value) return "";
   if (isHttpUrl(value)) return value;
@@ -92,4 +103,15 @@ export function resolveLiveLogos(
     homeLogo: uploaded.homeLogo || liveLogoValue(draft.homeLogo),
     awayLogo: uploaded.awayLogo || liveLogoValue(draft.awayLogo)
   };
+}
+
+export async function uploadUserAvatar(userId: string, logo: string): Promise<string> {
+  const value = logo.trim();
+  if (!value) return "";
+  if (isHttpUrl(value)) return value;
+  if (!value.startsWith("data:image/")) return "";
+  const { storage } = getFirebase();
+  const fileRef = ref(storage, `users/${userId}/avatar.${extensionFor(value)}`);
+  await uploadString(fileRef, value, "data_url", { contentType: imageContentType(value) });
+  return getDownloadURL(fileRef);
 }

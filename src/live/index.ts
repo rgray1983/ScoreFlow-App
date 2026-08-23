@@ -1,13 +1,14 @@
 export { createGameId, isGameId, viewerPath, viewerUrl } from "./ids";
 export { legacyLivePath } from "./legacy";
 export { scoreFields, brandingFields, isHttpUrl } from "./payload";
+export type { LiveBranding } from "./payload";
 export { parseLiveRecovery, loadLiveRecovery, saveLiveRecovery, clearLiveRecovery, liveRecoverySummary } from "./recovery";
 export type { LiveRecovery } from "./recovery";
 export { ensureAnonymousAuth, authErrorMessage, firebaseReady, hasCloudAccount, currentAuthUser } from "./firebase";
 export { createLiveGame, updateLiveScore, updateLiveBranding, endLiveGame, listenLiveGame, readLiveGame, parseLiveGame, setLiveChatPaused } from "./games";
 export type { LiveGameView } from "./games";
 export { writePresence, listenViewerCount } from "./presence";
-export { uploadMatchLogos, resolveLiveLogos, compactLiveLogos } from "./logos";
+export { uploadMatchLogos, resolveLiveLogos, compactLiveLogos, compactScorerBranding, uploadTeamLogo } from "./logos";
 export { qrDataUrl } from "./qr";
 export {
   REACTION_EMOJIS,

@@ -17,9 +17,11 @@ import {
   uploadMatchLogos,
   resolveLiveLogos,
   compactLiveLogos,
+  compactScorerBranding,
   viewerUrl,
   writePresence,
   setLiveChatPaused,
+  uploadTeamLogo,
   type LiveRecovery
 } from "../live";
 
@@ -142,8 +144,9 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     clearScoreTimer();
     try {
       const liveLogos = await compactLiveLogos(draft);
+      const scorer = await compactScorerBranding();
       if (get().epoch !== epoch) return;
-      await createLiveGame(gameId, match, liveLogos);
+      await createLiveGame(gameId, match, { ...liveLogos, ...scorer });
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
@@ -172,9 +175,18 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
           const uploaded = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
           if (!sessionStillOpen(epoch, gameId, get())) return;
           const logos = resolveLiveLogos(uploaded, liveLogos);
-          if (!logos.homeLogo && !logos.awayLogo) return;
-          if (logos.homeLogo === liveLogos.homeLogo && logos.awayLogo === liveLogos.awayLogo) return;
-          await updateLiveBranding(gameId, match, logos);
+          const scorerUrl = await uploadTeamLogo(gameId, "scorer", scorer.scorerAvatar || "").catch(() => "");
+          if (!logos.homeLogo && !logos.awayLogo && !scorer.scorerName && !scorerUrl && !scorer.scorerAvatar) return;
+          if (
+            logos.homeLogo === liveLogos.homeLogo
+            && logos.awayLogo === liveLogos.awayLogo
+            && !scorerUrl
+          ) return;
+          await updateLiveBranding(gameId, match, {
+            ...logos,
+            ...scorer,
+            ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})
+          });
         } catch {
           // Logos already went out on create when a compact data URL existed.
         }
@@ -274,7 +286,13 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         const uploaded = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         const logos = resolveLiveLogos(uploaded, compact);
-        await updateLiveBranding(startedId, match, logos);
+        const scorer = await compactScorerBranding();
+        const scorerUrl = await uploadTeamLogo(startedId, "scorer", scorer.scorerAvatar || "").catch(() => "");
+        await updateLiveBranding(startedId, match, {
+          ...logos,
+          ...scorer,
+          ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})
+        });
         if (!sessionStillOpen(startedEpoch, startedId, get())) return;
         set({ status: "live", error: "" });
       } catch (error) {

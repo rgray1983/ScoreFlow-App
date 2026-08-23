@@ -28,6 +28,8 @@ describe("parseLiveGame", () => {
     expect(game?.match.homeName).toBe("Blazers");
     expect(game?.homeLogo).toBe("https://example.com/home.png");
     expect(game?.awayLogo).toBe("data:image/png;base64,xx");
+    expect(game?.scorerName).toBe("");
+    expect(game?.scorerAvatar).toBe("");
     expect(game?.ended).toBe(false);
     expect(game?.chatPaused).toBe(false);
     expect(game?.ownerId).toBe("uid-1");
@@ -52,6 +54,29 @@ describe("parseLiveGame", () => {
       chatPaused: true
     });
     expect(game?.chatPaused).toBe(true);
+  });
+
+  it("reads the scorer name and photo from the live document", () => {
+    const game = parseLiveGame({
+      homeScore: 0,
+      awayScore: 0,
+      homeSets: 0,
+      awaySets: 0,
+      setNumber: 1,
+      matchFormat: "club",
+      matchTitle: "Region",
+      homeName: "Home",
+      awayName: "Away",
+      homeColor: "#d62828",
+      awayColor: "#1565c0",
+      winner: "",
+      completedSets: [],
+      ownerId: "uid-1",
+      scorerName: "Coach Richie",
+      scorerAvatar: "https://example.com/scorer.png"
+    });
+    expect(game?.scorerName).toBe("Coach Richie");
+    expect(game?.scorerAvatar).toBe("https://example.com/scorer.png");
   });
 
   it("shows a scorer point on the parsed viewer payload", () => {

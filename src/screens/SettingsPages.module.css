@@ -3,6 +3,15 @@
   gap: 14px;
 }
 
+.accountNav {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
 .cloudCard {
   display: grid;
   grid-template-columns: 1fr auto;

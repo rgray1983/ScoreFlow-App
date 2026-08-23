@@ -11,6 +11,7 @@ Private signed-in account data. Not used by anonymous guest sessions.
 Subcollections:
 
 - `users/{userId}/settings/premium` — Pro preview flags, theme, graphics, and cloud-backup preference
+- `users/{userId}/settings/profile` — scorer display name and avatar URL
 - `users/{userId}/teams/{teamId}` — saved team profiles (`id`, `name`, `color`, `logo`, `favorite`, `updatedAtMs`)
 - `users/{userId}/matches/{matchId}` — match history (`title`, team names/logos, set scores, winner, format, `completedSets`, `updatedAtMs`)
 
@@ -20,7 +21,7 @@ Queries: `orderBy("updatedAtMs", "desc")` with a limit. Security rules allow onl
 
 Live shared scoreboard document created when a scorer starts a live match. Family viewer links read this document by ID. Listing the collection is denied.
 
-Fields include public scoreboard state (`homeScore`, `awayScore`, set counts, names, colors, logo **URLs**, `ended`) plus `ownerId` for the creating scorer. Game IDs are unguessable 128-bit hex strings. Logo bytes are stored in Firebase Storage under `volleyballGames/{gameId}/`, not as data URLs in the game document.
+Fields include public scoreboard state (`homeScore`, `awayScore`, set counts, names, colors, logo **URLs**, `ended`) plus `ownerId` for the creating scorer. Live games may also store `scorerName` and `scorerAvatar` so a later viewer badge can show who’s scoring. Game IDs are unguessable 128-bit hex strings. Logo and avatar bytes are stored in Firebase Storage under `volleyballGames/{gameId}/` or `users/{userId}/`, not as huge data URLs in the game document.
 
 Subcollections:
 

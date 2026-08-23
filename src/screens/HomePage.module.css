@@ -52,6 +52,11 @@
   height: 24px;
 }
 
+.homeAvatar {
+  width: 36px;
+  height: 36px;
+}
+
 .copy {
   padding: 28px 2px 16px;
 }
