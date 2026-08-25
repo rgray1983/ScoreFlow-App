@@ -63,6 +63,10 @@
   gap: 6px;
 }
 
+.viewer .left {
+  position: static;
+}
+
 .status {
   justify-self: end;
   gap: 6px;
@@ -1123,6 +1127,19 @@
   .home .minus,
   .away .minus {
     border-radius: 14px;
+  }
+}
+
+@media (orientation: landscape) {
+  .viewer .logo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: clamp(118px, 16vw, 210px);
+    height: auto;
+    max-width: none;
+    max-height: 42px;
+    transform: translate(-50%, -50%);
   }
 }
 
