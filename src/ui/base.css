@@ -140,10 +140,9 @@ a {
   html.viewer-mode,
   html.viewer-mode body,
   html.viewer-mode #root {
-    height: auto;
+    height: var(--scoreflow-vh);
     min-height: var(--scoreflow-vh);
-    overflow: auto;
-    touch-action: pan-x pan-y;
+    overflow: hidden;
   }
 }
 

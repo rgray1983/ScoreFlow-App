@@ -78,6 +78,7 @@ export function parseMatchState(value: unknown): MatchState | null {
     homeColor: String(record.homeColor || ""),
     awayColor: String(record.awayColor || ""),
     winner: asSide(record.winner),
+    servingSide: asSide(record.servingSide),
     completedSets,
     matchFormat: asFormat(record.matchFormat)
   }).match;

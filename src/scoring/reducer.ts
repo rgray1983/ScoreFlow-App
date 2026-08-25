@@ -38,6 +38,7 @@ export function createMatch(overrides: Partial<MatchState> = {}): MatchEngine {
     homeColor: DEFAULT_HOME_COLOR,
     awayColor: DEFAULT_AWAY_COLOR,
     winner: "",
+    servingSide: "",
     completedSets: [],
     ...overrides,
     ...formatFields(format)
@@ -62,6 +63,7 @@ function resetProgress(match: MatchState): MatchState {
     awaySets: 0,
     setNumber: 1,
     winner: "",
+    servingSide: "",
     completedSets: []
   };
 }
@@ -70,8 +72,8 @@ function applyPoint(match: MatchState, side: Side): MatchState {
   if (isMatchOver(match)) return match;
 
   const scored: MatchState = side === "home"
-    ? { ...match, homeScore: match.homeScore + 1 }
-    : { ...match, awayScore: match.awayScore + 1 };
+    ? { ...match, homeScore: match.homeScore + 1, servingSide: side }
+    : { ...match, awayScore: match.awayScore + 1, servingSide: side };
 
   if (!hasWonSet(scored, side)) return scored;
 
@@ -95,6 +97,7 @@ function applyPoint(match: MatchState, side: Side): MatchState {
       homeSets,
       awaySets,
       winner: side,
+      servingSide: side,
       completedSets
     };
   }
@@ -107,6 +110,7 @@ function applyPoint(match: MatchState, side: Side): MatchState {
     awayScore: 0,
     setNumber: scored.setNumber + 1,
     winner: "",
+    servingSide: "",
     completedSets
   };
 }
@@ -180,6 +184,10 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
         }
       };
     }
+    case "setServe": {
+      if (isMatchOver(engine.match) || engine.match.servingSide === command.side) return engine;
+      return snapshot(engine, { ...engine.match, servingSide: command.side });
+    }
   }
 }
 
@@ -213,4 +221,8 @@ export function setColors(engine: MatchEngine, home: string, away: string): Matc
 
 export function setTitle(engine: MatchEngine, title: string): MatchEngine {
   return reduce(engine, { type: "setTitle", title });
+}
+
+export function setServe(engine: MatchEngine, side: Side): MatchEngine {
+  return reduce(engine, { type: "setServe", side });
 }

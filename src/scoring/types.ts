@@ -25,6 +25,7 @@ export type MatchState = {
   homeColor: string;
   awayColor: string;
   winner: Side | "";
+  servingSide: Side | "";
   completedSets: readonly CompletedSet[];
 };
 
@@ -48,4 +49,5 @@ export type Command =
   | { type: "applyFormat"; format: MatchFormat }
   | { type: "setNames"; home: string; away: string }
   | { type: "setColors"; home: string; away: string }
-  | { type: "setTitle"; title: string };
+  | { type: "setTitle"; title: string }
+  | { type: "setServe"; side: Side };

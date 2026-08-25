@@ -44,6 +44,15 @@ describe("match engine storage", () => {
     expect(matchHasProgress(loaded!)).toBe(true);
   });
 
+  it("saves who is serving", () => {
+    const storage = memoryStorage();
+    const serving = point(createMatch({ servingSide: "away" }), "home");
+    saveMatchEngine(serving, storage);
+    const loaded = loadMatchEngine(storage);
+    expect(loaded?.match.servingSide).toBe("home");
+    expect(loaded?.history[0].servingSide).toBe("away");
+  });
+
   it("rejects junk", () => {
     expect(parseMatchEngine(null)).toBeNull();
     expect(parseMatchEngine({ match: 4 })).toBeNull();

@@ -42,6 +42,7 @@ export function scoreFields(match: MatchState) {
     awayColor: match.awayColor,
     winner: match.winner,
     completedSets: match.completedSets.map((set) => ({ ...set })),
+    servingSide: match.servingSide || "",
     lastAlert: matchBanner(match),
     ended: false
   };

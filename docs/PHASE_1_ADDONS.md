@@ -25,6 +25,7 @@ Put it **under the team logo**: a small **Serving** pill, or a **pulsing volleyb
 - After that, a point for the serving team keeps serve; a point for the other team flips it (side-out).
 - Undo puts serve back too.
 - Do not track who the server is. Only which team has the ball.
+- Building on `cursor/serving-mark-feac` / `docs/PRs/PR-036.md`.
 
 ## 3 — Timeouts
 

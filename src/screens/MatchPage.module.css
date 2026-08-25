@@ -63,6 +63,10 @@
   gap: 6px;
 }
 
+.viewer .left {
+  position: static;
+}
+
 .status {
   justify-self: end;
   gap: 6px;
@@ -290,13 +294,22 @@
 }
 
 .identity > div {
-  grid-area: meta;
   width: 100%;
   min-width: 0;
 }
 
-.logoPick {
+.meta {
+  grid-area: meta;
+}
+
+.logoStack {
   grid-area: logo;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.logoPick {
   display: grid;
   justify-items: center;
   cursor: pointer;
@@ -913,6 +926,16 @@
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
+  .viewer {
+    width: 100%;
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
+    gap: 6px;
+    padding: max(4px, env(safe-area-inset-top)) max(2px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(2px, env(safe-area-inset-left));
+  }
+
   .scorer .topBar,
   .scorer .board {
     min-height: 0;
@@ -1009,13 +1032,43 @@
   }
 
   .identity {
-    grid-template-areas: "logo" "meta";
+    grid-template-areas: "meta" "logo";
     grid-template-rows: auto auto;
     gap: 4px;
     padding: 7px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.12);
     overflow: visible;
+  }
+
+  .logoStack {
+    gap: 4px;
+  }
+
+  .viewer .logo {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: 28px;
+    max-width: min(52vw, 168px);
+    max-height: 30px;
+    transform: none;
+  }
+
+  .viewer .topBar {
+    min-height: 40px;
+    padding: 4px 8px 4px 6px;
+    border-radius: 14px;
+  }
+
+  .viewer .left {
+    min-width: 0;
+  }
+
+  .viewer .board {
+    width: 100%;
+    min-width: 0;
   }
 
   .teamLogo {
@@ -1074,6 +1127,19 @@
   .home .minus,
   .away .minus {
     border-radius: 14px;
+  }
+}
+
+@media (orientation: landscape) {
+  .viewer .logo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: clamp(118px, 16vw, 210px);
+    height: auto;
+    max-width: none;
+    max-height: 42px;
+    transform: translate(-50%, -50%);
   }
 }
 
