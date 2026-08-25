@@ -162,6 +162,23 @@
 }
 
 @media (orientation: portrait) {
+  .fanZone:not(.scorer) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fanZone:not(.scorer) .dock,
+  .fanZone:not(.scorer) .reactions,
+  .fanZone:not(.scorer) .form {
+    width: 100%;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .fanZone:not(.scorer) .dock {
+    border-radius: 16px 16px 0 0;
+  }
+
   .reactions button {
     height: clamp(28px, 4.8svh, 36px);
     min-height: 0;
