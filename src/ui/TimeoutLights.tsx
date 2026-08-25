@@ -31,7 +31,7 @@ export function TimeoutLights({
       aria-label={label}
       data-testid={testId}
     >
-      <span className={styles.caption}>TO</span>
+      <span className={styles.caption}>TO's:</span>
       {Array.from({ length: TIMEOUTS_PER_SET }, (_, index) => {
         const available = index < count;
         const className = `${styles.lamp} ${available ? styles.on : styles.off}`;
