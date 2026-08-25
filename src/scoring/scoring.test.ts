@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   applyFormat,
+  callTimeout,
   canUndo,
   createMatch,
+  endTimeout,
+  formatTimeoutClock,
   isMatchOver,
   isMatchPoint,
   isServing,
@@ -15,6 +18,9 @@ import {
   setNames,
   setServe,
   subtract,
+  TIMEOUT_MS,
+  timeoutRemainingMs,
+  timeoutsOf,
   undo
 } from "./index";
 import type { MatchEngine, Side } from "./types";
@@ -81,6 +87,9 @@ describe("set win rules", () => {
     expect(won.match.homeScore).toBe(0);
     expect(won.match.awayScore).toBe(0);
     expect(won.match.servingSide).toBe("");
+    expect(won.match.homeTimeouts).toBe(2);
+    expect(won.match.awayTimeouts).toBe(2);
+    expect(won.match.activeTimeout).toBe("");
     expect(won.match.completedSets).toEqual([
       { set: 1, homeScore: 25, awayScore: 23, winner: "home" }
     ]);
@@ -165,6 +174,9 @@ describe("match end", () => {
     expect(reset.match.homeSets).toBe(0);
     expect(reset.match.setNumber).toBe(1);
     expect(reset.match.servingSide).toBe("");
+    expect(reset.match.homeTimeouts).toBe(2);
+    expect(reset.match.awayTimeouts).toBe(2);
+    expect(reset.match.activeTimeout).toBe("");
     expect(reset.match.completedSets).toEqual([]);
     expect(canUndo(reset)).toBe(false);
 
@@ -351,5 +363,99 @@ describe("serving", () => {
     const lowered = subtract(engine, "away");
     expect(lowered.match.awayScore).toBe(0);
     expect(lowered.match.servingSide).toBe("away");
+  });
+});
+
+describe("timeouts", () => {
+  const now = 1_700_000_000_000;
+
+  it("starts each set with two lights and no clock", () => {
+    const { match } = createMatch();
+    expect(match.homeTimeouts).toBe(2);
+    expect(match.awayTimeouts).toBe(2);
+    expect(match.activeTimeout).toBe("");
+    expect(match.timeoutEndsAtMs).toBe(0);
+    expect(timeoutsOf(match, "home")).toBe(2);
+  });
+
+  it("calls a timeout, drops a light, and starts a 45s clock", () => {
+    const engine = callTimeout(createMatch({ homeName: "Blazers" }), "home", now);
+    expect(engine.match.homeTimeouts).toBe(1);
+    expect(engine.match.awayTimeouts).toBe(2);
+    expect(engine.match.activeTimeout).toBe("home");
+    expect(engine.match.timeoutEndsAtMs).toBe(now + TIMEOUT_MS);
+    expect(timeoutRemainingMs(engine.match, now)).toBe(TIMEOUT_MS);
+    expect(canUndo(engine)).toBe(true);
+  });
+
+  it("undoes a mis-tap and restores the light", () => {
+    const called = callTimeout(createMatch(), "away", now);
+    const restored = undo(called);
+    expect(restored.match.awayTimeouts).toBe(2);
+    expect(restored.match.activeTimeout).toBe("");
+    expect(restored.match.timeoutEndsAtMs).toBe(0);
+  });
+
+  it("does not start a second timeout while one is running", () => {
+    const home = callTimeout(createMatch(), "home", now);
+    expect(callTimeout(home, "away", now + 1_000)).toBe(home);
+    expect(callTimeout(home, "home", now + 1_000)).toBe(home);
+  });
+
+  it("rejects a timeout when that side has no lights left", () => {
+    let engine = callTimeout(createMatch(), "home", now);
+    engine = endTimeout(engine, now + 1_000);
+    engine = callTimeout(engine, "home", now + 2_000);
+    engine = endTimeout(engine, now + 3_000);
+    expect(engine.match.homeTimeouts).toBe(0);
+    expect(callTimeout(engine, "home", now + 4_000)).toBe(engine);
+  });
+
+  it("lets End timeout clear the clock while it is still running", () => {
+    const called = callTimeout(createMatch(), "home", now);
+    const ended = endTimeout(called, now + 12_000);
+    expect(ended.match.activeTimeout).toBe("");
+    expect(ended.match.timeoutEndsAtMs).toBe(0);
+    expect(ended.match.homeTimeouts).toBe(1);
+    expect(undo(ended).match.activeTimeout).toBe("home");
+    expect(undo(ended).match.timeoutEndsAtMs).toBe(now + TIMEOUT_MS);
+  });
+
+  it("clears an expired timeout without eating the undo stack", () => {
+    const called = callTimeout(createMatch(), "home", now);
+    const expired = endTimeout(called, now + TIMEOUT_MS);
+    expect(expired.match.activeTimeout).toBe("");
+    expect(expired.match.homeTimeouts).toBe(1);
+    const restored = undo(expired);
+    expect(restored.match.homeTimeouts).toBe(2);
+    expect(restored.match.activeTimeout).toBe("");
+  });
+
+  it("keeps +1 and undo available during a timeout", () => {
+    let engine = callTimeout(createMatch(), "home", now);
+    engine = point(engine, "away");
+    expect(engine.match.awayScore).toBe(1);
+    expect(engine.match.activeTimeout).toBe("home");
+    const restored = undo(engine);
+    expect(restored.match.awayScore).toBe(0);
+    expect(restored.match.activeTimeout).toBe("home");
+  });
+
+  it("restores two lights each on a new set and clears the clock", () => {
+    let engine = callTimeout(createMatch(), "home", now);
+    engine = endTimeout(engine, now + 1_000);
+    engine = callTimeout(engine, "away", now + 2_000);
+    const won = winSet(engine, "home");
+    expect(won.match.setNumber).toBe(2);
+    expect(won.match.homeTimeouts).toBe(2);
+    expect(won.match.awayTimeouts).toBe(2);
+    expect(won.match.activeTimeout).toBe("");
+    expect(won.match.timeoutEndsAtMs).toBe(0);
+  });
+
+  it("formats the 45s clock", () => {
+    expect(formatTimeoutClock(TIMEOUT_MS)).toBe("0:45");
+    expect(formatTimeoutClock(1_000)).toBe("0:01");
+    expect(formatTimeoutClock(0)).toBe("0:00");
   });
 });

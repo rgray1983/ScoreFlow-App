@@ -26,6 +26,10 @@ export type MatchState = {
   awayColor: string;
   winner: Side | "";
   servingSide: Side | "";
+  homeTimeouts: number;
+  awayTimeouts: number;
+  activeTimeout: Side | "";
+  timeoutEndsAtMs: number;
   completedSets: readonly CompletedSet[];
 };
 
@@ -50,4 +54,6 @@ export type Command =
   | { type: "setNames"; home: string; away: string }
   | { type: "setColors"; home: string; away: string }
   | { type: "setTitle"; title: string }
-  | { type: "setServe"; side: Side };
+  | { type: "setServe"; side: Side }
+  | { type: "timeout"; side: Side; nowMs?: number }
+  | { type: "endTimeout"; nowMs?: number };

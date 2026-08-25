@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatch, point } from "../scoring";
+import { callTimeout, createMatch, point } from "../scoring";
 import { brandingFields, isHttpUrl, parseLiveLogo, scoreFields } from "./payload";
 
 describe("live payloads", () => {
@@ -9,8 +9,21 @@ describe("live payloads", () => {
     expect(payload.homeScore).toBe(1);
     expect(payload.homeName).toBe("Blazers");
     expect(payload.servingSide).toBe("home");
+    expect(payload.homeTimeouts).toBe(2);
+    expect(payload.awayTimeouts).toBe(2);
+    expect(payload.activeTimeout).toBe("");
+    expect(payload.timeoutEndsAtMs).toBe(0);
     expect(payload).not.toHaveProperty("homeLogo");
     expect(payload.ended).toBe(false);
+  });
+
+  it("sends timeout lights and the clock end time", () => {
+    const timed = callTimeout(createMatch({ homeName: "Blazers" }), "home", 1_700_000_000_000);
+    const payload = scoreFields(timed.match);
+    expect(payload.homeTimeouts).toBe(1);
+    expect(payload.awayTimeouts).toBe(2);
+    expect(payload.activeTimeout).toBe("home");
+    expect(payload.timeoutEndsAtMs).toBe(1_700_000_045_000);
   });
 
   it("keeps http logos and compact data urls, and omits empty sides", () => {

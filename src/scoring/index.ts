@@ -1,8 +1,10 @@
 export {
   applyFormat,
+  callTimeout,
   createMatch,
   DEFAULT_AWAY_COLOR,
   DEFAULT_HOME_COLOR,
+  endTimeout,
   newMatch,
   point,
   reduce,
@@ -17,6 +19,7 @@ export {
 export {
   canUndo,
   FORMAT_RULES,
+  formatTimeoutClock,
   hasWonSet,
   isMatchOver,
   isMatchPoint,
@@ -26,7 +29,11 @@ export {
   otherSide,
   pointsToWin,
   scoreOf,
-  setsOf
+  setsOf,
+  TIMEOUT_MS,
+  TIMEOUTS_PER_SET,
+  timeoutRemainingMs,
+  timeoutsOf
 } from "./queries";
 
 export type {

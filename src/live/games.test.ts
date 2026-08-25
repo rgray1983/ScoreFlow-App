@@ -86,5 +86,7 @@ describe("parseLiveGame", () => {
     expect(view?.match.awayScore).toBe(0);
     expect(view?.match.homeName).toBe("Blazers");
     expect(view?.match.servingSide).toBe("home");
+    expect(view?.match.homeTimeouts).toBe(2);
+    expect(view?.match.activeTimeout).toBe("");
   });
 });

@@ -1,4 +1,13 @@
-import { FORMAT_RULES, hasWonSet, isMatchOver, scoreOf } from "./queries";
+import {
+  FORMAT_RULES,
+  hasWonSet,
+  isMatchOver,
+  scoreOf,
+  TIMEOUT_MS,
+  TIMEOUTS_PER_SET,
+  timeoutRemainingMs,
+  timeoutsOf
+} from "./queries";
 import type { Command, MatchEngine, MatchFormat, MatchState, Side } from "./types";
 
 export const DEFAULT_HOME_COLOR = "#d62828";
@@ -39,6 +48,10 @@ export function createMatch(overrides: Partial<MatchState> = {}): MatchEngine {
     awayColor: DEFAULT_AWAY_COLOR,
     winner: "",
     servingSide: "",
+    homeTimeouts: TIMEOUTS_PER_SET,
+    awayTimeouts: TIMEOUTS_PER_SET,
+    activeTimeout: "",
+    timeoutEndsAtMs: 0,
     completedSets: [],
     ...overrides,
     ...formatFields(format)
@@ -64,7 +77,19 @@ function resetProgress(match: MatchState): MatchState {
     setNumber: 1,
     winner: "",
     servingSide: "",
+    homeTimeouts: TIMEOUTS_PER_SET,
+    awayTimeouts: TIMEOUTS_PER_SET,
+    activeTimeout: "",
+    timeoutEndsAtMs: 0,
     completedSets: []
+  };
+}
+
+function clearTimeoutClock(match: MatchState): MatchState {
+  return {
+    ...match,
+    activeTimeout: "",
+    timeoutEndsAtMs: 0
   };
 }
 
@@ -98,6 +123,8 @@ function applyPoint(match: MatchState, side: Side): MatchState {
       awaySets,
       winner: side,
       servingSide: side,
+      activeTimeout: "",
+      timeoutEndsAtMs: 0,
       completedSets
     };
   }
@@ -111,6 +138,10 @@ function applyPoint(match: MatchState, side: Side): MatchState {
     setNumber: scored.setNumber + 1,
     winner: "",
     servingSide: "",
+    homeTimeouts: TIMEOUTS_PER_SET,
+    awayTimeouts: TIMEOUTS_PER_SET,
+    activeTimeout: "",
+    timeoutEndsAtMs: 0,
     completedSets
   };
 }
@@ -188,6 +219,28 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
       if (isMatchOver(engine.match) || engine.match.servingSide === command.side) return engine;
       return snapshot(engine, { ...engine.match, servingSide: command.side });
     }
+    case "timeout": {
+      if (isMatchOver(engine.match) || engine.match.activeTimeout) return engine;
+      if (timeoutsOf(engine.match, command.side) <= 0) return engine;
+      const nowMs = command.nowMs ?? Date.now();
+      const remaining = timeoutsOf(engine.match, command.side);
+      return snapshot(engine, {
+        ...engine.match,
+        homeTimeouts: command.side === "home" ? remaining - 1 : engine.match.homeTimeouts,
+        awayTimeouts: command.side === "away" ? remaining - 1 : engine.match.awayTimeouts,
+        activeTimeout: command.side,
+        timeoutEndsAtMs: nowMs + TIMEOUT_MS
+      });
+    }
+    case "endTimeout": {
+      if (!engine.match.activeTimeout) return engine;
+      const next = clearTimeoutClock(engine.match);
+      const nowMs = command.nowMs ?? Date.now();
+      if (timeoutRemainingMs(engine.match, nowMs) > 0) {
+        return snapshot(engine, next);
+      }
+      return { match: next, history: engine.history };
+    }
   }
 }
 
@@ -225,4 +278,12 @@ export function setTitle(engine: MatchEngine, title: string): MatchEngine {
 
 export function setServe(engine: MatchEngine, side: Side): MatchEngine {
   return reduce(engine, { type: "setServe", side });
+}
+
+export function callTimeout(engine: MatchEngine, side: Side, nowMs = Date.now()): MatchEngine {
+  return reduce(engine, { type: "timeout", side, nowMs });
+}
+
+export function endTimeout(engine: MatchEngine, nowMs = Date.now()): MatchEngine {
+  return reduce(engine, { type: "endTimeout", nowMs });
 }

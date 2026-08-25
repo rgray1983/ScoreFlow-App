@@ -37,6 +37,7 @@ Looks like a real board: **two lights per team per set**. Tap a light on the sco
 - New set restores two lights each.
 - Undo restores a light if the timeout was a mis-tap.
 - Do not track substitutions. Do not pause the whole app in a way that blocks Undo.
+- Building on `cursor/timeout-lights-feac` / `docs/PRs/PR-037.md`.
 
 ## 4 — Match-point atmosphere
 

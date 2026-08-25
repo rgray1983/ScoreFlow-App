@@ -43,6 +43,10 @@ export function scoreFields(match: MatchState) {
     winner: match.winner,
     completedSets: match.completedSets.map((set) => ({ ...set })),
     servingSide: match.servingSide || "",
+    homeTimeouts: match.homeTimeouts,
+    awayTimeouts: match.awayTimeouts,
+    activeTimeout: match.activeTimeout || "",
+    timeoutEndsAtMs: match.timeoutEndsAtMs || 0,
     lastAlert: matchBanner(match),
     ended: false
   };

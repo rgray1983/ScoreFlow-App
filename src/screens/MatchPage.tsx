@@ -5,6 +5,7 @@ import {
   isMatchOver,
   isServing,
   matchBanner,
+  timeoutsOf,
   type Side
 } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
@@ -27,6 +28,8 @@ import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
 import { ServingMark } from "../ui/ServingMark";
+import { TimeoutLights } from "../ui/TimeoutLights";
+import { TimeoutOverlay, useTimeoutRemaining } from "../ui/TimeoutOverlay";
 import { useBoardFx } from "../ui/useBoardFx";
 import { withBase } from "../lib/base";
 import styles from "./MatchPage.module.css";
@@ -59,6 +62,8 @@ export function MatchPage() {
   const homePop = useScorePop(match.homeScore);
   const awayPop = useScorePop(match.awayScore);
   const fx = useBoardFx(match);
+  const timeoutActive = Boolean(match.activeTimeout);
+  const timeoutRemaining = useTimeoutRemaining(match.timeoutEndsAtMs, timeoutActive);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
@@ -74,6 +79,11 @@ export function MatchPage() {
     setWinnerOpen(false);
     setMatchCardOpen(false);
   }, [match.winner]);
+
+  useEffect(() => {
+    if (!timeoutActive || timeoutRemaining > 0) return;
+    dispatch({ type: "endTimeout" });
+  }, [dispatch, timeoutActive, timeoutRemaining]);
 
   useEffect(() => {
     live.dismissReturnPrompt();
@@ -105,6 +115,10 @@ export function MatchPage() {
 
   function serve(side: Side) {
     dispatch({ type: "setServe", side });
+  }
+
+  function callTimeout(side: Side) {
+    dispatch({ type: "timeout", side });
   }
 
   function startNewMatch() {
@@ -216,6 +230,15 @@ export function MatchPage() {
             <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
+              <TimeoutLights
+                teamName={match.homeName}
+                remaining={timeoutsOf(match, "home")}
+                color={match.homeColor}
+                interactive
+                disabled={over || timeoutActive}
+                testId="timeouts-home"
+                onCall={() => callTimeout("home")}
+              />
             </div>
           </div>
           <div className={styles.pointActions}>
@@ -310,6 +333,15 @@ export function MatchPage() {
             <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
+              <TimeoutLights
+                teamName={match.awayName}
+                remaining={timeoutsOf(match, "away")}
+                color={match.awayColor}
+                interactive
+                disabled={over || timeoutActive}
+                testId="timeouts-away"
+                onCall={() => callTimeout("away")}
+              />
             </div>
           </div>
           <div className={styles.pointActions}>
@@ -334,6 +366,13 @@ export function MatchPage() {
           </div>
         </section>
       </main>
+
+      <TimeoutOverlay
+        match={match}
+        remainingMs={timeoutRemaining}
+        compact
+        onEnd={() => dispatch({ type: "endTimeout" })}
+      />
 
       <ConfettiBurst
         active={fx.confetti}
