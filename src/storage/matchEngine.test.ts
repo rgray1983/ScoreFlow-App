@@ -53,6 +53,47 @@ describe("match engine storage", () => {
     expect(loaded?.history[0].servingSide).toBe("away");
   });
 
+  it("saves timeout lights and the running clock", () => {
+    const storage = memoryStorage();
+    const timed = createMatch({
+      homeTimeouts: 1,
+      awayTimeouts: 2,
+      activeTimeout: "home",
+      timeoutEndsAtMs: 1_700_000_045_000
+    });
+    saveMatchEngine(timed, storage);
+    const loaded = loadMatchEngine(storage);
+    expect(loaded?.match.homeTimeouts).toBe(1);
+    expect(loaded?.match.activeTimeout).toBe("home");
+    expect(loaded?.match.timeoutEndsAtMs).toBe(1_700_000_045_000);
+  });
+
+  it("defaults missing timeout fields to a full set of lights", () => {
+    const parsed = parseMatchEngine({
+      match: {
+        homeScore: 3,
+        awayScore: 1,
+        homeSets: 0,
+        awaySets: 0,
+        setNumber: 1,
+        matchFormat: "club",
+        matchTitle: "Region",
+        homeName: "Blazers",
+        awayName: "Eastside",
+        homeColor: "#d62828",
+        awayColor: "#1565c0",
+        winner: "",
+        servingSide: "home",
+        completedSets: []
+      },
+      history: []
+    });
+    expect(parsed?.match.homeTimeouts).toBe(2);
+    expect(parsed?.match.awayTimeouts).toBe(2);
+    expect(parsed?.match.activeTimeout).toBe("");
+    expect(parsed?.match.timeoutEndsAtMs).toBe(0);
+  });
+
   it("rejects junk", () => {
     expect(parseMatchEngine(null)).toBeNull();
     expect(parseMatchEngine({ match: 4 })).toBeNull();

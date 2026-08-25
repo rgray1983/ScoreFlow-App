@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { matchBanner, isServing } from "../scoring";
+import { matchBanner, isServing, timeoutsOf } from "../scoring";
 import {
   ensureAnonymousAuth,
   listenLiveGame,
@@ -13,6 +13,8 @@ import { TeamName } from "../ui/TeamName";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import { ServingMark } from "../ui/ServingMark";
+import { TimeoutLights } from "../ui/TimeoutLights";
+import { TimeoutOverlay, useTimeoutRemaining } from "../ui/TimeoutOverlay";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { PrematchOverlay } from "../ui/PrematchOverlay";
 import { BoardFxBanners } from "../ui/BoardFxBanners";
@@ -93,6 +95,8 @@ export function ViewerPage() {
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON") || banner === "GAME NOT FOUND";
   const fx = useBoardFx(watching && !ended ? match : null);
   const winnerName = match?.winner === "home" ? match.homeName : match?.awayName || "";
+  const timeoutActive = Boolean(match?.activeTimeout);
+  const timeoutRemaining = useTimeoutRemaining(match?.timeoutEndsAtMs ?? 0, timeoutActive);
 
   return (
     <div
@@ -124,6 +128,12 @@ export function ViewerPage() {
             <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match?.homeName || "Home"} />
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
+              <TimeoutLights
+                teamName={match?.homeName || "Home"}
+                remaining={match ? timeoutsOf(match, "home") : 2}
+                color={match?.homeColor || "#d62828"}
+                testId="timeouts-home"
+              />
             </div>
           </div>
         </section>
@@ -163,12 +173,22 @@ export function ViewerPage() {
             <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match?.awayName || "Visitor"} />
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
+              <TimeoutLights
+                teamName={match?.awayName || "Visitor"}
+                remaining={match ? timeoutsOf(match, "away") : 2}
+                color={match?.awayColor || "#1565c0"}
+                testId="timeouts-away"
+              />
             </div>
           </div>
         </section>
 
         <p className={viewerStyles.chatHint}>Rotate for chat</p>
       </main>
+
+      {match && watching && !ended ? (
+        <TimeoutOverlay match={match} remainingMs={timeoutRemaining} />
+      ) : null}
 
       {match ? (
         <ConfettiBurst

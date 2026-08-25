@@ -1,5 +1,6 @@
 import {
   createMatch,
+  TIMEOUTS_PER_SET,
   type CompletedSet,
   type MatchEngine,
   type MatchFormat,
@@ -47,6 +48,13 @@ function asScore(value: unknown): number {
   return Number.isFinite(next) && next >= 0 ? Math.floor(next) : 0;
 }
 
+function asTimeouts(value: unknown): number {
+  if (value === undefined || value === null || value === "") return TIMEOUTS_PER_SET;
+  const next = Number(value);
+  if (!Number.isFinite(next)) return TIMEOUTS_PER_SET;
+  return Math.max(0, Math.min(TIMEOUTS_PER_SET, Math.floor(next)));
+}
+
 export function parseCompletedSet(value: unknown): CompletedSet | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
@@ -79,6 +87,10 @@ export function parseMatchState(value: unknown): MatchState | null {
     awayColor: String(record.awayColor || ""),
     winner: asSide(record.winner),
     servingSide: asSide(record.servingSide),
+    homeTimeouts: asTimeouts(record.homeTimeouts),
+    awayTimeouts: asTimeouts(record.awayTimeouts),
+    activeTimeout: asSide(record.activeTimeout),
+    timeoutEndsAtMs: asScore(record.timeoutEndsAtMs),
     completedSets,
     matchFormat: asFormat(record.matchFormat)
   }).match;

@@ -5,6 +5,9 @@ export const FORMAT_RULES: Record<MatchFormat, { matchSets: number; setsToWin: n
   highschool: { matchSets: 5, setsToWin: 3, winBy: 2 }
 };
 
+export const TIMEOUTS_PER_SET = 2;
+export const TIMEOUT_MS = 45_000;
+
 export function otherSide(side: Side): Side {
   return side === "home" ? "away" : "home";
 }
@@ -50,6 +53,22 @@ export function canUndo(engine: MatchEngine): boolean {
 
 export function isServing(match: MatchState, side: Side): boolean {
   return match.servingSide === side;
+}
+
+export function timeoutsOf(match: MatchState, side: Side): number {
+  return side === "home" ? match.homeTimeouts : match.awayTimeouts;
+}
+
+export function timeoutRemainingMs(match: MatchState, nowMs = Date.now()): number {
+  if (!match.activeTimeout || match.timeoutEndsAtMs <= 0) return 0;
+  return Math.max(0, match.timeoutEndsAtMs - nowMs);
+}
+
+export function formatTimeoutClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export function matchBanner(match: MatchState): string {
