@@ -57,7 +57,7 @@ export function ShareSheet({ open, url, onClose }: ShareSheetProps) {
             <CloseIcon />
           </button>
         </div>
-        <p>Family opens this viewer link. Your phone stays on the scorer.</p>
+        <p className={styles.copy}>Family opens this viewer link. Your phone stays on the scorer.</p>
         {qr ? <img className={styles.qr} src={qr} alt="QR code for the live viewer link" /> : <div className={styles.qrSlot} />}
         <input className={styles.link} readOnly value={url} aria-label="Viewer link" onFocus={(event) => event.currentTarget.select()} />
         <div className={styles.actions}>

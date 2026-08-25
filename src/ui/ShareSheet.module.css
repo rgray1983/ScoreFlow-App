@@ -27,7 +27,7 @@
 }
 
 .head h2,
-.card p {
+.copy {
   margin: 0;
 }
 
@@ -37,7 +37,7 @@
   letter-spacing: -0.05em;
 }
 
-.card p {
+.copy {
   margin-top: 10px;
   color: var(--muted);
   line-height: 1.45;
@@ -91,4 +91,86 @@
 
 .actions :global(button) {
   width: 100%;
+}
+
+@media (orientation: landscape) {
+  .shade {
+    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+
+  .card {
+    width: min(94vw, 640px);
+    max-height: calc(var(--scoreflow-vh) - 16px);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "head head"
+      "copy copy"
+      "qr actions"
+      "link link";
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 8px;
+    padding: 12px 14px;
+    overflow: auto;
+    text-align: left;
+  }
+
+  .head {
+    grid-area: head;
+  }
+
+  .copy {
+    grid-area: copy;
+    margin-top: 0;
+  }
+
+  .head h2 {
+    font-size: clamp(22px, 6.2vh, 32px);
+  }
+
+  .qr,
+  .qrSlot {
+    grid-area: qr;
+    width: min(34vh, 168px);
+    height: min(34vh, 168px);
+    margin: 0;
+  }
+
+  .qr {
+    padding: 8px;
+  }
+
+  .actions {
+    grid-area: actions;
+    margin-top: 0;
+  }
+
+  .link {
+    grid-area: link;
+    margin-top: 0;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .card {
+    padding: 10px 12px;
+    row-gap: 6px;
+  }
+
+  .head h2 {
+    font-size: 22px;
+  }
+
+  .qr,
+  .qrSlot {
+    width: min(30vh, 128px);
+    height: min(30vh, 128px);
+  }
+
+  .close {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
 }
