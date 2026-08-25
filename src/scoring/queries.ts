@@ -48,6 +48,10 @@ export function canUndo(engine: MatchEngine): boolean {
   return engine.history.length > 0;
 }
 
+export function isServing(match: MatchState, side: Side): boolean {
+  return match.servingSide === side;
+}
+
 export function matchBanner(match: MatchState): string {
   if (isMatchOver(match) && (match.winner === "home" || match.winner === "away")) {
     const winnerName = match.winner === "home" ? match.homeName : match.awayName;

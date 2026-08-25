@@ -21,7 +21,7 @@ Queries: `orderBy("updatedAtMs", "desc")` with a limit. Security rules allow onl
 
 Live shared scoreboard document created when a scorer starts a live match. Family viewer links read this document by ID. Listing the collection is denied.
 
-Fields include public scoreboard state (`homeScore`, `awayScore`, set counts, names, colors, logo **URLs**, `ended`) plus `ownerId` for the creating scorer. Live games may also store `scorerName` and `scorerAvatar` so a later viewer badge can show who’s scoring. Game IDs are unguessable 128-bit hex strings. Logo and avatar bytes are stored in Firebase Storage under `volleyballGames/{gameId}/` or `users/{userId}/`, not as huge data URLs in the game document.
+Fields include public scoreboard state (`homeScore`, `awayScore`, set counts, names, colors, `servingSide`, logo **URLs**, `ended`) plus `ownerId` for the creating scorer. Live games may also store `scorerName` and `scorerAvatar` so a later viewer badge can show who’s scoring. `servingSide` is `"home"`, `"away"`, or empty when the next set still needs a first-serve tap. Game IDs are unguessable 128-bit hex strings. Logo and avatar bytes are stored in Firebase Storage under `volleyballGames/{gameId}/` or `users/{userId}/`, not as huge data URLs in the game document.
 
 Subcollections:
 

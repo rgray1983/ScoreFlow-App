@@ -5,6 +5,7 @@ import {
   createMatch,
   isMatchOver,
   isMatchPoint,
+  isServing,
   isSetPoint,
   matchBanner,
   newMatch,
@@ -12,6 +13,7 @@ import {
   pointsToWin,
   setColors,
   setNames,
+  setServe,
   subtract,
   undo
 } from "./index";
@@ -78,6 +80,7 @@ describe("set win rules", () => {
     expect(won.match.setNumber).toBe(2);
     expect(won.match.homeScore).toBe(0);
     expect(won.match.awayScore).toBe(0);
+    expect(won.match.servingSide).toBe("");
     expect(won.match.completedSets).toEqual([
       { set: 1, homeScore: 25, awayScore: 23, winner: "home" }
     ]);
@@ -161,6 +164,7 @@ describe("match end", () => {
     expect(reset.match.homeScore).toBe(0);
     expect(reset.match.homeSets).toBe(0);
     expect(reset.match.setNumber).toBe(1);
+    expect(reset.match.servingSide).toBe("");
     expect(reset.match.completedSets).toEqual([]);
     expect(canUndo(reset)).toBe(false);
 
@@ -279,5 +283,73 @@ describe("matchBanner", () => {
     engine = winSet(engine, "home");
     expect(isMatchOver(engine.match)).toBe(true);
     expect(matchBanner(engine.match)).toBe("MATCH WON — Blazers");
+  });
+});
+
+describe("serving", () => {
+  it("starts with nobody serving until a tap or the first point", () => {
+    const engine = createMatch();
+    expect(engine.match.servingSide).toBe("");
+    expect(isServing(engine.match, "home")).toBe(false);
+    expect(isServing(engine.match, "away")).toBe(false);
+  });
+
+  it("lets the scorer tap who serves first", () => {
+    const home = setServe(createMatch(), "home");
+    expect(home.match.servingSide).toBe("home");
+    expect(isServing(home.match, "home")).toBe(true);
+    expect(canUndo(home)).toBe(true);
+
+    const away = setServe(home, "away");
+    expect(away.match.servingSide).toBe("away");
+    expect(undo(away).match.servingSide).toBe("home");
+  });
+
+  it("does not snapshot when the same side is already serving", () => {
+    const home = setServe(createMatch(), "home");
+    expect(setServe(home, "home")).toBe(home);
+  });
+
+  it("keeps serve on a held point and flips on side-out", () => {
+    let engine = setServe(createMatch(), "home");
+    engine = point(engine, "home");
+    expect(engine.match.servingSide).toBe("home");
+    engine = point(engine, "away");
+    expect(engine.match.servingSide).toBe("away");
+    engine = point(engine, "away");
+    expect(engine.match.servingSide).toBe("away");
+  });
+
+  it("undoes serve with the rally", () => {
+    let engine = setServe(createMatch(), "home");
+    engine = point(engine, "away");
+    expect(engine.match.servingSide).toBe("away");
+    const restored = undo(engine);
+    expect(restored.match.homeScore).toBe(0);
+    expect(restored.match.awayScore).toBe(0);
+    expect(restored.match.servingSide).toBe("home");
+  });
+
+  it("clears serve at the start of the next set", () => {
+    const won = winSet(setServe(createMatch(), "home"), "home");
+    expect(won.match.setNumber).toBe(2);
+    expect(won.match.servingSide).toBe("");
+  });
+
+  it("keeps the winner serving after match point", () => {
+    let engine = winSet(createMatch(), "home");
+    engine = setServe(engine, "home");
+    engine = winSet(engine, "home");
+    expect(engine.match.winner).toBe("home");
+    expect(engine.match.servingSide).toBe("home");
+  });
+
+  it("leaves serve alone on minus-one", () => {
+    let engine = setServe(createMatch(), "home");
+    engine = point(engine, "away");
+    expect(engine.match.servingSide).toBe("away");
+    const lowered = subtract(engine, "away");
+    expect(lowered.match.awayScore).toBe(0);
+    expect(lowered.match.servingSide).toBe("away");
   });
 });

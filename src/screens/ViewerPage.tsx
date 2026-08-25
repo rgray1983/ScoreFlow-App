@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { matchBanner } from "../scoring";
+import { matchBanner, isServing } from "../scoring";
 import {
   ensureAnonymousAuth,
   listenLiveGame,
@@ -12,6 +12,7 @@ import { FanZone } from "../ui/FanZone";
 import { TeamName } from "../ui/TeamName";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
+import { ServingMark } from "../ui/ServingMark";
 import { MatchWonCard, WinnerCelebration } from "../ui/MatchWon";
 import { PrematchOverlay } from "../ui/PrematchOverlay";
 import { BoardFxBanners } from "../ui/BoardFxBanners";
@@ -111,8 +112,15 @@ export function ViewerPage() {
       <main className={styles.board} aria-label="Live volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
-            <div>
+            <div className={styles.logoStack}>
+              <LogoMark className={styles.teamLogo} name={match?.homeName || "Home"} logo={game?.homeLogo} color={match?.homeColor} />
+              <ServingMark
+                teamName={match?.homeName || "Home"}
+                active={Boolean(match && isServing(match, "home"))}
+                testId="serving-home"
+              />
+            </div>
+            <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match?.homeName || "Home"} />
               <span className={styles.sets}>Sets {match?.homeSets ?? 0}</span>
             </div>
@@ -143,8 +151,15 @@ export function ViewerPage() {
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
-            <div>
+            <div className={styles.logoStack}>
+              <LogoMark className={styles.teamLogo} name={match?.awayName || "Visitor"} logo={game?.awayLogo} color={match?.awayColor} />
+              <ServingMark
+                teamName={match?.awayName || "Visitor"}
+                active={Boolean(match && isServing(match, "away"))}
+                testId="serving-away"
+              />
+            </div>
+            <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match?.awayName || "Visitor"} />
               <span className={styles.sets}>Sets {match?.awaySets ?? 0}</span>
             </div>

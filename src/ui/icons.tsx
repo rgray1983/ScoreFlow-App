@@ -98,3 +98,29 @@ export function PlayIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function VolleyballIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M12 3.2c2.2 2.6 3.3 5.6 3.3 8.8s-1.1 6.2-3.3 8.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.4 8.2c2.6 1.2 5.2 1.8 7.6 1.8 2.6 0 5.2-.6 7.6-1.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.4 15.8c2.6-1.2 5.2-1.8 7.6-1.8 2.6 0 5.2.6 7.6 1.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

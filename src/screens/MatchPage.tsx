@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   canUndo,
   isMatchOver,
+  isServing,
   matchBanner,
   type Side
 } from "../scoring";
@@ -25,6 +26,7 @@ import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ShareSheet } from "../ui/ShareSheet";
 import { HomeIcon, SettingsIcon, ShareIcon, UndoIcon } from "../ui/icons";
 import { LivePill } from "../ui/LivePill";
+import { ServingMark } from "../ui/ServingMark";
 import { useBoardFx } from "../ui/useBoardFx";
 import { withBase } from "../lib/base";
 import styles from "./MatchPage.module.css";
@@ -99,6 +101,10 @@ export function MatchPage() {
 
   function minus(side: Side) {
     dispatch({ type: "subtract", side });
+  }
+
+  function serve(side: Side) {
+    dispatch({ type: "setServe", side });
   }
 
   function startNewMatch() {
@@ -188,16 +194,26 @@ export function MatchPage() {
       <main className={styles.board} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
-            <BoardLogoPicker
-              name={match.homeName}
-              logo={draft.homeLogo}
-              color={match.homeColor}
-              label={`Upload ${match.homeName} logo`}
-              wrapClassName={styles.logoPick}
-              markClassName={styles.teamLogo}
-              onChange={(logo) => setTeamLogo("home", logo)}
-            />
-            <div>
+            <div className={styles.logoStack}>
+              <BoardLogoPicker
+                name={match.homeName}
+                logo={draft.homeLogo}
+                color={match.homeColor}
+                label={`Upload ${match.homeName} logo`}
+                wrapClassName={styles.logoPick}
+                markClassName={styles.teamLogo}
+                onChange={(logo) => setTeamLogo("home", logo)}
+              />
+              <ServingMark
+                teamName={match.homeName}
+                active={isServing(match, "home")}
+                interactive
+                disabled={over}
+                testId="serving-home"
+                onSelect={() => serve("home")}
+              />
+            </div>
+            <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match.homeName} />
               <span className={styles.sets}>Sets {match.homeSets}</span>
             </div>
@@ -272,16 +288,26 @@ export function MatchPage() {
 
         <section className={`${styles.team} ${styles.away}`}>
           <div className={styles.identity}>
-            <BoardLogoPicker
-              name={match.awayName}
-              logo={draft.awayLogo}
-              color={match.awayColor}
-              label={`Upload ${match.awayName} logo`}
-              wrapClassName={styles.logoPick}
-              markClassName={styles.teamLogo}
-              onChange={(logo) => setTeamLogo("away", logo)}
-            />
-            <div>
+            <div className={styles.logoStack}>
+              <BoardLogoPicker
+                name={match.awayName}
+                logo={draft.awayLogo}
+                color={match.awayColor}
+                label={`Upload ${match.awayName} logo`}
+                wrapClassName={styles.logoPick}
+                markClassName={styles.teamLogo}
+                onChange={(logo) => setTeamLogo("away", logo)}
+              />
+              <ServingMark
+                teamName={match.awayName}
+                active={isServing(match, "away")}
+                interactive
+                disabled={over}
+                testId="serving-away"
+                onSelect={() => serve("away")}
+              />
+            </div>
+            <div className={styles.meta}>
               <TeamName className={styles.teamName} name={match.awayName} />
               <span className={styles.sets}>Sets {match.awaySets}</span>
             </div>

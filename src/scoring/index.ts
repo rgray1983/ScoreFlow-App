@@ -8,6 +8,7 @@ export {
   reduce,
   setColors,
   setNames,
+  setServe,
   setTitle,
   subtract,
   undo
@@ -19,6 +20,7 @@ export {
   hasWonSet,
   isMatchOver,
   isMatchPoint,
+  isServing,
   isSetPoint,
   matchBanner,
   otherSide,

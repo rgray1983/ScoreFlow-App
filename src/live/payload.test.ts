@@ -8,6 +8,7 @@ describe("live payloads", () => {
     const payload = scoreFields(scored.match);
     expect(payload.homeScore).toBe(1);
     expect(payload.homeName).toBe("Blazers");
+    expect(payload.servingSide).toBe("home");
     expect(payload).not.toHaveProperty("homeLogo");
     expect(payload.ended).toBe(false);
   });

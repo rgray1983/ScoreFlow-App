@@ -1,0 +1,71 @@
+.mark {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(5, 7, 12, 0.42);
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+button.mark:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.spacer {
+  min-width: 72px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ball {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.pill,
+.hint {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.idle {
+  background: rgba(5, 7, 12, 0.08);
+}
+
+.active {
+  background: linear-gradient(180deg, #e8c34a, #c9a227);
+  color: #14110a;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.active .ball {
+  animation: servePulse 1.15s ease-in-out infinite;
+}
+
+@keyframes servePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active .ball {
+    animation: none;
+  }
+}

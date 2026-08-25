@@ -290,13 +290,22 @@
 }
 
 .identity > div {
-  grid-area: meta;
   width: 100%;
   min-width: 0;
 }
 
-.logoPick {
+.meta {
+  grid-area: meta;
+}
+
+.logoStack {
   grid-area: logo;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.logoPick {
   display: grid;
   justify-items: center;
   cursor: pointer;
@@ -1016,6 +1025,10 @@
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.12);
     overflow: visible;
+  }
+
+  .logoStack {
+    gap: 4px;
   }
 
   .teamLogo {
