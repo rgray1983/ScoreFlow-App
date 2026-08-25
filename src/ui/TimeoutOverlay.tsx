@@ -10,18 +10,16 @@ type TimeoutOverlayProps = {
 };
 
 export function useTimeoutRemaining(endsAtMs: number, active: boolean) {
-  const [now, setNow] = useState(() => Date.now());
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     if (!active) return;
-    const tick = () => setNow(Date.now());
-    tick();
-    const id = window.setInterval(tick, 200);
+    const id = window.setInterval(() => setTick((n) => n + 1), 200);
     return () => window.clearInterval(id);
   }, [active, endsAtMs]);
 
-  if (!active) return 0;
-  return Math.max(0, endsAtMs - now);
+  if (!active || endsAtMs <= 0) return 0;
+  return Math.max(0, endsAtMs - Date.now());
 }
 
 export function TimeoutOverlay({

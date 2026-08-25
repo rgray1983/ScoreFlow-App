@@ -6,9 +6,9 @@
 }
 
 .compact {
-  top: max(58px, calc(env(safe-area-inset-top) + 52px));
+  top: 22%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -20%);
   width: min(42vw, 220px);
 }
 
@@ -104,8 +104,9 @@
 
 @media (orientation: portrait) {
   .compact {
-    top: max(48px, calc(env(safe-area-inset-top) + 42px));
-    width: min(56vw, 200px);
+    top: 36%;
+    transform: translate(-50%, -50%);
+    width: min(62vw, 220px);
   }
 
   .compact .clock {
