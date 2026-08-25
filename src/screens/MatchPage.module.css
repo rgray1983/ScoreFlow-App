@@ -1018,7 +1018,7 @@
   }
 
   .identity {
-    grid-template-areas: "logo" "meta";
+    grid-template-areas: "meta" "logo";
     grid-template-rows: auto auto;
     gap: 4px;
     padding: 7px;
@@ -1029,6 +1029,27 @@
 
   .logoStack {
     gap: 4px;
+  }
+
+  .viewer .logo {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: 22px;
+    max-width: min(46vw, 148px);
+    max-height: 24px;
+    transform: none;
+  }
+
+  .viewer .topBar {
+    min-height: 44px;
+    padding: 6px 8px;
+    border-radius: 20px;
+  }
+
+  .viewer .left {
+    min-width: 0;
   }
 
   .teamLogo {
