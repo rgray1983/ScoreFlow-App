@@ -8,14 +8,24 @@
 
 @media (orientation: portrait) {
   .page {
+    width: 100%;
+    height: var(--scoreflow-vh);
+    min-height: var(--scoreflow-vh);
+    overflow: hidden;
     grid-template-rows: auto minmax(0, 1fr) minmax(190px, 33%);
-    gap: 8px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 6px;
+    padding: max(4px, env(safe-area-inset-top)) max(2px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(2px, env(safe-area-inset-left));
   }
 
   .page :global(header),
   .page :global(main) {
     min-height: 0;
+    width: 100%;
+  }
+
+  .page :global(section[aria-label="Live fan zone"]) {
+    width: 100%;
+    min-width: 0;
   }
 }
 
