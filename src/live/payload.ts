@@ -52,6 +52,7 @@ export function scoreFields(match: MatchState) {
     runLength: match.runLength,
     pendingSet: match.pendingSet,
     lastHighlight: match.lastHighlight ? { ...match.lastHighlight } : null,
+    lastSound: match.lastSound || null,
     lastAlert: matchBanner(match)
   };
 }

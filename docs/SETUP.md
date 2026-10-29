@@ -39,7 +39,7 @@ GitHub Pages remains sufficient for the current static app. A preview deployment
 
 A versioned localStorage latest-state outbox stores complete live scores and terminal pending ends. Owner/revision-checked Firestore transactions prevent older writes from rolling back scores or reopening ended games. Retry runs on auth restoration, reconnect, focus, and a five-second interval. Pending / Offline / Online status reflects the queue. The optimized 198,582-byte court WebP is precached. See [PR-039](PRs/PR-039.md).
 
-## Pro teams and family play-by-play (PR-040 review)
+## Pro teams and family play-by-play (merged PR-040)
 
 Use the existing **Try Pro** preview switch on Home; no billing or entitlement service was added. **Manage Teams & Rosters** saves a team name, city/state, color, logo, and an optional roster (name and jersey number). Match Setup's **Your saved team** selects the home side; the opponent still uses ordinary setup. Free keeps its single Home Team and normal scoring.
 
@@ -56,6 +56,16 @@ Review commands and scenarios: [PR-040](PRs/PR-040.md). Browser tests use `demo-
 ## Individual viewer board style
 
 The viewer header's Board style button selects Classic, Old School or Flip Clock for that browser only. `scoreflowViewerBoardStyleV1` stores the local preference. **Follow scorer** is the default and resumes live style-following when selected again. No style preference is sent to Firebase, and the scorer and other viewers keep their own styles. The full live match remains unmodified, so styling cannot change scoring or trigger new scoring effects. This control is available to all viewers. Name/logo panels now sit directly on the board artwork without a translucent rectangular backing.
+
+## Optional scoreboard sound (PR-041 review)
+
+Both boards have a compact **Sound settings** button. **Enable sound** unlocks a Web Audio context from a tap and loads Richie's seven supplied MP3 clips. Volume, mute and Test sound are device-local; `scoreflowSoundV1` remembers the preference and volume, and no sound setting is sent to Firebase. After a page reload or browser audio interruption, tap Enable sound again. New installations default to silent. Browser audio policy, phone volume and silent-mode behavior still require physical-device checks.
+
+Accepted points, general team calls and timeout starts carry a small `lastSound` ID/timestamp/cue list in the existing atomic, owner/revision-fenced live score snapshot. Scoring still saves locally first and never waits for audio. The regular tone is replaced by Ace/Kill/Block for general calls; named roster actions use the point tone. Run announcements follow at exactly 4 and 7 consecutive points, including a set-winning point. Existing visual heat thresholds are unchanged. The supplied timeout clip plays once at timeout start, with no extra synthesized whistle or voice layered over it.
+
+Each board observes events even while muted. Initial history, duplicate snapshots, Undo/corrections, style/branding changes, expired events, reconnect baselines and background catch-up stay quiet. Offline scorer events are marked local-only so immediate reconnection cannot replay them remotely. Viewers hear only fresh latest-state events, not a backlog of missed points. New actions replace any currently queued sequence; mute, Undo, end, page departure and backgrounding cancel playback. Audio loading/decoding failures show a retryable status without affecting scores. Audio requires a visible active board and is not a lock-screen notification service.
+
+All seven recordings (313,105 bytes total) are served from `src/public/sounds`, resolved with the Vite base and precached by Workbox. No speech API, CDN audio service, extra dependency, vibration work or production Firebase/rules change is included. See [PR-041](PRs/PR-041.md) for checks and exact review commands.
 
 ## Remaining validation
 

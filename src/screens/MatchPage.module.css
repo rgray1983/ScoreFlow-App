@@ -1365,3 +1365,9 @@
   .point { min-height: 30px; padding: 5px; font-size: 14px; }
   .controls :global(button), .controls :global(a) { height: 30px; min-height: 30px; font-size: 9px; }
 }
+
+/* Leave room for the sound control and status on the narrowest phones. */
+@media (orientation: portrait) and (max-width: 380px) {
+  .viewersLabel { display: none; }
+  .left, .status { gap: 4px; }
+}

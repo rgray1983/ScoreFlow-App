@@ -57,6 +57,7 @@ export function createMatch(overrides: Partial<MatchState> = {}): MatchEngine {
     runSide: "",
     runLength: 0,
     pendingSet: false,
+    lastSound: null,
     lastHighlight: null,
     ...overrides,
     ...formatFields(format)
@@ -90,6 +91,7 @@ function resetProgress(match: MatchState): MatchState {
     runSide: "",
     runLength: 0,
     pendingSet: false,
+    lastSound: null,
     lastHighlight: null
   };
 }
@@ -112,6 +114,7 @@ function applyPoint(match: MatchState, side: Side): MatchState {
     servingSide: side,
     runSide: side,
     runLength: match.runSide === side ? match.runLength + 1 : 1,
+    lastSound: null,
     lastHighlight: null
   };
 

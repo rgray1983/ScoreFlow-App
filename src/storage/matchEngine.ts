@@ -1,3 +1,4 @@
+import { parseSoundEvent } from "../audio/events";
 import {
   createMatch,
   TIMEOUTS_PER_SET,
@@ -118,6 +119,7 @@ export function parseMatchState(value: unknown): MatchState | null {
     runLength: Math.min(999, asScore(record.runLength)),
     pendingSet: record.pendingSet === true && !asSide(record.winner) && completedSets.length > 0,
     lastHighlight: parseHighlight(record.lastHighlight),
+    lastSound: parseSoundEvent(record.lastSound),
     matchFormat: asFormat(record.matchFormat)
   }).match;
 }

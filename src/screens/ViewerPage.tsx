@@ -1,3 +1,4 @@
+import { BoardSound } from "../ui/BoardSound";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { matchBanner, isServing, timeoutsOf } from "../scoring";
@@ -134,6 +135,7 @@ export function ViewerPage() {
           <img className={`${styles.logo} ${viewerStyles.viewerLogo}`} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         </div>
         <div className={styles.status}>
+          <BoardSound remoteOnly match={match} active={watching && !ended && status === "live"} session={gameId} className={styles.iconButton} />
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{viewers}</span>
           <LivePill status={status} />
         </div>

@@ -4,11 +4,11 @@ Updated: October 29, 2026. Repository: `rgray1983/ScoreFlow-App`.
 
 ## Resume here
 
-Current release: **PR-039 / [GitHub PR #40](https://github.com/rgray1983/ScoreFlow-App/pull/40)**, approved and merged at `88ae9e1205303d66fae555d0763b7342a59331b5` on October 29, 2026. It adds durable offline recovery, ownership/revision fences, pending status and the optimized cached court image. PR-038's one-minute timeouts, result-score glow and board styles remain intact.
+Current release: **PR-040 / [GitHub PR #41](https://github.com/rgray1983/ScoreFlow-App/pull/41)**, approved and merged at `16333fcdd6fe6424315940cba3013b7ea1f75727` on October 29, 2026. Pro saved teams/rosters, family play-by-play, rolling chat, large general-call viewer graphics and individual viewer styles are merged. PR-039's durable recovery and optimized court asset remain intact.
 
 ## Next review
 
-**PR-040** on `agent/pr-040-teams-play-by-play`: Pro saved teams and simple rosters, a scorer-side player → Ace/Kill/Block drawer, separate viewer Chat / Play by Play tabs, landscape fade-out announcements (including general team calls for either side), scorer landscape chat popups in the viewer position, a rolling latest-message chat/reaction fix, individual viewer board styles with a Follow scorer option, and clean team name/logo areas. See [PR-040](PRs/PR-040.md). Richie requested one PR for testing; leave it unmerged until approved.
+**PR-041** on `agent/pr-041-scoreboard-sounds`: Richie's seven supplied sounds, device-local sound controls on scorer/viewer, exact 4/7 run milestones, fresh-event playback and offline audio caching. See [PR-041](PRs/PR-041.md). Leave unmerged until approved.
 
 ## Phase 1 progress
 
@@ -26,7 +26,7 @@ Current release: **PR-039 / [GitHub PR #40](https://github.com/rgray1983/ScoreFl
 
 ## Next actions, in order
 
-1. Review PR-040 on `agent/pr-040-teams-play-by-play`; enable the existing Pro preview, create two teams and rosters, start a match, use the Roster drawer, and follow on a separate viewer. Exercise Undo, reconnect/reload, offline end, and a conversation with more than 40 messages. Keep this PR unmerged until Richie approves.
+1. Review PR-041 on `agent/pr-041-scoreboard-sounds`; enable sound separately on scorer/viewer, check points, general calls, four/seven-point runs and timeouts. Exercise mute, Undo, reload, reconnect and offline scoring.
 2. Validate on physical iPhone/Android installs and real gym Wi-Fi. Confirm safe areas, same-link recovery, one-minute timeouts, and results sharing. Browser and emulator tests are not physical-device evidence.
 3. Measure and split the initial JavaScript payload in a focused follow-up. The oversized court image is addressed in PR-039; it now ships as a 198,582-byte precached WebP.
 4. Add a separate staging Firebase project and branch preview site if sharing changes before merge becomes frequent. Keep production and staging data separate.

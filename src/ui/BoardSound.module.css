@@ -1,0 +1,4 @@
+.controls { display: grid; gap: 14px; min-width: 0; }
+.controls p { margin: 0; }
+.controls label { display: flex; justify-content: space-between; gap: 16px; }
+.controls input { width: 100%; min-width: 0; accent-color: #ffd166; }

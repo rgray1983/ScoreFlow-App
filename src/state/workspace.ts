@@ -1,3 +1,4 @@
+import { withSoundEvent } from "../audio/events";
 import { loadTeamBook, saveTeamBook, parseRoster, type TeamProfile, type RosterPlayer } from "../storage/teams";
 import { loadMatchContext, saveMatchContext } from "../storage/matchContext";
 import { matchPlays } from "../scoring/plays";
@@ -142,7 +143,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         if (!usePremium.getState().isPro || command.call.side !== "home" || !player) return previous;
         command = { ...command, call: { ...command.call, player: { ...player } } };
       }
-      const next = reduce(previous, command);
+      const next = withSoundEvent(previous, reduce(previous, command), command,
+        () => ({ id: crypto.randomUUID(), atMs: Date.now(),
+          ...(typeof navigator !== "undefined" && navigator.onLine === false ? { remote: false } : {}) }));
       if (next === previous) return previous;
       const engine = saveMatchEngine(next);
       set({ engine });
