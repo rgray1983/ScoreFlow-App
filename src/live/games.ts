@@ -114,8 +114,8 @@ export async function readLiveGame(gameId: string): Promise<LiveGameView | null>
   return parseLiveGame(snap.data());
 }
 
-export function listenLiveGame(gameId: string, onGame: (game: LiveGameView | null) => void): Unsubscribe {
-  return onSnapshot(gameRef(gameId), (snap) => {
-    onGame(snap.exists() ? parseLiveGame(snap.data()) : null);
+export function listenLiveGame(gameId: string, onGame: (game: LiveGameView | null, fromCache?: boolean) => void): Unsubscribe {
+  return onSnapshot(gameRef(gameId), { includeMetadataChanges: true }, (snap) => {
+    onGame(snap.exists() ? parseLiveGame(snap.data()) : null, snap.metadata.fromCache);
   }, () => onGame(null));
 }

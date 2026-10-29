@@ -1,3 +1,4 @@
+import { startLiveSync } from "./state/liveSession";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { HomePage } from "./screens/HomePage";
@@ -20,6 +21,7 @@ export function App() {
   const legacyTo = legacyLivePath(params);
 
   useEffect(() => {
+    startLiveSync();
     hydratePremium();
     bootAccount();
   }, [hydratePremium, bootAccount]);

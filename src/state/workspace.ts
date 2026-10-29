@@ -69,6 +69,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       set({ draft: next });
     },
     startMatch() {
+      void useLiveSession.getState().endLive();
       const committed = saveMatchDraft(commitMatchDraft(get().draft));
       const engine = saveMatchEngine(engineFromDraft(committed, get().engine.match.boardTheme));
       resetHistorySaveGuard();
@@ -77,6 +78,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       return committed;
     },
     dispatch(command) {
+      if (command.type === "newMatch") void useLiveSession.getState().endLive();
       const previous = get().engine;
       const next = reduce(previous, command);
       if (next === previous) return previous;

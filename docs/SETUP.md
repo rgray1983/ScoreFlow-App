@@ -35,7 +35,11 @@ GitHub Pages remains sufficient for the current static app. A preview deployment
 - Ordinary score updates no longer write `ended: false`, so a delayed score update cannot reopen an ended link.
 - Rejected reducer commands do not write local storage or publish redundant updates.
 
-## Remaining reliability work
+## PR-039 review work
+
+The next review branch implements a localStorage latest-state outbox with terminal pending ends and owner/revision-checked Firestore transactions. Retry starts on auth restoration, reconnect, focus, and a five-second interval. The scorer shows Pending sync until acknowledgement. Its optimized 198,582-byte court WebP is precached. See [PR-039](PRs/PR-039.md) for tests, constraints, and review commands. These changes are not deployed until approved.
+
+## Previous baseline and remaining validation
 
 The app saves the match on the device and keeps a recovery ID, but that is not a fully verified offline synchronization design. Firestore currently uses the default web cache; there is no app-level durable outbound queue or server-acknowledged pending indicator. Test disconnect/reconnect and reload explicitly before promising gym-proof recovery. Prefer a persisted latest-state outbox per live game and a clear pending indicator; keep score updates independent of slow media uploads. Persistent Firestore caching can complement that, with attention to shared devices and multiple tabs.
 

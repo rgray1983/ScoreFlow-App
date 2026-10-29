@@ -1,36 +1,33 @@
 import { create } from "zustand";
 import type { MatchState } from "../scoring";
+import { loadMatchEngine } from "../storage/matchEngine";
 import type { MatchDraft } from "../storage/matchSetup";
 import { shouldReuseLiveGameId } from "./homeResume";
 import {
   clearLiveRecovery,
   createGameId,
-  createLiveGame,
-  endLiveGame,
   firebaseReady,
   listenViewerCount,
   loadLiveRecovery,
   liveRecoverySummary,
   saveLiveRecovery,
-  updateLiveBranding,
-  updateLiveScore,
-  uploadMatchLogos,
-  resolveLiveLogos,
   compactLiveLogos,
   compactScorerBranding,
   viewerUrl,
   writePresence,
   setLiveChatPaused,
-  uploadTeamLogo,
-  type LiveRecovery
+  type LiveRecovery,
 } from "../live";
+import {
+  currentAuthUser,
+  ensureAnonymousAuth,
+  watchAuth,
+} from "../live/firebase";
+import { LiveOutbox, deviceOutboxStorage } from "../live/outbox";
+import { sendPendingGame } from "../live/syncGame";
 
-export type LiveStatus = "offline" | "connecting" | "live" | "error";
-
-type GoLiveOptions = {
-  reuseId?: boolean;
-};
-
+export type LiveStatus =
+  "offline" | "connecting" | "pending" | "live" | "error";
 type LiveSessionState = {
   status: LiveStatus;
   active: boolean;
@@ -43,7 +40,11 @@ type LiveSessionState = {
   returnPrompt: boolean;
   chatPaused: boolean;
   endedThisSession: boolean;
-  goLive: (match: MatchState, draft: MatchDraft, options?: GoLiveOptions) => Promise<void>;
+  goLive: (
+    match: MatchState,
+    draft: MatchDraft,
+    options?: { reuseId?: boolean },
+  ) => Promise<void>;
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
   setChatPaused: (paused: boolean) => Promise<void>;
@@ -55,36 +56,99 @@ type LiveSessionState = {
   dismissReturnPrompt: () => void;
   offerReturnPrompt: () => void;
 };
-
-let scoreTimer = 0;
-let presenceTimer = 0;
-let stopViewerCount: (() => void) | null = null;
-let brandingRevision = 0;
 let latestMatch: MatchState | null = null;
-
-function stopPresence(): void {
-  if (typeof window !== "undefined") {
-    window.clearInterval(presenceTimer);
+let brandingRevision = 0;
+let ownerId = "";
+let presenceTimer = 0;
+let scoreTimer = 0;
+let stopCount: (() => void) | undefined;
+const online = () => typeof navigator === "undefined" || navigator.onLine;
+const outbox = new LiveOutbox(
+  deviceOutboxStorage(),
+  sendPendingGame,
+  () => currentAuthUser()?.uid || null,
+  online,
+  () => refreshStatus(),
+);
+function refreshStatus() {
+  const state = useLiveSession.getState();
+  if (state.status === "error" && state.error) return;
+  const waiting =
+    outbox.pending(state.active ? state.gameId : undefined).length > 0;
+  useLiveSession.setState({
+    status: !online()
+      ? "offline"
+      : waiting
+        ? "pending"
+        : state.active
+          ? "live"
+          : "offline",
+    error: outbox.error,
+  });
+}
+function stopPresence() {
+  window.clearInterval(presenceTimer);
+  stopCount?.();
+  stopCount = undefined;
+}
+function saveRecovery(match: MatchState) {
+  const { gameId } = useLiveSession.getState();
+  saveLiveRecovery({
+    gameId,
+    active: true,
+    savedAtMs: Date.now(),
+    summary: liveRecoverySummary(match),
+    ownerId,
+  });
+  useLiveSession.setState({ recovery: loadLiveRecovery() });
+}
+function queue(
+  match: MatchState,
+  ended = false,
+  branding?: import("../live/payload").LiveBranding,
+) {
+  const state = useLiveSession.getState();
+  if (!state.active || !state.gameId || !ownerId) return;
+  // Never bind a recovered game to a newly signed-in user's identity.
+  if (currentAuthUser()?.uid !== ownerId)
+    throw new Error("Sign in to the original account to update this game.");
+  const pending = outbox.pending(state.gameId)[0];
+  if (pending && pending.ownerId !== ownerId)
+    throw new Error("Sign in to the original account to resume this game.");
+  outbox.enqueue({
+    gameId: state.gameId,
+    ownerId,
+    match,
+    ended,
+    branding: branding || pending?.branding || { homeLogo: "", awayLogo: "" },
+  });
+}
+function enqueueScore(match: MatchState) {
+  try {
+    queue(match);
+    saveRecovery(match);
+    useLiveSession.setState({
+      error: "",
+      status: online() ? "pending" : "offline",
+    });
+  } catch (error) {
+    useLiveSession.setState({ status: "error", error: String(error) });
   }
-  stopViewerCount?.();
-  stopViewerCount = null;
 }
-
-function clearScoreTimer(): void {
-  if (typeof window !== "undefined") {
-    window.clearTimeout(scoreTimer);
-  }
-  scoreTimer = 0;
+let booted = false;
+export function startLiveSync() {
+  if (booted || typeof window === "undefined" || !firebaseReady()) return;
+  booted = true;
+  const retry = () => {
+    refreshStatus();
+    void outbox.flush();
+  };
+  window.addEventListener("online", retry);
+  window.addEventListener("offline", refreshStatus);
+  window.addEventListener("focus", retry);
+  window.setInterval(retry, 5000);
+  watchAuth(retry);
 }
-
-function sessionStillOpen(
-  epoch: number,
-  gameId: string,
-  state: { active: boolean; epoch: number; gameId: string }
-): boolean {
-  return state.active && state.epoch === epoch && state.gameId === gameId;
-}
-
 export const useLiveSession = create<LiveSessionState>((set, get) => ({
   status: "offline",
   active: false,
@@ -97,229 +161,169 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
   returnPrompt: Boolean(loadLiveRecovery()),
   chatPaused: false,
   endedThisSession: false,
-  openShare() {
-    set({ shareOpen: true });
-  },
-  closeShare() {
-    set({ shareOpen: false });
-  },
-  dismissRecovery() {
-    set({ recovery: null, returnPrompt: false });
-  },
-  dismissReturnPrompt() {
-    set({ returnPrompt: false });
-  },
+  openShare: () => set({ shareOpen: true }),
+  closeShare: () => set({ shareOpen: false }),
+  dismissRecovery: () => set({ recovery: null, returnPrompt: false }),
+  dismissReturnPrompt: () => set({ returnPrompt: false }),
   offerReturnPrompt() {
     if (get().active || get().recovery) set({ returnPrompt: true });
   },
   async goLive(match, draft, options) {
-    if (!firebaseReady()) {
-      set({ status: "error", error: "Firebase config is missing.", active: false });
-      return;
-    }
-    if (get().gameId && get().status === "connecting") {
+    startLiveSync();
+    if (get().status === "connecting") {
       set({ shareOpen: true });
       return;
     }
-    if (get().active && get().gameId && !options?.reuseId) {
-      set({ shareOpen: true, status: "live", error: "" });
+    if (get().active && !options?.reuseId) {
+      set({ shareOpen: true });
+      void outbox.flush();
       return;
     }
-
-    const recoveredId = get().gameId || get().recovery?.gameId || "";
-    const reuseId = shouldReuseLiveGameId({
+    const reuse = shouldReuseLiveGameId({
       reuseRequested: options?.reuseId,
       endedThisSession: get().endedThisSession,
       gameId: get().gameId,
-      recoveryId: get().recovery?.gameId || ""
+      recoveryId: get().recovery?.gameId || "",
     });
-    const gameId = reuseId
-      ? recoveredId || createGameId()
+    const gameId = reuse
+      ? get().gameId || get().recovery?.gameId || createGameId()
       : createGameId();
     const epoch = get().epoch + 1;
-    const initialBrandingRevision = ++brandingRevision;
     latestMatch = match;
-    set({
-      status: "connecting",
-      error: "",
-      gameId,
-      active: false,
-      epoch,
-      shareOpen: true,
-      endedThisSession: false
-    });
+    set({ gameId, epoch, status: "connecting", shareOpen: true, error: "" });
     stopPresence();
-    clearScoreTimer();
+    window.clearTimeout(scoreTimer);
     try {
-      const liveLogos = await compactLiveLogos(draft);
-      const scorer = await compactScorerBranding();
+      const user = await ensureAnonymousAuth();
+      const saved = outbox.pending(gameId)[0];
+      if (
+        (get().recovery?.ownerId && get().recovery?.ownerId !== user.uid) ||
+        (saved && (saved.ownerId !== user.uid || saved.ended))
+      )
+        throw new Error("This saved link cannot be resumed by this account.");
+      const [logos, scorer] = await Promise.all([
+        compactLiveLogos(draft),
+        compactScorerBranding(),
+      ]);
       if (get().epoch !== epoch) return;
-      const createdMatch = latestMatch ?? match;
-      await createLiveGame(gameId, createdMatch, { ...liveLogos, ...scorer });
-      if (get().epoch !== epoch) return;
-      saveLiveRecovery({
-        gameId,
-        active: true,
-        savedAtMs: Date.now(),
-        summary: liveRecoverySummary(match)
-      });
-      set({
-        status: "live",
-        active: true,
-        gameId,
-        error: "",
-        recovery: loadLiveRecovery(),
-        chatPaused: false
-      });
-      if (latestMatch && latestMatch !== createdMatch) get().publishScore(latestMatch);
+      ownerId = user.uid;
+      set({ active: true, endedThisSession: false, chatPaused: false });
+      const current = latestMatch || match;
+      queue(current, false, { ...logos, ...scorer });
+      saveRecovery(current);
+      void outbox.flush();
       const beat = () => {
-        if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
+        if (get().active && get().epoch === epoch && online())
+          void writePresence(gameId, "scorer").catch(() => {});
       };
       beat();
       presenceTimer = window.setInterval(beat, 15000);
-      stopViewerCount = listenViewerCount(gameId, (viewerCount) => {
-        if (sessionStillOpen(epoch, gameId, get())) set({ viewerCount });
+      stopCount = listenViewerCount(gameId, (viewerCount) => {
+        if (get().epoch === epoch) set({ viewerCount });
       });
-      void (async () => {
-        try {
-          const uploaded = await uploadMatchLogos(gameId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-          if (!sessionStillOpen(epoch, gameId, get())) return;
-          const logos = resolveLiveLogos(uploaded, liveLogos);
-          const scorerUrl = await uploadTeamLogo(gameId, "scorer", scorer.scorerAvatar || "").catch(() => "");
-          if (!logos.homeLogo && !logos.awayLogo && !scorer.scorerName && !scorerUrl && !scorer.scorerAvatar) return;
-          if (
-            logos.homeLogo === liveLogos.homeLogo
-            && logos.awayLogo === liveLogos.awayLogo
-            && !scorerUrl
-          ) return;
-          if (!sessionStillOpen(epoch, gameId, get()) || initialBrandingRevision !== brandingRevision) return;
-          await updateLiveBranding(gameId, {
-            ...logos,
-            ...scorer,
-            ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})
-          });
-        } catch {
-          // Logos already went out on create when a compact data URL existed.
-        }
-      })();
+      refreshStatus();
     } catch (error) {
-      if (get().epoch !== epoch) return;
-      set({
-        status: "error",
-        active: false,
-        shareOpen: false,
-        gameId: reuseId ? gameId : "",
-        error: error instanceof Error ? error.message : "Live game could not be created."
-      });
+      if (get().epoch === epoch)
+        set({
+          status: "error",
+          active: false,
+          shareOpen: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
     }
   },
   async resumeLive(match, draft) {
     const gameId = get().recovery?.gameId || get().gameId;
-    if (!gameId) return;
-    set({ gameId });
-    await get().goLive(match, draft, { reuseId: true });
+    if (gameId) {
+      set({ gameId });
+      await get().goLive(match, draft, { reuseId: true });
+    }
   },
   async endLive() {
+    window.clearTimeout(scoreTimer);
     const gameId = get().gameId || get().recovery?.gameId;
-    const epoch = get().epoch + 1;
-    clearScoreTimer();
+    try {
+      if (gameId && !get().active) {
+        const saved = outbox.pending(gameId)[0];
+        if (saved && saved.ownerId !== currentAuthUser()?.uid)
+          throw new Error("Sign in to the original account to end this game.");
+        if (saved && !saved.ended) outbox.enqueue({ ...saved, ended: true });
+        if (!saved && get().recovery?.gameId === gameId) {
+          const recovery = get().recovery;
+          const recoveredMatch = loadMatchEngine()?.match;
+          if (
+            !recovery?.ownerId ||
+            recovery.ownerId !== currentAuthUser()?.uid ||
+            !recoveredMatch
+          ) {
+            throw new Error(
+              "Resume this saved match before ending its live link.",
+            );
+          }
+          outbox.enqueue({
+            gameId,
+            ownerId: recovery.ownerId,
+            match: recoveredMatch,
+            ended: true,
+            branding: { homeLogo: "", awayLogo: "" },
+          });
+        }
+      } else if (latestMatch && get().active) queue(latestMatch, true);
+    } catch (error) {
+      set({ status: "error", error: String(error) });
+      return;
+    }
     stopPresence();
     clearLiveRecovery();
     set({
-      status: "offline",
       active: false,
-      epoch,
+      epoch: get().epoch + 1,
       gameId: "",
       viewerCount: 0,
-      error: "",
       shareOpen: false,
       recovery: null,
       returnPrompt: false,
       chatPaused: false,
-      endedThisSession: true
+      endedThisSession: true,
     });
-    if (gameId) {
-      try {
-        await endLiveGame(gameId);
-      } catch {
-        // Local end still clears recovery so the scorer can leave the gym.
-      }
-    }
+    refreshStatus();
+    void outbox.flush();
   },
   async setChatPaused(paused) {
-    const { gameId, active } = get();
-    if (!gameId || !active) return;
-    const previous = get().chatPaused;
-    set({ chatPaused: paused });
+    if (!get().active || !online()) return;
     try {
-      await setLiveChatPaused(gameId, paused);
+      await setLiveChatPaused(get().gameId, paused);
+      set({ chatPaused: paused });
     } catch {
-      if (get().gameId === gameId) set({ chatPaused: previous });
+      /* Score queue remains independent. */
     }
   },
   publishScore(match) {
     latestMatch = match;
-    const { gameId, active, epoch } = get();
-    if (!gameId || !active) return;
-    clearScoreTimer();
-    const startedEpoch = epoch;
-    const startedId = gameId;
-    scoreTimer = window.setTimeout(() => {
-      if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-      void updateLiveScore(startedId, match)
-        .then(() => {
-          if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-          saveLiveRecovery({
-            gameId: startedId,
-            active: true,
-            savedAtMs: Date.now(),
-            summary: liveRecoverySummary(match)
-          });
-          set({ status: "live", error: "", recovery: loadLiveRecovery() });
-        })
-        .catch((error: unknown) => {
-          if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-          set({
-            status: "error",
-            error: error instanceof Error ? error.message : "Live update failed."
-          });
-        });
-    }, 120);
+    if (!get().active) return;
+    enqueueScore(match);
+    window.clearTimeout(scoreTimer);
+    scoreTimer = window.setTimeout(() => void outbox.flush(), 120);
   },
-  publishBranding(_match, draft) {
-    const { gameId, active, epoch } = get();
-    if (!gameId || !active) return;
-    const startedEpoch = epoch;
-    const startedId = gameId;
+  publishBranding(match, draft) {
+    if (!get().active) return;
+    const epoch = get().epoch;
     const revision = ++brandingRevision;
-    void (async () => {
-      try {
-        const compact = await compactLiveLogos(draft);
-        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-        const uploaded = await uploadMatchLogos(startedId, { homeLogo: draft.homeLogo, awayLogo: draft.awayLogo });
-        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-        const logos = resolveLiveLogos(uploaded, compact);
-        const scorer = await compactScorerBranding();
-        const scorerUrl = await uploadTeamLogo(startedId, "scorer", scorer.scorerAvatar || "").catch(() => "");
-        if (!sessionStillOpen(startedEpoch, startedId, get()) || revision !== brandingRevision) return;
-        await updateLiveBranding(startedId, {
-          ...logos,
-          ...scorer,
-          ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})
-        });
-        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-        set({ status: "live", error: "" });
-      } catch (error) {
-        if (!sessionStillOpen(startedEpoch, startedId, get())) return;
-        set({
-          status: "error",
-          error: error instanceof Error ? error.message : "Live branding update failed."
-        });
-      }
-    })();
-  }
+    void compactLiveLogos(draft)
+      .then((branding) => {
+        if (
+          get().active &&
+          get().epoch === epoch &&
+          revision === brandingRevision
+        ) {
+          // Read latest score at completion, not the snapshot before image compaction.
+          queue(latestMatch || match, false, branding);
+          void outbox.flush();
+        }
+      })
+      .catch((error) => set({ status: "error", error: String(error) }));
+  },
 }));
-
-export function liveViewerUrl(gameId = useLiveSession.getState().gameId): string {
+export function liveViewerUrl(gameId = useLiveSession.getState().gameId) {
   return gameId ? viewerUrl(gameId) : "";
 }

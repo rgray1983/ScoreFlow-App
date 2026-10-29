@@ -179,3 +179,43 @@ test("one-minute timeouts count down together and restore on Undo", async ({ pag
   await expect(page.getByTestId("timeout-scorer")).toContainText("0:59");
   await expect(viewer.getByTestId("timeout-viewer")).toContainText("0:59");
 });
+
+test('offline rallies reload and reconnect to the original viewer; offline end survives reload', async ({ page, browser }) => {
+  await seed(page);
+  await page.getByRole('button', {name:'Share Live',exact:true}).click();
+  await expect(page.getByText('Online',{exact:true})).toBeVisible();
+  const url = await page.getByLabel('Viewer link').inputValue();
+  await page.getByTestId('share-close').click();
+  const fans = await browser.newContext();
+  const viewer = await fans.newPage();
+  await viewer.goto(url);
+  await viewer.getByRole('button',{name:'Watch Live Score'}).click();
+  await viewer.getByLabel('Chat name').fill('Offline Fan');
+  await viewer.getByRole('button',{name:'Start Chatting'}).click();
+  await page.context().setOffline(true);
+  for(let i=0;i<4;i++) await page.getByRole('button',{name:'Add point to Team 1',exact:true}).click();
+  await expect(page.getByTestId('home-score')).toHaveText('4');
+  // Reload the application while blocking its Firebase transport, but allow Vite
+  // assets to load. PWA shell caching is separately verified by the production build.
+  await page.context().setOffline(false);
+  await page.route(url=>url.hostname==='127.0.0.1' && [8080,9099,9199].includes(Number(url.port)),r=>r.abort());
+  await page.reload();
+  await expect(page.getByTestId('home-score')).toHaveText('4');
+  await page.setViewportSize({width:320,height:568});
+  await expect(page.getByText('Pending',{exact:true})).toBeVisible();
+  const pendingBounds = await page.getByText('Pending',{exact:true}).boundingBox();
+  expect(pendingBounds!.x + pendingBounds!.width).toBeLessThanOrEqual(320);
+  await page.unrouteAll();
+  await expect(viewer.getByTestId('home-score')).toHaveText('4',{timeout:25000});
+  if (!await page.getByLabel('Viewer link').isVisible()) await page.getByRole('button',{name:'Share Live',exact:true}).click();
+  await expect(page.getByLabel('Viewer link')).toHaveValue(url);
+  await page.getByTestId('share-close').click();
+  await page.context().setOffline(true);
+  await page.getByRole('button',{name:'Home',exact:true}).click();
+  await page.getByRole('button',{name:'End Match',exact:true}).click();
+  await expect(page.getByRole('link',{name:'Start A Match',exact:true})).toBeVisible();
+  await page.context().setOffline(false);
+  await page.reload();
+  await expect(viewer.getByText('Match Ended',{exact:true})).toBeVisible({timeout:25000});
+  await fans.close();
+});

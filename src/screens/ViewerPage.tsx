@@ -32,7 +32,7 @@ export function ViewerPage() {
   const { gameId = "" } = useParams();
   const [game, setGame] = useState<LiveGameView | null>(null);
   const [missing, setMissing] = useState(false);
-  const [status, setStatus] = useState<"offline" | "live" | "error">("offline");
+  const [status, setStatus] = useState<"offline" | "connecting" | "live" | "error">("offline");
   const [viewers, setViewers] = useState(0);
   const [watching, setWatching] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
@@ -67,14 +67,14 @@ export function ViewerPage() {
         beat();
         heartbeat = window.setInterval(beat, 15000);
         stopCount = listenViewerCount(gameId, setViewers);
-        stopGame = listenLiveGame(gameId, (next) => {
+        stopGame = listenLiveGame(gameId, (next, fromCache) => {
           if (!next) {
             setStatus("offline");
             return;
           }
           setMissing(false);
           setGame(next);
-          setStatus(next.ended ? "offline" : "live");
+          setStatus(!navigator.onLine || next.ended ? "offline" : fromCache ? "connecting" : "live");
         });
       } catch {
         if (!cancelled) setStatus("error");
@@ -88,6 +88,14 @@ export function ViewerPage() {
       stopCount?.();
     };
   }, [gameId]);
+
+  useEffect(() => {
+    const lost = () => setStatus("offline");
+    const returning = () => setStatus("connecting");
+    window.addEventListener("offline", lost);
+    window.addEventListener("online", returning);
+    return () => { window.removeEventListener("offline", lost); window.removeEventListener("online", returning); };
+  }, []);
 
   const match = game?.match;
   const ended = Boolean(game?.ended);
