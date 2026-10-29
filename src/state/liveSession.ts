@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { MatchState } from "../scoring";
+import { matchPlays } from "../scoring/plays";
+import type { HighlightCall, MatchState } from "../scoring";
 import { loadMatchEngine } from "../storage/matchEngine";
 import type { MatchDraft } from "../storage/matchSetup";
 import { shouldReuseLiveGameId } from "./homeResume";
@@ -48,7 +49,7 @@ type LiveSessionState = {
   resumeLive: (match: MatchState, draft: MatchDraft) => Promise<void>;
   endLive: () => Promise<void>;
   setChatPaused: (paused: boolean) => Promise<void>;
-  publishScore: (match: MatchState) => void;
+  publishScore: (match: MatchState, plays?: HighlightCall[]) => void;
   publishBranding: (match: MatchState, draft: MatchDraft) => void;
   openShare: () => void;
   closeShare: () => void;
@@ -57,6 +58,7 @@ type LiveSessionState = {
   offerReturnPrompt: () => void;
 };
 let latestMatch: MatchState | null = null;
+let latestPlays: HighlightCall[] = [];
 let brandingRevision = 0;
 let ownerId = "";
 let presenceTimer = 0;
@@ -119,6 +121,7 @@ function queue(
     gameId: state.gameId,
     ownerId,
     match,
+    plays: latestPlays,
     ended,
     branding: branding || pending?.branding || { homeLogo: "", awayLogo: "" },
   });
@@ -190,6 +193,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       : createGameId();
     const epoch = get().epoch + 1;
     latestMatch = match;
+    latestPlays = matchPlays(loadMatchEngine());
     set({ gameId, epoch, status: "connecting", shareOpen: true, error: "" });
     stopPresence();
     window.clearTimeout(scoreTimer);
@@ -264,6 +268,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
             gameId,
             ownerId: recovery.ownerId,
             match: recoveredMatch,
+            plays: matchPlays(loadMatchEngine()),
             ended: true,
             branding: { homeLogo: "", awayLogo: "" },
           });
@@ -298,8 +303,9 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       /* Score queue remains independent. */
     }
   },
-  publishScore(match) {
+  publishScore(match, plays) {
     latestMatch = match;
+    latestPlays = plays ?? matchPlays(loadMatchEngine());
     if (!get().active) return;
     enqueueScore(match);
     window.clearTimeout(scoreTimer);

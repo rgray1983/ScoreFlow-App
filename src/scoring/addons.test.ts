@@ -68,7 +68,7 @@ describe("highlights", () => {
       const engine = reduce(before, { type: "highlight", call });
       expect(engine.match.homeScore).toBe(1);
       expect(engine.match.servingSide).toBe("home");
-      expect(engine.match.lastHighlight).toEqual(call);
+      expect(engine.match.lastHighlight).toMatchObject({ ...call, teamName: "Team 1", score: { set: 1, home: 1, away: 0 } });
       expect(undo(engine)).toEqual(before);
       expect(point(engine, "away").match.lastHighlight).toBeNull();
     });

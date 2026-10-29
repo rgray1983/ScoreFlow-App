@@ -1,0 +1,2 @@
+.player { display: grid; grid-template-columns: 64px minmax(0, 1fr) 40px; align-items: end; gap: 8px; }
+.remove { min-height: 44px; border-radius: 12px; background: #ffffff12; color: #fff; font-size: 24px; }

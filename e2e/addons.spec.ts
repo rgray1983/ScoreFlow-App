@@ -71,10 +71,12 @@ test("families follow style, run, highlight, held decider, and match winner", as
   await expect(viewer.getByTestId("home-score")).toHaveText("24");
   await expect(viewer.getByTestId("run-home")).toContainText("5–0 RUN");
   await expect(viewer.getByTestId("highlight-burst")).toBeVisible();
+  await expect(viewer.getByTestId("fan-popup").filter({ hasText: "Team 1 — Kill!" })).toBeAttached();
   await expect(viewer.getByRole("main")).toHaveAttribute("data-pressure-kind", "match");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(viewer.getByTestId("home-score")).toHaveText("23");
   await expect(viewer.getByTestId("highlight-burst")).toHaveCount(0);
+  await expect(viewer.getByTestId("fan-popup").filter({ hasText: "Team 1 — Kill!" })).toHaveCount(0);
   await page.getByRole("button", { name: "Add point to Team 2", exact: true }).click();
   await expect(viewer.getByTestId("away-score")).toHaveText("24");
   await page.getByRole("button", { name: "Add point to Team 2", exact: true }).click();
@@ -218,4 +220,110 @@ test('offline rallies reload and reconnect to the original viewer; offline end s
   await page.reload();
   await expect(viewer.getByText('Match Ended',{exact:true})).toBeVisible({timeout:25000});
   await fans.close();
+});
+
+test('team-level calls for either side reach viewer popups and Play by Play after coalesced offline scoring', async ({ page, browser }, testInfo) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await seed(page);
+  await page.getByRole('button', { name: 'Share Live', exact: true }).click();
+  await expect(page.getByText('Online', { exact: true })).toBeVisible({ timeout: 20000 });
+  const url = await page.getByLabel('Viewer link').inputValue();
+  await page.getByTestId('share-close').click();
+  const fans = await browser.newContext({ viewport: { width: 844, height: 390 } });
+  const forbidden: string[] = [];
+  await fans.route((u) => u.protocol === 'https:' && /(^|\.)(googleapis\.com|firebaseio\.com|firebaseapp\.com|firebasestorage\.app)$/.test(u.hostname), (r) => { forbidden.push(r.request().url()); return r.abort(); });
+  try {
+    const viewer = await fans.newPage();
+    await viewer.goto(url);
+    await viewer.getByRole('button', { name: 'Watch Live Score' }).click();
+    await viewer.getByLabel('Chat name').fill('Team Call Fan');
+    await viewer.getByRole('button', { name: 'Start Chatting' }).click();
+    await expect(viewer.getByTestId('home-score')).toHaveText('0');
+    await viewer.setViewportSize({ width: 390, height: 844 });
+    await viewer.getByLabel('Chat message', { exact: true }).fill('Go team, from the viewer!');
+    await viewer.getByRole('button', { name: 'Send', exact: true }).click();
+    const scorerChat = page.getByTestId('fan-popup').filter({ hasText: 'Go team, from the viewer!' });
+    await expect(scorerChat).toBeVisible();
+    await viewer.setViewportSize({ width: 844, height: 390 });
+    const viewerChat = viewer.getByTestId('fan-popup').filter({ hasText: 'Go team, from the viewer!' });
+    await expect(viewerChat).toBeVisible();
+    // Compare the shared fixed popup container, not its animated child.
+    const scorerPosition = await scorerChat.evaluate((node) => { const r = node.parentElement!.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+    const viewerPosition = await viewerChat.evaluate((node) => { const r = node.parentElement!.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+    expect(scorerPosition.x).toBeCloseTo(viewerPosition.x, 0);
+    expect(scorerPosition.y).toBeCloseTo(viewerPosition.y, 0);
+    // Scoring controls must stay clickable through the popup layer.
+    await expect(scorerChat).toBeVisible();
+    await page.getByRole('button', { name: 'Add point to Team 1', exact: true }).click();
+    await expect(page.getByTestId('home-score')).toHaveText('1');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await page.screenshot({ path: testInfo.outputPath('scorer-chat-popup.png'), animations: 'disabled' });
+    await page.context().setOffline(true);
+    for (const [team, kind] of [['Team 1', 'ace'], ['Team 2', 'kill'], ['Team 1', 'block']]) {
+      await page.getByRole('button', { name: `Highlight call for ${team}`, exact: true }).click();
+      await page.getByRole('button', { name: `${kind}! +1`, exact: true }).click();
+    }
+    // This clears lastHighlight before the queue can publish. The full feed must
+    // retain all three calls instead of depending on a single transient effect.
+    await page.getByRole('button', { name: 'Add point to Team 2', exact: true }).click();
+    await page.context().setOffline(false);
+    await expect(viewer.getByTestId('home-score')).toHaveText('2', { timeout: 25000 });
+    await expect(viewer.getByTestId('away-score')).toHaveText('2');
+    await expect(viewer.getByTestId('fan-popup').filter({ hasText: 'Team 1 — Block!' })).toBeVisible();
+    await expect(viewer.getByTestId('highlight-burst')).toHaveCount(0);
+    await viewer.screenshot({ path: testInfo.outputPath('team-call-popup.png'), animations: 'disabled' });
+    await viewer.setViewportSize({ width: 390, height: 844 });
+    await viewer.getByRole('tab', { name: /Play by Play/ }).click();
+    await expect(viewer.getByTestId('play-event')).toHaveCount(3);
+    await expect(viewer.getByTestId('play-event').nth(0)).toContainText('Team 1 — Ace!');
+    await expect(viewer.getByTestId('play-event').nth(1)).toContainText('Team 2 — Kill!');
+    await expect(viewer.getByTestId('play-event').nth(2)).toContainText('Team 1 — Block!');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(viewer.getByTestId('home-score')).toHaveText('1');
+    await expect(viewer.getByTestId('play-event')).toHaveCount(2);
+    await expect(viewer.getByTestId('fan-popup').filter({ hasText: 'Team 1 — Block!' })).toHaveCount(0);
+    await viewer.reload();
+    await viewer.getByRole('button', { name: 'Watch Live Score' }).click();
+    await viewer.getByRole('tab', { name: /Play by Play/ }).click();
+    await expect(viewer.getByTestId('play-event')).toHaveCount(2);
+    await viewer.setViewportSize({ width: 844, height: 390 });
+    await expect(viewer.getByTestId('fan-popup')).toHaveCount(0);
+    expect(forbidden).toEqual([]);
+  } finally { await fans.close(); }
+});
+
+test('large Ace Kill and Block graphics appear on both scorer and viewer for general team calls', async ({ page, context }, testInfo) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await seed(page);
+  await page.getByRole('button', { name: 'Share Live', exact: true }).click();
+  await expect(page.getByText('Online', { exact: true })).toBeVisible({ timeout: 20000 });
+  const url = await page.getByLabel('Viewer link').inputValue();
+  await page.getByTestId('share-close').click();
+  const viewer = await context.newPage();
+  await viewer.setViewportSize({ width: 844, height: 390 });
+  await viewer.goto(url);
+  await viewer.getByRole('button', { name: 'Watch Live Score' }).click();
+  await viewer.getByLabel('Chat name').fill('Big Graphic Fan');
+  await viewer.getByRole('button', { name: 'Start Chatting' }).click();
+  for (const [team, kind] of [['Team 1', 'ace'], ['Team 2', 'kill'], ['Team 1', 'block']]) {
+    await page.getByRole('button', { name: `Highlight call for ${team}`, exact: true }).click();
+    await page.getByRole('button', { name: `${kind}! +1`, exact: true }).click();
+    const scorerGraphic = page.getByTestId('highlight-burst');
+    const viewerGraphic = viewer.getByTestId('highlight-burst');
+    await expect(scorerGraphic).toBeVisible();
+    await expect(scorerGraphic).toHaveAttribute('data-kind', kind);
+    await expect(viewerGraphic).toBeVisible();
+    await expect(viewerGraphic).toHaveAttribute('data-kind', kind);
+    await expect(viewerGraphic).toContainText(team);
+    // Check the actual large celebration, not a small chat/feed popup.
+    expect(await viewerGraphic.evaluate((node) => getComputedStyle(node.querySelector('strong')!).fontSize).then(parseFloat)).toBeGreaterThan(40);
+    await expect.poll(() => viewerGraphic.evaluate((node) => Number(getComputedStyle(node).opacity))).toBeGreaterThan(0.8);
+    if (kind === 'kill') await viewer.screenshot({ path: testInfo.outputPath('viewer-large-kill.png') });
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(scorerGraphic).toHaveCount(0);
+    await expect(viewerGraphic).toHaveCount(0);
+    await expect(viewer.getByTestId('home-score')).toHaveText('0');
+    await expect(viewer.getByTestId('away-score')).toHaveText('0');
+  }
 });

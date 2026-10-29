@@ -1,6 +1,6 @@
-import { parseMatchState } from "../storage/matchEngine";
+import { parseHighlight, parseMatchState } from "../storage/matchEngine";
 import { browserStorage, type JsonStorage } from "../storage/local";
-import type { MatchState } from "../scoring";
+import type { HighlightCall, MatchState } from "../scoring";
 import type { LiveBranding } from "./payload";
 
 export type PendingGame = {
@@ -9,6 +9,7 @@ export type PendingGame = {
   revision: number;
   ended: boolean;
   match: MatchState;
+  plays?: HighlightCall[];
   branding: LiveBranding;
 };
 export const OUTBOX_KEY = "scoreflowLiveOutboxV1";
@@ -39,7 +40,7 @@ export class LiveOutbox {
           typeof entry.ownerId === "string" &&
           entry.ownerId &&
           Number.isFinite(entry.revision)
-          ? [{ ...entry, match, branding: entry.branding || {} }]
+          ? [{ ...entry, match, plays: (Array.isArray(entry.plays) ? entry.plays : []).map(parseHighlight).filter((p): p is HighlightCall => Boolean(p)), branding: entry.branding || {} }]
           : [];
       });
     } catch {

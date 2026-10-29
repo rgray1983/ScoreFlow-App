@@ -1047,7 +1047,7 @@
     gap: 3px;
     padding: 4px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.12);
+    background: transparent;
     overflow: visible;
   }
 
@@ -1294,8 +1294,9 @@
 .board[data-theme="flip-clock"] .score { text-shadow: none; }
 .board[data-theme="old-school"] .colon,
 .board[data-theme="flip-clock"] .colon { color: #d3ae68; }
-.board[data-theme="old-school"] .identity,
-.board[data-theme="flip-clock"] .identity { background: #ffffff05; }
+/* Keep team names/logos directly on the alternate board artwork. */
+.board[data-theme="old-school"] .team::before,
+.board[data-theme="flip-clock"] .team::before { background: none; }
 .board[data-home-heat="1"] .home::before,
 .board[data-home-heat="2"] .home::before,
 .board[data-home-heat="3"] .home::before { background: radial-gradient(ellipse at 50% 65%, #ff6b0040, transparent 75%); opacity: 1; }

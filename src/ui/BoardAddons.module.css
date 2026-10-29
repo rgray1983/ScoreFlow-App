@@ -40,6 +40,7 @@
   text-align: center;
 }
 .styleChoice[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.followChoice { width: 100%; margin-top: 14px; }
 .styleChoice small { color: #a7b1c0; font-size: 9px; }
 .preview { display: flex; justify-content: center; gap: 4px; padding: 12px 2px; border-radius: 8px; background: #c9ced4; color: #10151e; font-family: var(--font-score); font-size: 27px; }
 .preview span { color: #7c8188; }

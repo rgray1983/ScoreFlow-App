@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   canUndo,
@@ -9,6 +9,8 @@ import {
   type HighlightKind,
   type Side
 } from "../scoring";
+import { matchPlays } from "../scoring/plays";
+import { RosterDrawer } from "../ui/RosterDrawer";
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
@@ -54,10 +56,13 @@ function useScorePop(score: number) {
 
 export function MatchPage() {
   const navigate = useNavigate();
-  const draft = useWorkspace((state) => state.draft);
+  const draft = useWorkspace((state) => state.matchDraft);
   const engine = useWorkspace((state) => state.engine);
   const dispatch = useWorkspace((state) => state.dispatch);
-  const updateDraft = useWorkspace((state) => state.updateDraft);
+  const updateDraft = useWorkspace((state) => state.updateMatchDraft);
+  const roster = useWorkspace((state) => state.matchRoster);
+  const isPro = usePremium((state) => state.isPro);
+  const plays = useMemo(() => matchPlays(engine), [engine]);
   const resultBackground = usePremium((state) => state.resultBackground);
   const scorerName = useAccount((state) => state.displayName);
   const live = useLiveSession();
@@ -111,7 +116,7 @@ export function MatchPage() {
 
   function setTeamLogo(side: Side, logo: string) {
     updateDraft(side === "home" ? { homeLogo: logo } : { awayLogo: logo });
-    live.publishBranding(match, useWorkspace.getState().draft);
+    live.publishBranding(match, useWorkspace.getState().matchDraft);
   }
 
   function score(side: Side) {
@@ -399,6 +404,10 @@ export function MatchPage() {
         </section>
       </main>
 
+      {isPro && roster.length > 0 ? <RosterDrawer roster={roster} disabled={scoringBlocked} onCall={(player, kind) => {
+        dispatch({ type: "highlight", call: { id: crypto.randomUUID(), side: "home", kind, atMs: Date.now(), player: { ...player } } });
+        vibrate();
+      }} /> : null}
       <HighlightBurst match={match} />
       <SetBreakCard match={match} onContinue={() => dispatch({ type: "continueSet" })} onUndo={() => dispatch({ type: "undo" })} />
       <BoardStylePicker open={styleOpen} theme={match.boardTheme} onClose={() => setStyleOpen(false)}
@@ -492,6 +501,7 @@ export function MatchPage() {
       <ShareSheet open={live.shareOpen} url={liveViewerUrl(live.gameId)} onClose={live.closeShare} />
       <ResultsSheet open={recapOpen} match={recapMatch} onClose={closeRecap} />
       <FanZone
+        plays={plays}
         gameId={live.gameId}
         chatPaused={live.chatPaused}
         ended={!live.active}

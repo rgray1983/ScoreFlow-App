@@ -33,10 +33,10 @@ export function ProCard({ variant = "home" }: ProCardProps) {
   const badge = isPro ? (home ? "Pro" : "ScoreFlow Pro") : "Free";
   const summary = isPro
     ? home
-      ? "Pro is active: premium themes, graphics, unlimited history, and cloud backup are unlocked."
-      : "Premium themes, poster styles, unlimited match history, and cloud backup are active."
+      ? "Pro is active: saved teams, rosters, player highlights, themes, and cloud backup are unlocked."
+      : "Saved teams, rosters, player highlights, premium graphics, and cloud backup are active."
     : home
-      ? "Unlock premium themes, graphics, unlimited history, and cloud backup."
+      ? "Unlock saved teams, rosters, player highlights, themes, and cloud backup."
       : "Free includes live scoring, sharing, QR codes, and your latest 3 matches.";
   const buttonLabel = isPro
     ? home ? "Manage Pro" : "Pro Active"

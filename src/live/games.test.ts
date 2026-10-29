@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMatch, point } from "../scoring";
+import { createMatch, point, reduce } from "../scoring";
+import { matchPlays } from "../scoring/plays";
 import { parseLiveGame } from "./games";
 import { scoreFields } from "./payload";
 
@@ -35,6 +36,16 @@ describe("parseLiveGame", () => {
     expect(game?.ownerId).toBe("uid-1");
   });
 
+  it("retains team calls for both sides even after the latest highlight is cleared by a normal point", () => {
+    let engine = createMatch({ homeName: "Panthers", awayName: "Rivals" });
+    engine = reduce(engine, { type: "highlight", call: { id: "home", kind: "ace", side: "home", atMs: 1 } });
+    engine = reduce(engine, { type: "highlight", call: { id: "away", kind: "block", side: "away", atMs: 2 } });
+    engine = point(engine, "home");
+    const view = parseLiveGame({ ...scoreFields(engine.match), playByPlay: matchPlays(engine) })!;
+    expect(view.match.lastHighlight).toBeNull();
+    expect(view.plays.map((p) => p.teamName)).toEqual(["Panthers", "Rivals"]);
+    expect(view.plays.map((p) => p.side)).toEqual(["home", "away"]);
+  });
   it("reads chatPaused from the live document", () => {
     const game = parseLiveGame({
       homeScore: 0,

@@ -183,13 +183,26 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
       if (isMatchOver(engine.match) || engine.match.pendingSet) return engine;
       return snapshot(engine, {
         ...applyPoint(engine.match, command.call.side),
-        lastHighlight: { ...command.call }
+        lastHighlight: {
+          ...command.call,
+          teamName: (command.call.side === "home" ? engine.match.homeName : engine.match.awayName).slice(0, 60),
+          score: {
+            set: engine.match.setNumber,
+            home: engine.match.homeScore + (command.call.side === "home" ? 1 : 0),
+            away: engine.match.awayScore + (command.call.side === "away" ? 1 : 0)
+          }
+        }
       });
     }
     case "continueSet": {
       if (!engine.match.pendingSet) return engine;
       // Continue is a gate, not a rally. Undo still targets the set-winning point.
-      return { ...engine, match: { ...engine.match, pendingSet: false, lastHighlight: null } };
+      return { ...engine, match: {
+        ...engine.match,
+        pendingSet: false,
+        // Keep the set-winning call in the feed without adding an Undo step.
+        lastHighlight: engine.match.lastHighlight
+      } };
     }
     case "setBoardTheme": {
       return {

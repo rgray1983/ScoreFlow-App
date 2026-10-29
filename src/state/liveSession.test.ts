@@ -53,6 +53,21 @@ describe("live session recovery lifecycle", () => {
     expect(mocks.send).not.toHaveBeenCalled();
     expect(useLiveSession.getState().active).toBe(false);
   });
+  it("persists the corrected player feed with scores and an offline end across reload", async () => {
+    const { useLiveSession } = await import("./liveSession");
+    const plays = [{ id: "call", kind: "ace" as const, side: "home" as const, atMs: 1, player: { id: "p", name: "Sophia", number: "12" } }];
+    await useLiveSession.getState().goLive(createMatch().match, EMPTY_MATCH_DRAFT);
+    useLiveSession.getState().publishScore(createMatch({ homeScore: 1 }).match, plays);
+    expect(JSON.parse(localStorage.getItem("scoreflowLiveOutboxV1")!).entries[0].plays).toEqual(plays);
+    useLiveSession.getState().publishScore(createMatch().match, []);
+    await useLiveSession.getState().endLive();
+    vi.resetModules();
+    await import("./liveSession");
+    const entry = JSON.parse(localStorage.getItem("scoreflowLiveOutboxV1")!).entries[0];
+    expect(entry.ended).toBe(true);
+    expect(entry.plays).toEqual([]);
+    expect(entry.match.homeScore).toBe(0);
+  });
   it("does not adopt another account’s saved link", async () => {
     const { useLiveSession } = await import("./liveSession");
     await useLiveSession

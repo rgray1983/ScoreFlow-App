@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { usePremium } from "../state/premium";
 import { Button } from "../ui/Button";
 import { ColorPicker } from "../ui/ColorPicker";
 import { Dialog } from "../ui/Dialog";
@@ -13,6 +14,10 @@ import setupStyles from "./SetupPage.module.css";
 
 export function SetupPage() {
   const navigate = useNavigate();
+  const isPro = usePremium((state) => state.isPro);
+  const teams = useWorkspace((state) => state.teams);
+  const selectedTeamId = useWorkspace((state) => state.selectedTeamId);
+  const selectTeam = useWorkspace((state) => state.selectTeam);
   const fromMatch = Boolean((useLocation().state as { fromMatch?: boolean } | null)?.fromMatch);
   const draft = useWorkspace((state) => state.draft);
   const engine = useWorkspace((state) => state.engine);
@@ -71,6 +76,10 @@ export function SetupPage() {
 
       <section className={styles.card}>
         <h2>Teams</h2>
+        {isPro && teams.length ? <Field label="Your saved team"><SelectInput value={selectedTeamId} onChange={(e) => selectTeam(e.target.value)}>
+          {teams.map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}
+        </SelectInput></Field> : null}
+        {isPro ? <Button to="/team" tone="quiet">Manage Teams & Rosters</Button> : null}
         <div className={setupStyles.teams}>
           <div>
             <Field label="Home team">

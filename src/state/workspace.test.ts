@@ -1,0 +1,63 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { memoryStorage } from "../storage/local";
+const mock = vi.hoisted(() => ({ pro: true, publish: vi.fn() }));
+vi.mock("./premium", () => ({ usePremium: { getState: () => ({ isPro: mock.pro, cloudBackup: false, resultBackground: "default" }) } }));
+vi.mock("./liveSession", () => ({ useLiveSession: { getState: () => ({ endLive: async () => {}, publishBranding() {}, publishScore: mock.publish }) } }));
+vi.mock("../live/backup", () => ({ backupCompletedMatch() {}, syncHomeTeamToCloud() {} }));
+const player = { id: "p", name: "Sophia", number: "12" };
+const team = { id: "varsity", name: "Panthers", location: "McBee", logo: "first", color: "#123456", roster: [player] };
+describe("team and live-match boundaries", () => {
+  beforeEach(() => { vi.resetModules(); vi.stubGlobal("localStorage", memoryStorage()); mock.pro = true; mock.publish.mockClear(); });
+  it("preserves the match roster and logos when another team is selected or edited, including reload", async () => {
+    let { useWorkspace } = await import("./workspace");
+    useWorkspace.getState().saveTeamProfile(team);
+    useWorkspace.getState().startMatch();
+    useWorkspace.getState().saveTeamProfile({ ...team, id: "jv", name: "JV", logo: "second", roster: [] });
+    expect(useWorkspace.getState().draft.homeName).toBe("JV");
+    expect(useWorkspace.getState().engine.match.homeName).toBe("Panthers");
+    expect(useWorkspace.getState().matchDraft.homeLogo).toBe("first");
+    expect(useWorkspace.getState().matchRoster).toEqual([player]);
+    vi.resetModules();
+    ({ useWorkspace } = await import("./workspace"));
+    expect(useWorkspace.getState().selectedTeamId).toBe("jv");
+    expect(useWorkspace.getState().matchRoster).toEqual([player]);
+    expect(useWorkspace.getState().matchDraft.homeLogo).toBe("first");
+  });
+  it("migrates an already-running legacy match before changing the next team, preserving its logo after reload", async () => {
+    localStorage.setItem("scoreflowMatchDraftV1", JSON.stringify({ homeName: "Original", homeLogo: "original-logo", awayLogo: "away-logo" }));
+    localStorage.setItem("scoreflowMatchEngineV1", JSON.stringify({ match: { homeName: "Original", homeScore: 7 }, history: [] }));
+    let { useWorkspace } = await import("./workspace");
+    useWorkspace.getState().saveTeamProfile(team);
+    vi.resetModules();
+    ({ useWorkspace } = await import("./workspace"));
+    expect(useWorkspace.getState().draft.homeName).toBe("Panthers");
+    expect(useWorkspace.getState().engine.match.homeName).toBe("Original");
+    expect(useWorkspace.getState().engine.match.homeScore).toBe(7);
+    expect(useWorkspace.getState().matchDraft.homeLogo).toBe("original-logo");
+    expect(useWorkspace.getState().matchDraft.awayLogo).toBe("away-logo");
+  });
+  it("Free cannot create additional teams, select a different one, or send player calls", async () => {
+    const { useWorkspace } = await import("./workspace");
+    useWorkspace.getState().saveTeamProfile(team);
+    useWorkspace.getState().startMatch();
+    mock.pro = false;
+    expect(() => useWorkspace.getState().saveTeamProfile({ ...team, id: "other" })).toThrow("Pro");
+    useWorkspace.getState().selectTeam("other");
+    const before = useWorkspace.getState().engine;
+    expect(useWorkspace.getState().dispatch({ type: "highlight", call: { id: "call", kind: "ace", side: "home", atMs: 1, player } })).toBe(before);
+    expect(useWorkspace.getState().dispatch({ type: "point", side: "home" }).match.homeScore).toBe(1);
+  });
+  it("only allows players from the match roster, only for home, and publishes Undo as a full corrected feed", async () => {
+    const { useWorkspace } = await import("./workspace");
+    useWorkspace.getState().saveTeamProfile(team); useWorkspace.getState().startMatch();
+    const call = { id: "call", kind: "ace" as const, side: "home" as const, atMs: 1, player };
+    useWorkspace.getState().dispatch({ type: "highlight", call: { ...call, side: "away" } });
+    useWorkspace.getState().dispatch({ type: "highlight", call: { ...call, player: { ...player, id: "outsider" } } });
+    expect(useWorkspace.getState().engine.match.homeScore).toBe(0);
+    useWorkspace.getState().dispatch({ type: "highlight", call });
+    expect(mock.publish.mock.lastCall?.[1]).toHaveLength(1);
+    useWorkspace.getState().dispatch({ type: "undo" });
+    expect(mock.publish.mock.lastCall?.[1]).toEqual([]);
+    expect(useWorkspace.getState().engine.match.homeScore).toBe(0);
+  });
+});
