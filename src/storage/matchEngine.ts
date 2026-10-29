@@ -84,6 +84,7 @@ export function parseHighlight(value: unknown): HighlightCall | null {
     ...(player && typeof player.name === "string" && player.name.trim() ? { player: {
       id: String(player.id || "").slice(0, 80), name: player.name.trim().slice(0, 32), number: String(player.number || "").replace(/[^0-9]/g, "").slice(0, 3)
     } } : {}),
+    ...(typeof call.teamName === "string" && call.teamName.trim() ? { teamName: call.teamName.trim().slice(0, 60) } : {}),
     ...(score ? { score: { set: Math.max(1, asScore(score.set)), home: asScore(score.home), away: asScore(score.away) } } : {})
   };
 }

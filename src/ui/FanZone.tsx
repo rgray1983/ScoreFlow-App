@@ -271,7 +271,7 @@ export function FanZone({
           if (feed) atBottom.current = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
         }}>
           {tab === "chat" && hasOlder ? <button type="button" className={styles.earlier} disabled={loadingOlder} onClick={() => void earlier()}>{loadingOlder ? "Loading…" : "Earlier messages"}</button> : null}
-          {empty ? <p className={styles.empty}>{tab === "chat" ? "Be the first fan to cheer!" : "Player highlights will appear here."}</p> : null}
+          {empty ? <p className={styles.empty}>{tab === "chat" ? "Be the first fan to cheer!" : "Scoring highlights will appear here."}</p> : null}
           {tab === "chat" ? messages.map((message) => (
             <article
               key={message.id}

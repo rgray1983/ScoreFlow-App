@@ -185,11 +185,12 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
         ...applyPoint(engine.match, command.call.side),
         lastHighlight: {
           ...command.call,
-          ...(command.call.player ? { score: {
+          teamName: (command.call.side === "home" ? engine.match.homeName : engine.match.awayName).slice(0, 60),
+          score: {
             set: engine.match.setNumber,
             home: engine.match.homeScore + (command.call.side === "home" ? 1 : 0),
             away: engine.match.awayScore + (command.call.side === "away" ? 1 : 0)
-          } } : {})
+          }
         }
       });
     }
@@ -199,8 +200,8 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
       return { ...engine, match: {
         ...engine.match,
         pendingSet: false,
-        // Keep a player call in the derived feed without adding an Undo step.
-        lastHighlight: engine.match.lastHighlight?.player ? engine.match.lastHighlight : null
+        // Keep the set-winning call in the feed without adding an Undo step.
+        lastHighlight: engine.match.lastHighlight
       } };
     }
     case "setBoardTheme": {

@@ -212,7 +212,7 @@
     pointer-events: none;
   }
 
-  .fanZone.scorer {
+  .fanZone.scorer .reactions {
     display: none;
   }
 

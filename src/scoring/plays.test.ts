@@ -31,7 +31,28 @@ describe("player scoring highlights", () => {
     expect(matchPlays(reduce(engine, { type: "continueSet" }))).toHaveLength(1);
     expect(matchPlays(reduce(reduce(engine, { type: "continueSet" }), { type: "undo" }))).toEqual([]);
   });
-  it("keeps team-only and opponent calls out of the player feed", () => {
+  it.each(["ace", "kill", "block"] as const)("keeps team-level %s calls for both sides without requiring a roster", (kind) => {
+    for (const side of ["home", "away"] as const) {
+      const initial = createMatch({ homeName: "Panthers", awayName: "Rivals" });
+      const scored = reduce(initial, { type: "highlight", call: { id: kind, kind, side, atMs: 100 } });
+      const plays = matchPlays(scored);
+      expect(plays).toHaveLength(1);
+      expect(plays[0].player).toBeUndefined();
+      expect(playText(plays[0])).toBe(`${side === "home" ? "Panthers" : "Rivals"} — ${kind[0].toUpperCase()}${kind.slice(1)}!`);
+      expect(plays[0].score).toEqual({ set: 1, home: side === "home" ? 1 : 0, away: side === "away" ? 1 : 0 });
+      const later = reduce(scored, { type: "point", side: "away" });
+      expect(later.match.lastHighlight).toBeNull();
+      expect(matchPlays(parseMatchEngine(JSON.parse(JSON.stringify(later))))).toEqual(plays);
+      expect(matchPlays(reduce(scored, { type: "undo" }))).toEqual([]);
+    }
+  });
+  it("retains a general set-winning call through Continue, and Undo removes it", () => {
+    const won = reduce(createMatch({ homeScore: 24, awayScore: 20 }), { type: "highlight", call: { id: "win", side: "home", kind: "ace", atMs: 1 } });
+    const continued = reduce(won, { type: "continueSet" });
+    expect(matchPlays(continued)[0].score).toEqual({ set: 1, home: 25, away: 20 });
+    expect(matchPlays(reduce(continued, { type: "undo" }))).toEqual([]);
+  });
+  it("keeps opponent player calls out of the feed", () => {
     const engine = reduce(createMatch(), { type: "highlight", call: { ...call, side: "away" } });
     expect(matchPlays(engine)).toEqual([]);
   });

@@ -35,7 +35,7 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
   if (!match) return null;
   return {
     match,
-    plays: (Array.isArray(record.playByPlay) ? record.playByPlay : []).map(parseHighlight).filter((p): p is HighlightCall => Boolean(p?.player && p.side === "home")),
+    plays: (Array.isArray(record.playByPlay) ? record.playByPlay : []).map(parseHighlight).filter((p): p is HighlightCall => Boolean(p && (!p.player || p.side === "home"))),
     homeLogo: parseLiveLogo(record.homeLogo),
     awayLogo: parseLiveLogo(record.awayLogo),
     scorerName: String(record.scorerName || "").trim().slice(0, 32),
