@@ -70,10 +70,12 @@ test("families follow style, run, highlight, held decider, and match winner", as
   await page.getByRole("button", { name: "kill! +1", exact: true }).click();
   await expect(viewer.getByTestId("home-score")).toHaveText("24");
   await expect(viewer.getByTestId("run-home")).toContainText("5–0 RUN");
+  await expect(viewer.getByTestId("highlight-burst")).toBeVisible();
   await expect(viewer.getByTestId("fan-popup").filter({ hasText: "Team 1 — Kill!" })).toBeAttached();
   await expect(viewer.getByRole("main")).toHaveAttribute("data-pressure-kind", "match");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(viewer.getByTestId("home-score")).toHaveText("23");
+  await expect(viewer.getByTestId("highlight-burst")).toHaveCount(0);
   await expect(viewer.getByTestId("fan-popup").filter({ hasText: "Team 1 — Kill!" })).toHaveCount(0);
   await page.getByRole("button", { name: "Add point to Team 2", exact: true }).click();
   await expect(viewer.getByTestId("away-score")).toHaveText("24");
@@ -289,4 +291,39 @@ test('team-level calls for either side reach viewer popups and Play by Play afte
     await expect(viewer.getByTestId('fan-popup')).toHaveCount(0);
     expect(forbidden).toEqual([]);
   } finally { await fans.close(); }
+});
+
+test('large Ace Kill and Block graphics appear on both scorer and viewer for general team calls', async ({ page, context }, testInfo) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await seed(page);
+  await page.getByRole('button', { name: 'Share Live', exact: true }).click();
+  await expect(page.getByText('Online', { exact: true })).toBeVisible({ timeout: 20000 });
+  const url = await page.getByLabel('Viewer link').inputValue();
+  await page.getByTestId('share-close').click();
+  const viewer = await context.newPage();
+  await viewer.setViewportSize({ width: 844, height: 390 });
+  await viewer.goto(url);
+  await viewer.getByRole('button', { name: 'Watch Live Score' }).click();
+  await viewer.getByLabel('Chat name').fill('Big Graphic Fan');
+  await viewer.getByRole('button', { name: 'Start Chatting' }).click();
+  for (const [team, kind] of [['Team 1', 'ace'], ['Team 2', 'kill'], ['Team 1', 'block']]) {
+    await page.getByRole('button', { name: `Highlight call for ${team}`, exact: true }).click();
+    await page.getByRole('button', { name: `${kind}! +1`, exact: true }).click();
+    const scorerGraphic = page.getByTestId('highlight-burst');
+    const viewerGraphic = viewer.getByTestId('highlight-burst');
+    await expect(scorerGraphic).toBeVisible();
+    await expect(scorerGraphic).toHaveAttribute('data-kind', kind);
+    await expect(viewerGraphic).toBeVisible();
+    await expect(viewerGraphic).toHaveAttribute('data-kind', kind);
+    await expect(viewerGraphic).toContainText(team);
+    // Check the actual large celebration, not a small chat/feed popup.
+    expect(await viewerGraphic.evaluate((node) => getComputedStyle(node.querySelector('strong')!).fontSize).then(parseFloat)).toBeGreaterThan(40);
+    await expect.poll(() => viewerGraphic.evaluate((node) => Number(getComputedStyle(node).opacity))).toBeGreaterThan(0.8);
+    if (kind === 'kill') await viewer.screenshot({ path: testInfo.outputPath('viewer-large-kill.png') });
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(scorerGraphic).toHaveCount(0);
+    await expect(viewerGraphic).toHaveCount(0);
+    await expect(viewer.getByTestId('home-score')).toHaveText('0');
+    await expect(viewer.getByTestId('away-score')).toHaveText('0');
+  }
 });

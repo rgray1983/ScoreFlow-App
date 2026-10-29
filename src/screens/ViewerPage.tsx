@@ -200,8 +200,8 @@ export function ViewerPage() {
         <p className={viewerStyles.chatHint}>Rotate for chat</p>
       </main>
 
-      {/* New games use durable feed popups; retain the effect for legacy games. */}
-      <HighlightBurst match={watching && !ended && !game?.plays.some((play) => play.id === match?.lastHighlight?.id) ? match : null} />
+      {/* General team calls keep their large celebration as well as the feed entry. */}
+      <HighlightBurst match={watching && !ended ? match : null} />
       {match && watching && !ended ? <SetBreakCard match={match} /> : null}
 
       {match && watching && !ended ? (
