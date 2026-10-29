@@ -6,15 +6,20 @@ import {
   isServing,
   matchBanner,
   timeoutsOf,
+  type HighlightKind,
   type Side
 } from "../scoring";
 import { matchHasProgress } from "../storage/matchEngine";
 import { historyMatchFromLive } from "../storage/matchHistory";
 import { consumeResumeIntent, isDocumentReload, shouldResumeLiveOnMatchPage } from "../state/homeResume";
 import { usePremium } from "../state/premium";
+import { useAccount } from "../state/account";
 import { useWorkspace } from "../state/workspace";
 import { liveViewerUrl, useLiveSession } from "../state/liveSession";
 import { BoardLogoPicker } from "../ui/BoardLogoPicker";
+import { BoardStylePicker, HighlightBurst, HighlightPicker, RunBadge, ScorerCredit, ScoreDigits } from "../ui/BoardAddons";
+import { SetBreakCard } from "../ui/SetBreakCard";
+import { boardEnergyAttributes } from "../ui/boardEnergy";
 import { Button } from "../ui/Button";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { Dialog } from "../ui/Dialog";
@@ -54,9 +59,11 @@ export function MatchPage() {
   const dispatch = useWorkspace((state) => state.dispatch);
   const updateDraft = useWorkspace((state) => state.updateDraft);
   const resultBackground = usePremium((state) => state.resultBackground);
+  const scorerName = useAccount((state) => state.displayName);
   const live = useLiveSession();
   const match = engine.match;
   const over = isMatchOver(match);
+  const scoringBlocked = over || match.pendingSet;
   const banner = matchBanner(match);
   const alert = banner.startsWith("SET POINT") || banner.startsWith("MATCH POINT") || banner.startsWith("MATCH WON");
   const homePop = useScorePop(match.homeScore);
@@ -69,6 +76,8 @@ export function MatchPage() {
   const [winnerOpen, setWinnerOpen] = useState(Boolean(match.winner));
   const [matchCardOpen, setMatchCardOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [callSide, setCallSide] = useState<Side | null>(null);
 
   useEffect(() => {
     if (match.winner) {
@@ -107,6 +116,17 @@ export function MatchPage() {
 
   function score(side: Side) {
     dispatch({ type: "point", side });
+    vibrate();
+  }
+
+  function vibrate() {
+    if (!scoringBlocked) navigator.vibrate?.(16);
+  }
+
+  function highlight(side: Side, kind: HighlightKind) {
+    dispatch({ type: "highlight", call: { id: crypto.randomUUID(), kind, side, atMs: Date.now() } });
+    setCallSide(null);
+    vibrate();
   }
 
   function minus(side: Side) {
@@ -187,6 +207,11 @@ export function MatchPage() {
           <Link className={styles.iconButton} to="/setup" state={{ fromMatch: true }} aria-label="Match setup">
             <SettingsIcon className={styles.icon} />
           </Link>
+          <button className={styles.iconButton} type="button" aria-label="Board style" onClick={() => setStyleOpen(true)}>
+            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="3" /><path d="M12 4v16M3 12h18" />
+            </svg>
+          </button>
         </div>
         <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         <div className={styles.status}>
@@ -205,7 +230,7 @@ export function MatchPage() {
         <SetHistoryTicker match={match} />
       </header>
 
-      <main className={styles.board} aria-label="Volleyball scoreboard">
+      <main className={styles.board} {...boardEnergyAttributes(match)} aria-label="Volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
             <div className={styles.logoStack}>
@@ -222,7 +247,7 @@ export function MatchPage() {
                 teamName={match.homeName}
                 active={isServing(match, "home")}
                 interactive
-                disabled={over}
+                disabled={scoringBlocked}
                 testId="serving-home"
                 onSelect={() => serve("home")}
               />
@@ -235,17 +260,18 @@ export function MatchPage() {
                 remaining={timeoutsOf(match, "home")}
                 color={match.homeColor}
                 interactive
-                disabled={over || timeoutActive}
+                disabled={scoringBlocked || timeoutActive}
                 testId="timeouts-home"
                 onCall={() => callTimeout("home")}
               />
+              <RunBadge match={match} side="home" />
             </div>
           </div>
           <div className={styles.pointActions}>
             <button
               className={`${styles.point} ${styles.plus}`}
               type="button"
-              disabled={over}
+              disabled={scoringBlocked}
               aria-label={`Add point to ${match.homeName}`}
               onClick={() => score("home")}
             >
@@ -254,18 +280,21 @@ export function MatchPage() {
             <button
               className={`${styles.point} ${styles.minus}`}
               type="button"
-              disabled={over || match.homeScore <= 0}
+              disabled={scoringBlocked || match.homeScore <= 0}
               aria-label={`Subtract point from ${match.homeName}`}
               onClick={() => minus("home")}
             >
               −1
             </button>
+            <button className={`${styles.point} ${styles.call}`} type="button" disabled={scoringBlocked}
+              aria-label={`Highlight call for ${match.homeName}`} onClick={() => setCallSide("home")}>Call</button>
           </div>
         </section>
 
         <section className={styles.center}>
           <div className={styles.titleBlock}>
             <h1 className={styles.title}>{match.matchTitle}</h1>
+            <ScorerCredit name={scorerName} />
             <p className={styles.setBox}><span>Set <strong>{match.setNumber}</strong></span></p>
             <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>
               {banner}
@@ -279,9 +308,9 @@ export function MatchPage() {
             />
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`} data-testid="home-score">{match.homeScore}</span>
+            <span className={`${styles.score} ${styles.homeScore} ${homePop ? styles.scorePop : ""}`} data-testid="home-score"><ScoreDigits value={match.homeScore} theme={match.boardTheme} /></span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`} data-testid="away-score">{match.awayScore}</span>
+            <span className={`${styles.score} ${styles.awayScore} ${awayPop ? styles.scorePop : ""}`} data-testid="away-score"><ScoreDigits value={match.awayScore} theme={match.boardTheme} /></span>
           </div>
           <div className={styles.controls}>
             <button
@@ -325,7 +354,7 @@ export function MatchPage() {
                 teamName={match.awayName}
                 active={isServing(match, "away")}
                 interactive
-                disabled={over}
+                disabled={scoringBlocked}
                 testId="serving-away"
                 onSelect={() => serve("away")}
               />
@@ -338,17 +367,18 @@ export function MatchPage() {
                 remaining={timeoutsOf(match, "away")}
                 color={match.awayColor}
                 interactive
-                disabled={over || timeoutActive}
+                disabled={scoringBlocked || timeoutActive}
                 testId="timeouts-away"
                 onCall={() => callTimeout("away")}
               />
+              <RunBadge match={match} side="away" />
             </div>
           </div>
           <div className={styles.pointActions}>
             <button
               className={`${styles.point} ${styles.plus} ${styles.plusAway}`}
               type="button"
-              disabled={over}
+              disabled={scoringBlocked}
               aria-label={`Add point to ${match.awayName}`}
               onClick={() => score("away")}
             >
@@ -357,15 +387,23 @@ export function MatchPage() {
             <button
               className={`${styles.point} ${styles.minus}`}
               type="button"
-              disabled={over || match.awayScore <= 0}
+              disabled={scoringBlocked || match.awayScore <= 0}
               aria-label={`Subtract point from ${match.awayName}`}
               onClick={() => minus("away")}
             >
               −1
             </button>
+            <button className={`${styles.point} ${styles.call}`} type="button" disabled={scoringBlocked}
+              aria-label={`Highlight call for ${match.awayName}`} onClick={() => setCallSide("away")}>Call</button>
           </div>
         </section>
       </main>
+
+      <HighlightBurst match={match} />
+      <SetBreakCard match={match} onContinue={() => dispatch({ type: "continueSet" })} onUndo={() => dispatch({ type: "undo" })} />
+      <BoardStylePicker open={styleOpen} theme={match.boardTheme} onClose={() => setStyleOpen(false)}
+        onSelect={(theme) => dispatch({ type: "setBoardTheme", theme })} />
+      <HighlightPicker side={callSide} match={match} onCall={highlight} onClose={() => setCallSide(null)} />
 
       <TimeoutOverlay
         match={match}

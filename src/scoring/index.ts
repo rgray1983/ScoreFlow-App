@@ -38,6 +38,9 @@ export {
 
 export type {
   Command,
+  BoardTheme,
+  HighlightKind,
+  HighlightCall,
   CompletedSet,
   FormatRules,
   MatchEngine,

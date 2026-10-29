@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   createUserWithEmailAndPassword,
+  connectAuthEmulator,
   getAuth,
   linkWithCredential,
   linkWithPopup,
@@ -17,8 +18,8 @@ import {
   type Auth,
   type User
 } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
+import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from "firebase/storage";
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -38,6 +39,11 @@ export function getFirebase() {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true") {
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+      connectFirestoreEmulator(db, "127.0.0.1", 8080);
+      connectStorageEmulator(storage, "127.0.0.1", 9199);
+    }
   }
   return { app, auth: auth!, db: db!, storage: storage! };
 }

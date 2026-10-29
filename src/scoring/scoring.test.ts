@@ -14,6 +14,7 @@ import {
   newMatch,
   point,
   pointsToWin,
+  reduce,
   setColors,
   setNames,
   setServe,
@@ -26,7 +27,7 @@ import {
 import type { MatchEngine, Side } from "./types";
 
 function rallyTo(engine: MatchEngine, home: number, away: number): MatchEngine {
-  let next = engine;
+  let next = reduce(engine, { type: "continueSet" });
   while (next.match.homeScore < home || next.match.awayScore < away) {
     if (next.match.homeScore < home) next = point(next, "home");
     if (isMatchOver(next.match) || next.match.setNumber !== engine.match.setNumber) break;
@@ -378,7 +379,7 @@ describe("timeouts", () => {
     expect(timeoutsOf(match, "home")).toBe(2);
   });
 
-  it("calls a timeout, drops a light, and starts a 45s clock", () => {
+  it("calls a timeout, drops a light, and starts a 60s clock", () => {
     const engine = callTimeout(createMatch({ homeName: "Blazers" }), "home", now);
     expect(engine.match.homeTimeouts).toBe(1);
     expect(engine.match.awayTimeouts).toBe(2);
@@ -453,8 +454,9 @@ describe("timeouts", () => {
     expect(won.match.timeoutEndsAtMs).toBe(0);
   });
 
-  it("formats the 45s clock", () => {
-    expect(formatTimeoutClock(TIMEOUT_MS)).toBe("0:45");
+  it("formats the one-minute clock", () => {
+    expect(formatTimeoutClock(TIMEOUT_MS)).toBe("1:00");
+    expect(formatTimeoutClock(TIMEOUT_MS - 1000)).toBe("0:59");
     expect(formatTimeoutClock(1_000)).toBe("0:01");
     expect(formatTimeoutClock(0)).toBe("0:00");
   });

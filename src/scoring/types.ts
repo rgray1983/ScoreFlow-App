@@ -2,6 +2,15 @@ export type Side = "home" | "away";
 
 export type MatchFormat = "club" | "highschool";
 
+export type BoardTheme = "classic" | "old-school" | "flip-clock";
+export type HighlightKind = "ace" | "kill" | "block";
+export type HighlightCall = {
+  id: string;
+  kind: HighlightKind;
+  side: Side;
+  atMs: number;
+};
+
 export type CompletedSet = {
   set: number;
   homeScore: number;
@@ -31,6 +40,11 @@ export type MatchState = {
   activeTimeout: Side | "";
   timeoutEndsAtMs: number;
   completedSets: readonly CompletedSet[];
+  boardTheme: BoardTheme;
+  runSide: Side | "";
+  runLength: number;
+  pendingSet: boolean;
+  lastHighlight: HighlightCall | null;
 };
 
 export type MatchEngine = {
@@ -47,6 +61,9 @@ export type FormatRules = {
 
 export type Command =
   | { type: "point"; side: Side }
+  | { type: "highlight"; call: HighlightCall }
+  | { type: "continueSet" }
+  | { type: "setBoardTheme"; theme: BoardTheme }
   | { type: "subtract"; side: Side }
   | { type: "undo" }
   | { type: "newMatch" }

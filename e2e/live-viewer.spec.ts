@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("scorer can add a point on the Vite board", async ({ page }) => {
   await page.goto("/");

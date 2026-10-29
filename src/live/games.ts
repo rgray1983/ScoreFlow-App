@@ -53,6 +53,7 @@ export async function createLiveGame(
   await setDoc(gameRef(gameId), {
     ...scoreFields(match),
     ...brandingFields(logos),
+    ended: false,
     ownerId: user.uid,
     chatPaused: false,
     createdAt: serverTimestamp(),
@@ -73,12 +74,10 @@ export async function updateLiveScore(gameId: string, match: MatchState): Promis
 
 export async function updateLiveBranding(
   gameId: string,
-  match: MatchState,
   logos: LiveBranding
 ): Promise<void> {
   const user = await ensureAnonymousAuth();
   await setDoc(gameRef(gameId), {
-    ...scoreFields(match),
     ...brandingFields(logos),
     ownerId: user.uid,
     updatedAt: serverTimestamp(),

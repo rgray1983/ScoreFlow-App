@@ -4,12 +4,12 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 26px;
+  min-height: var(--serve-height, 26px);
   padding: 3px 8px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(5, 7, 12, 0.42);
+  color: var(--board-muted, rgba(5, 7, 12, 0.42));
   font: inherit;
   line-height: 1;
   white-space: nowrap;

@@ -291,8 +291,14 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
   ctx.lineTo(w / 2, tableTop + rowGap * (rowCount - 1) + 54);
   ctx.stroke();
 
+  ctx.save();
   ctx.font = "950 82px Inter, Arial";
   ctx.textBaseline = "middle";
+  // Centered white halo keeps team-colored digits readable on busy backgrounds.
+  ctx.shadowColor = "rgba(255,255,255,0.78)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
   for (let i = 0; i < rowCount; i++) {
     const set = completed[i];
     const y = tableTop + i * rowGap;
@@ -303,6 +309,7 @@ export async function drawResultsGraphic(match: HistoryMatch): Promise<HTMLCanva
     ctx.textAlign = "left";
     ctx.fillText(set ? String(set.awayScore) : "–", w / 2 + 72, y);
   }
+  ctx.restore();
 
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,.76)";

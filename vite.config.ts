@@ -21,6 +21,7 @@ function copySpaFallback() {
 
 export default defineConfig({
   root: "src",
+  envDir: projectRoot,
   publicDir: "public",
   base: process.env.VITE_BASE || "/",
   plugins: [

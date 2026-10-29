@@ -70,14 +70,17 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
     },
     startMatch() {
       const committed = saveMatchDraft(commitMatchDraft(get().draft));
-      const engine = saveMatchEngine(engineFromDraft(committed));
+      const engine = saveMatchEngine(engineFromDraft(committed, get().engine.match.boardTheme));
       resetHistorySaveGuard();
       set({ draft: committed, engine });
       useLiveSession.getState().publishBranding(engine.match, committed);
       return committed;
     },
     dispatch(command) {
-      const engine = saveMatchEngine(reduce(get().engine, command));
+      const previous = get().engine;
+      const next = reduce(previous, command);
+      if (next === previous) return previous;
+      const engine = saveMatchEngine(next);
       set({ engine });
       useLiveSession.getState().publishScore(engine.match);
       if (command.type === "newMatch") resetHistorySaveGuard();

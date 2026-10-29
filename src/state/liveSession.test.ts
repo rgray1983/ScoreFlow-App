@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMatch } from "../scoring";
+import { createMatch, point } from "../scoring";
 import { EMPTY_MATCH_DRAFT } from "../storage/matchSetup";
 import type { LiveRecovery } from "../live";
 
@@ -303,5 +303,33 @@ describe("live session", () => {
     expect(useLiveSession.getState().chatPaused).toBe(true);
     expect(useLiveSession.getState().active).toBe(true);
     expect(liveMocks.setLiveChatPaused).toHaveBeenCalledWith("id-a", true);
+  });
+
+  it("publishes points scored while the initial live write is still pending", async () => {
+    let finish: (() => void) | undefined;
+    liveMocks.createLiveGame.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const pending = useLiveSession.getState().goLive(match, draft);
+    for (let i = 0; i < 30 && !finish; i++) await Promise.resolve();
+    expect(finish).toBeTypeOf("function");
+    expect(useLiveSession.getState().status).toBe("connecting");
+    const scored = point(createMatch(), "home").match;
+    useLiveSession.getState().publishScore(scored);
+    finish?.();
+    await pending;
+    await vi.advanceTimersByTimeAsync(120);
+    expect(liveMocks.updateLiveScore).toHaveBeenLastCalledWith("id-a", scored);
+  });
+
+  it("drops a logo upload completed after the session ends", async () => {
+    await useLiveSession.getState().goLive(match, draft);
+    let finish: ((value: { homeLogo: string; awayLogo: string }) => void) | undefined;
+    liveMocks.uploadMatchLogos.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    useLiveSession.getState().publishBranding(match, { ...draft, homeLogo: "https://example.com/new.png" });
+    for (let i = 0; i < 30 && !finish; i++) await Promise.resolve();
+    expect(finish).toBeTypeOf("function");
+    await useLiveSession.getState().endLive();
+    finish?.({ homeLogo: "https://example.com/new.png", awayLogo: "" });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(liveMocks.updateLiveBranding).not.toHaveBeenCalled();
   });
 });
