@@ -4,6 +4,7 @@ export const LIVE_RECOVERY_KEY = "scoreflowLiveRecoveryV1";
 
 export type LiveRecovery = {
   gameId: string;
+  ownerId?: string;
   active: boolean;
   savedAtMs: number;
   summary: string;
@@ -16,6 +17,7 @@ export function parseLiveRecovery(value: unknown): LiveRecovery | null {
   if (!gameId || record.active !== true) return null;
   return {
     gameId,
+    ...(typeof record.ownerId === "string" ? { ownerId: record.ownerId } : {}),
     active: true,
     savedAtMs: Number(record.savedAtMs) || Date.now(),
     summary: String(record.summary || "Live match")

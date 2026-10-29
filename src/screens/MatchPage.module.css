@@ -21,7 +21,7 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.5)),
     radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--home), transparent 78%), transparent 24%),
     radial-gradient(circle at 82% 10%, color-mix(in srgb, var(--away), transparent 80%), transparent 26%),
-    url("../../images/scoreboard-bg.jpg") center / cover no-repeat,
+    url("../../images/scoreboard-bg.webp") center / cover no-repeat,
     #05070c;
   opacity: 0.92;
 }

@@ -1,10 +1,11 @@
 import styles from "./LivePill.module.css";
 
-type Status = "offline" | "connecting" | "live" | "error";
+type Status = "offline" | "connecting" | "pending" | "live" | "error";
 
 const labels: Record<Status, string> = {
   offline: "Offline",
   connecting: "Connecting",
+  pending: "Pending",
   live: "Online",
   error: "Sync Error"
 };
@@ -12,7 +13,8 @@ const labels: Record<Status, string> = {
 export function LivePill({ status = "offline" }: { status?: Status }) {
   return (
     <span
-      className={`${styles.pill} ${status === "live" ? styles.live : ""} ${status === "connecting" ? styles.connecting : ""} ${status === "error" ? styles.error : ""}`}
+      title={status === "pending" ? "Updates saved on this device; waiting for server acknowledgement" : undefined}
+      className={`${styles.pill} ${status === "live" ? styles.live : ""} ${status === "connecting" || status === "pending" ? styles.connecting : ""} ${status === "error" ? styles.error : ""}`}
     >
       <span className={styles.dot} />
       {labels[status]}
