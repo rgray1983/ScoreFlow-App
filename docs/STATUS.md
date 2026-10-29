@@ -4,31 +4,29 @@ Updated: October 29, 2026. Repository: `rgray1983/ScoreFlow-App`.
 
 ## Resume here
 
-Latest merged work on main: GitHub PR #38 / record PR-037, serving marks and two 45-second timeout lights per team per set.
-
-Next review: **PR-038**, branch `agent/pr-038-phase-one-scoreboard`. See [the review record](PRs/PR-038.md). This branch implements the remaining [Phase 1 add-ons](PHASE_1_ADDONS.md) and adds isolated Firebase browser testing. It awaits Richie's phone testing and merge approval.
+Current release: **PR-038 / [GitHub PR #39](https://github.com/rgray1983/ScoreFlow-App/pull/39)**, approved by Richie on October 29, 2026. It completes the [Phase 1 add-ons](PHASE_1_ADDONS.md), changes timeouts to one minute, adds white score glow to recap/export graphics, and isolates Firebase browser testing. GitHub tracks the merge and Pages deployment state; see [the review record](PRs/PR-038.md) for details.
 
 ## Phase 1 progress
 
 | Feature | State |
 | --- | --- |
 | Serving mark and automatic side-out | Merged |
-| Timeout lights | Merged; one-minute clock update in PR-038 |
-| Set-point / match-point atmosphere | Implemented in PR-038 |
-| Classic, Old School, and Flip Clock board styles | Implemented in PR-038 |
-| Quiet scorer display-name credit | Implemented in PR-038 |
-| Scoring-run warmth and 5+/7+ run treatment | Implemented in PR-038 |
-| Next-set / deciding-set card held until scorer continues | Implemented in PR-038 |
-| Ace / Kill / Block calls, one point each, undoable | Implemented in PR-038 |
+| Timeout lights and one-minute clock | Approved in PR-038 |
+| Set-point / match-point atmosphere | Approved in PR-038 |
+| Classic, Old School, and Flip Clock board styles | Approved in PR-038 |
+| Quiet scorer display-name credit | Approved in PR-038 |
+| Scoring-run warmth and 5+/7+ run treatment | Approved in PR-038 |
+| Next-set / deciding-set card held until scorer continues | Approved in PR-038 |
+| Ace / Kill / Block calls, one point each, undoable | Approved in PR-038 |
+| White glow behind Match Results scores, preview and export | Approved in PR-038 |
 
 ## Next actions, in order
 
-1. Review PR-038 on an actual iPhone Home Screen install and Android browser. Check both orientations, the smallest phone, and a separate live viewer.
-2. After approval, merge and confirm the Pages deployment. Check an existing installed PWA picks up the update and a viewer link survives a hard refresh.
-3. Test poor gym connectivity: disconnect the scorer, score rallies, reconnect, reload, and confirm the same viewer link receives the latest score. Add explicit pending/offline indicators and durable resend handling before calling offline recovery complete.
-4. Optimize the 8.5 MB court background and the initial JavaScript payload. Measure phone startup before and after; preserve visual quality and PWA caching.
-5. Add a separate staging Firebase project and branch preview site if sharing changes before merge becomes frequent. Keep production and staging data separate.
-6. Only then choose from [later scoreboard ideas](SCOREBOARD_ADDON_IDEAS.md). Coach, billing, TV boards, and player statistics are separate work.
+1. Verify the approved release after merge: Pages deployment, installed PWA update, and viewer hard refresh. Keep real iPhone/Android orientation and safe-area checks in the release checklist.
+2. Test poor gym connectivity: disconnect the scorer, score rallies, reconnect, reload, and confirm the same viewer link receives the latest score. Add explicit pending/offline indicators and durable resend handling before calling offline recovery complete.
+3. Optimize the 8.5 MB court background and the initial JavaScript payload. Measure phone startup before and after; preserve visual quality and PWA caching.
+4. Add a separate staging Firebase project and branch preview site if sharing changes before merge becomes frequent. Keep production and staging data separate.
+5. Only then choose from [later scoreboard ideas](SCOREBOARD_ADDON_IDEAS.md). Coach, billing, TV boards, and player statistics are separate work.
 
 ## Decisions to preserve
 

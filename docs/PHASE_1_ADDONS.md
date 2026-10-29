@@ -6,7 +6,7 @@ Build these as scoreboard energy: fast on the scorer, loud on the viewer, undoab
 
 ## Implementation status — October 29, 2026
 
-Serving marks and timeouts are merged. The remaining add-ons below are implemented on `agent/pr-038-phase-one-scoreboard` and await Richie's device review and approval. See [PR-038](PRs/PR-038.md) for behavior and tests, and [STATUS](STATUS.md) for the next work in order. The descriptions below remain the agreed product spec.
+Phase 1 is implemented and approved by Richie, including the one-minute timeout and result-score glow review updates. [GitHub PR #39](https://github.com/rgray1983/ScoreFlow-App/pull/39) tracks merge and deployment state. See [PR-038](PRs/PR-038.md) for behavior and tests, and [STATUS](STATUS.md) for the next work in order. The descriptions below remain the agreed product spec.
 
 ## In this pass
 
