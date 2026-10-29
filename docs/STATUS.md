@@ -13,7 +13,7 @@ Next review: **PR-038**, branch `agent/pr-038-phase-one-scoreboard`. See [the re
 | Feature | State |
 | --- | --- |
 | Serving mark and automatic side-out | Merged |
-| Timeout lights and shared 45-second clock | Merged |
+| Timeout lights | Merged; one-minute clock update in PR-038 |
 | Set-point / match-point atmosphere | Implemented in PR-038 |
 | Classic, Old School, and Flip Clock board styles | Implemented in PR-038 |
 | Quiet scorer display-name credit | Implemented in PR-038 |

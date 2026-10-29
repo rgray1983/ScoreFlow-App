@@ -6,7 +6,7 @@ export const FORMAT_RULES: Record<MatchFormat, { matchSets: number; setsToWin: n
 };
 
 export const TIMEOUTS_PER_SET = 2;
-export const TIMEOUT_MS = 45_000;
+export const TIMEOUT_MS = 60_000;
 
 export function otherSide(side: Side): Side {
   return side === "home" ? "away" : "home";

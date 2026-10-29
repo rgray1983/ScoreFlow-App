@@ -23,7 +23,7 @@ describe("live payloads", () => {
     expect(payload.homeTimeouts).toBe(1);
     expect(payload.awayTimeouts).toBe(2);
     expect(payload.activeTimeout).toBe("home");
-    expect(payload.timeoutEndsAtMs).toBe(1_700_000_045_000);
+    expect(payload.timeoutEndsAtMs).toBe(1_700_000_060_000);
   });
 
   it("keeps http logos and compact data urls, and omits empty sides", () => {

@@ -151,3 +151,31 @@ test("the read-only viewer keeps digits visible in phone and tablet orientations
     await viewer.screenshot({ path: testInfo.outputPath(`viewer-${size.width}x${size.height}.png`), animations: "disabled" });
   }
 });
+
+test("one-minute timeouts count down together and restore on Undo", async ({ page, context }) => {
+  await seed(page);
+  await page.getByRole("button", { name: "Share Live", exact: true }).click();
+  await expect(page.getByText("Online", { exact: true })).toBeVisible();
+  const url = await page.getByLabel("Viewer link").inputValue();
+  await page.getByTestId("share-close").click();
+  const viewer = await context.newPage();
+  await viewer.goto(url);
+  await viewer.getByRole("button", { name: "Watch Live Score" }).click();
+  await viewer.getByLabel("Chat name").fill("Timeout Fan");
+  await viewer.getByRole("button", { name: "Start Chatting" }).click();
+  const now = Date.now();
+  await page.clock.setFixedTime(now);
+  await viewer.clock.setFixedTime(now);
+  await page.getByRole("button", { name: "Call timeout for Team 1", exact: true }).first().click();
+  await expect(page.getByTestId("timeout-scorer")).toContainText("1:00");
+  await expect(viewer.getByTestId("timeout-viewer")).toContainText("1:00");
+  await page.clock.setFixedTime(now + 1000);
+  await viewer.clock.setFixedTime(now + 1000);
+  await expect(page.getByTestId("timeout-scorer")).toContainText("0:59");
+  await expect(viewer.getByTestId("timeout-viewer")).toContainText("0:59");
+  await page.getByRole("button", { name: "End timeout", exact: true }).click();
+  await expect(viewer.getByTestId("timeout-viewer")).toHaveCount(0);
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByTestId("timeout-scorer")).toContainText("0:59");
+  await expect(viewer.getByTestId("timeout-viewer")).toContainText("0:59");
+});

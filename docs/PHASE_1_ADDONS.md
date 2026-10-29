@@ -13,7 +13,7 @@ Serving marks and timeouts are merged. The remaining add-ons below are implement
 | # | Add-on | Scorer | Viewer |
 |---|---|---|---|
 | 2 | Serving mark | Tap who serves to start a set; auto side-out after that | Same mark, no tap |
-| 3 | Timeouts | Tap a team’s timeout lights | 45s popup + lights go down |
+| 3 | Timeouts | Tap a team’s timeout lights | 60s popup + lights go down |
 | 4 | Match-point atmosphere | Board shifts when the next point can win set/match | Same |
 | 7 | Board themes | Pick a board skin (glass, Old School, flip-clock, …) | Follows the scorer’s skin |
 | 9 | Scorer name | Uses Account display name | Quiet credit on the board |
@@ -36,7 +36,7 @@ Put it **under the team logo**: a small **Serving** pill, or a **pulsing volleyb
 Looks like a real board: **two lights per team per set**. Tap a light on the scorer to call it.
 
 - Lights on that side go down.
-- Viewer gets a **45 second timer popup** with the team name/color who called it.
+- Viewer gets a **one-minute timer popup** with the team name/color who called it (updated after Richie's review).
 - Scorer should see a compact timer too, and an **End timeout** (or it clears at 0) so they are not stuck.
 - New set restores two lights each.
 - Undo restores a light if the timeout was a mis-tap.

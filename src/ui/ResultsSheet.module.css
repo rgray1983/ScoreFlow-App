@@ -274,7 +274,10 @@
   font-weight: 950;
   line-height: 1;
   text-align: right;
-  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.26);
+  text-shadow:
+    0 0 2px rgba(255, 255, 255, 0.55),
+    0 0 6px rgba(255, 255, 255, 0.78),
+    0 3px 12px rgba(0, 0, 0, 0.26);
 }
 
 .row strong:last-child {
