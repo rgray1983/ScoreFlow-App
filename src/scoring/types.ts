@@ -1,3 +1,4 @@
+import type { SoundEvent } from "../audio/events";
 export type Side = "home" | "away";
 
 export type MatchFormat = "club" | "highschool";
@@ -48,6 +49,7 @@ export type MatchState = {
   runLength: number;
   pendingSet: boolean;
   lastHighlight: HighlightCall | null;
+  lastSound?: SoundEvent | null;
 };
 
 export type MatchEngine = {

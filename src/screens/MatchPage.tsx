@@ -1,3 +1,4 @@
+import { BoardSound } from "../ui/BoardSound";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -220,6 +221,7 @@ export function MatchPage() {
         </div>
         <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         <div className={styles.status}>
+          <BoardSound match={match} active session={live.gameId || "local"} className={styles.iconButton} />
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{live.viewerCount}</span>
           {live.active ? (
             <button

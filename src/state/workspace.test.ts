@@ -60,4 +60,21 @@ describe("team and live-match boundaries", () => {
     expect(mock.publish.mock.lastCall?.[1]).toEqual([]);
     expect(useWorkspace.getState().engine.match.homeScore).toBe(0);
   });
+  it("saves and publishes the same sound event with the accepted score; offline events stay local-only", async () => {
+    const { useWorkspace } = await import("./workspace");
+    const { loadMatchEngine } = await import("../storage/matchEngine");
+    const first = useWorkspace.getState().dispatch({ type: "point", side: "home" });
+    expect(first.match.lastSound?.cues).toEqual(["point"]);
+    expect(loadMatchEngine()?.match.lastSound).toEqual(first.match.lastSound);
+    expect(mock.publish.mock.lastCall?.[0].lastSound).toEqual(first.match.lastSound);
+    vi.stubGlobal("navigator", { onLine: false });
+    const offline = useWorkspace.getState().dispatch({ type: "point", side: "away" });
+    expect(offline.match.lastSound?.remote).toBe(false);
+    expect(offline.match.lastSound?.id).not.toBe(first.match.lastSound?.id);
+    expect(mock.publish.mock.lastCall?.[0].lastSound).toEqual(offline.match.lastSound);
+    const undone = useWorkspace.getState().dispatch({ type: "undo" });
+    expect(undone.match.lastSound).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
 });
