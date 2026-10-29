@@ -59,6 +59,8 @@ type LiveSessionState = {
 let scoreTimer = 0;
 let presenceTimer = 0;
 let stopViewerCount: (() => void) | null = null;
+let brandingRevision = 0;
+let latestMatch: MatchState | null = null;
 
 function stopPresence(): void {
   if (typeof window !== "undefined") {
@@ -115,6 +117,10 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       set({ status: "error", error: "Firebase config is missing.", active: false });
       return;
     }
+    if (get().gameId && get().status === "connecting") {
+      set({ shareOpen: true });
+      return;
+    }
     if (get().active && get().gameId && !options?.reuseId) {
       set({ shareOpen: true, status: "live", error: "" });
       return;
@@ -131,8 +137,10 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       ? recoveredId || createGameId()
       : createGameId();
     const epoch = get().epoch + 1;
+    const initialBrandingRevision = ++brandingRevision;
+    latestMatch = match;
     set({
-      status: "offline",
+      status: "connecting",
       error: "",
       gameId,
       active: false,
@@ -146,7 +154,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
       const liveLogos = await compactLiveLogos(draft);
       const scorer = await compactScorerBranding();
       if (get().epoch !== epoch) return;
-      await createLiveGame(gameId, match, { ...liveLogos, ...scorer });
+      const createdMatch = latestMatch ?? match;
+      await createLiveGame(gameId, createdMatch, { ...liveLogos, ...scorer });
       if (get().epoch !== epoch) return;
       saveLiveRecovery({
         gameId,
@@ -162,6 +171,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         recovery: loadLiveRecovery(),
         chatPaused: false
       });
+      if (latestMatch && latestMatch !== createdMatch) get().publishScore(latestMatch);
       const beat = () => {
         if (sessionStillOpen(epoch, gameId, get())) void writePresence(gameId, "scorer");
       };
@@ -182,7 +192,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
             && logos.awayLogo === liveLogos.awayLogo
             && !scorerUrl
           ) return;
-          await updateLiveBranding(gameId, match, {
+          if (!sessionStillOpen(epoch, gameId, get()) || initialBrandingRevision !== brandingRevision) return;
+          await updateLiveBranding(gameId, {
             ...logos,
             ...scorer,
             ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})
@@ -247,6 +258,7 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
     }
   },
   publishScore(match) {
+    latestMatch = match;
     const { gameId, active, epoch } = get();
     if (!gameId || !active) return;
     clearScoreTimer();
@@ -274,11 +286,12 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         });
     }, 120);
   },
-  publishBranding(match, draft) {
+  publishBranding(_match, draft) {
     const { gameId, active, epoch } = get();
     if (!gameId || !active) return;
     const startedEpoch = epoch;
     const startedId = gameId;
+    const revision = ++brandingRevision;
     void (async () => {
       try {
         const compact = await compactLiveLogos(draft);
@@ -288,7 +301,8 @@ export const useLiveSession = create<LiveSessionState>((set, get) => ({
         const logos = resolveLiveLogos(uploaded, compact);
         const scorer = await compactScorerBranding();
         const scorerUrl = await uploadTeamLogo(startedId, "scorer", scorer.scorerAvatar || "").catch(() => "");
-        await updateLiveBranding(startedId, match, {
+        if (!sessionStillOpen(startedEpoch, startedId, get()) || revision !== brandingRevision) return;
+        await updateLiveBranding(startedId, {
           ...logos,
           ...scorer,
           ...(scorerUrl ? { scorerAvatar: scorerUrl } : {})

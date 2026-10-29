@@ -18,7 +18,7 @@ import {
 } from "./matchHistory";
 
 function rallyTo(engine: MatchEngine, home: number, away: number): MatchEngine {
-  let next = engine;
+  let next = reduce(engine, { type: "continueSet" });
   while (next.match.homeScore < home || next.match.awayScore < away) {
     if (next.match.homeScore < home) next = point(next, "home");
     if (isMatchOver(next.match) || next.match.setNumber !== engine.match.setNumber) break;

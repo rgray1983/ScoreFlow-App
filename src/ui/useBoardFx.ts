@@ -14,19 +14,27 @@ export function useBoardFx(match?: MatchState | null) {
   useEffect(() => {
     if (!match) {
       previous.current = null;
+      setPointSide(null);
+      setSetWinnerSide(null);
+      setConfetti(false);
       return;
     }
     const prev = previous.current;
     previous.current = match;
     if (!prev) return;
     const fx = detectBoardFx(prev, match);
-    if (fx.pointSide) {
+    if (key !== boardFxKey(prev)) {
+      setPointSide(null);
+      setSetWinnerSide(null);
+      setConfetti(false);
+    }
+    if (fx.pointSide && !match.lastHighlight) {
       setPointSide(fx.pointSide);
-      setPointKey(Date.now());
+      setPointKey((value) => value + 1);
     }
     if (fx.setWinnerSide) {
       setSetWinnerSide(fx.setWinnerSide);
-      setSetWinnerKey(Date.now());
+      setSetWinnerKey((value) => value + 1);
       setConfetti(!match.winner);
     }
   }, [key, match]);

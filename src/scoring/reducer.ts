@@ -53,6 +53,11 @@ export function createMatch(overrides: Partial<MatchState> = {}): MatchEngine {
     activeTimeout: "",
     timeoutEndsAtMs: 0,
     completedSets: [],
+    boardTheme: "classic",
+    runSide: "",
+    runLength: 0,
+    pendingSet: false,
+    lastHighlight: null,
     ...overrides,
     ...formatFields(format)
   };
@@ -81,7 +86,11 @@ function resetProgress(match: MatchState): MatchState {
     awayTimeouts: TIMEOUTS_PER_SET,
     activeTimeout: "",
     timeoutEndsAtMs: 0,
-    completedSets: []
+    completedSets: [],
+    runSide: "",
+    runLength: 0,
+    pendingSet: false,
+    lastHighlight: null
   };
 }
 
@@ -94,11 +103,17 @@ function clearTimeoutClock(match: MatchState): MatchState {
 }
 
 function applyPoint(match: MatchState, side: Side): MatchState {
-  if (isMatchOver(match)) return match;
+  if (isMatchOver(match) || match.pendingSet) return match;
 
-  const scored: MatchState = side === "home"
-    ? { ...match, homeScore: match.homeScore + 1, servingSide: side }
-    : { ...match, awayScore: match.awayScore + 1, servingSide: side };
+  const scored: MatchState = {
+    ...match,
+    homeScore: match.homeScore + (side === "home" ? 1 : 0),
+    awayScore: match.awayScore + (side === "away" ? 1 : 0),
+    servingSide: side,
+    runSide: side,
+    runLength: match.runSide === side ? match.runLength + 1 : 1,
+    lastHighlight: null
+  };
 
   if (!hasWonSet(scored, side)) return scored;
 
@@ -136,6 +151,9 @@ function applyPoint(match: MatchState, side: Side): MatchState {
     homeScore: 0,
     awayScore: 0,
     setNumber: scored.setNumber + 1,
+    pendingSet: true,
+    runSide: "",
+    runLength: 0,
     winner: "",
     servingSide: "",
     homeTimeouts: TIMEOUTS_PER_SET,
@@ -151,18 +169,36 @@ function applySubtract(match: MatchState, side: Side): MatchState {
   const current = scoreOf(match, side);
   if (current <= 0) return match;
   return side === "home"
-    ? { ...match, homeScore: current - 1 }
-    : { ...match, awayScore: current - 1 };
+    ? { ...match, homeScore: current - 1, runSide: "", runLength: 0, lastHighlight: null }
+    : { ...match, awayScore: current - 1, runSide: "", runLength: 0, lastHighlight: null };
 }
 
 export function reduce(engine: MatchEngine, command: Command): MatchEngine {
   switch (command.type) {
     case "point": {
-      if (isMatchOver(engine.match)) return engine;
+      if (isMatchOver(engine.match) || engine.match.pendingSet) return engine;
       return snapshot(engine, applyPoint(engine.match, command.side));
     }
+    case "highlight": {
+      if (isMatchOver(engine.match) || engine.match.pendingSet) return engine;
+      return snapshot(engine, {
+        ...applyPoint(engine.match, command.call.side),
+        lastHighlight: { ...command.call }
+      });
+    }
+    case "continueSet": {
+      if (!engine.match.pendingSet) return engine;
+      // Continue is a gate, not a rally. Undo still targets the set-winning point.
+      return { ...engine, match: { ...engine.match, pendingSet: false, lastHighlight: null } };
+    }
+    case "setBoardTheme": {
+      return {
+        match: { ...engine.match, boardTheme: command.theme },
+        history: engine.history.map((match) => ({ ...match, boardTheme: command.theme }))
+      };
+    }
     case "subtract": {
-      if (isMatchOver(engine.match) || scoreOf(engine.match, command.side) <= 0) return engine;
+      if (isMatchOver(engine.match) || engine.match.pendingSet || scoreOf(engine.match, command.side) <= 0) return engine;
       return snapshot(engine, applySubtract(engine.match, command.side));
     }
     case "undo": {
@@ -216,11 +252,11 @@ export function reduce(engine: MatchEngine, command: Command): MatchEngine {
       };
     }
     case "setServe": {
-      if (isMatchOver(engine.match) || engine.match.servingSide === command.side) return engine;
+      if (isMatchOver(engine.match) || engine.match.pendingSet || engine.match.servingSide === command.side) return engine;
       return snapshot(engine, { ...engine.match, servingSide: command.side });
     }
     case "timeout": {
-      if (isMatchOver(engine.match) || engine.match.activeTimeout) return engine;
+      if (isMatchOver(engine.match) || engine.match.pendingSet || engine.match.activeTimeout) return engine;
       if (timeoutsOf(engine.match, command.side) <= 0) return engine;
       const nowMs = command.nowMs ?? Date.now();
       const remaining = timeoutsOf(engine.match, command.side);

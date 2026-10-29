@@ -35,7 +35,7 @@ export function hasWonSet(match: MatchState, side: Side): boolean {
 }
 
 export function isSetPoint(match: MatchState, side: Side): boolean {
-  if (isMatchOver(match)) return false;
+  if (isMatchOver(match) || match.pendingSet) return false;
   const target = pointsToWin(match);
   const own = scoreOf(match, side);
   const opp = scoreOf(match, otherSide(side));

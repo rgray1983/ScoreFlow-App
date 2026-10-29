@@ -4,6 +4,10 @@ The first wow pass on the ScoreFlow that already exists. Not the old rebuild pha
 
 Build these as scoreboard energy: fast on the scorer, loud on the viewer, undoable, live-synced.
 
+## Implementation status — October 29, 2026
+
+Serving marks and timeouts are merged. The remaining add-ons below are implemented on `agent/pr-038-phase-one-scoreboard` and await Richie's device review and approval. See [PR-038](PRs/PR-038.md) for behavior and tests, and [STATUS](STATUS.md) for the next work in order. The descriptions below remain the agreed product spec.
+
 ## In this pass
 
 | # | Add-on | Scorer | Viewer |

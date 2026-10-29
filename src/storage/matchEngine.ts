@@ -2,6 +2,8 @@ import {
   createMatch,
   TIMEOUTS_PER_SET,
   type CompletedSet,
+  type BoardTheme,
+  type HighlightCall,
   type MatchEngine,
   type MatchFormat,
   type MatchState,
@@ -12,8 +14,9 @@ import { readJson, writeJson, type JsonStorage } from "./local";
 
 export const MATCH_ENGINE_KEY = "scoreflowMatchEngineV1";
 
-export function engineFromDraft(draft: MatchDraft): MatchEngine {
+export function engineFromDraft(draft: MatchDraft, boardTheme: BoardTheme = "classic"): MatchEngine {
   return createMatch({
+    boardTheme,
     matchFormat: draft.format,
     matchTitle: draft.title,
     homeName: draft.homeName,
@@ -68,6 +71,15 @@ export function parseCompletedSet(value: unknown): CompletedSet | null {
   };
 }
 
+function parseHighlight(value: unknown): HighlightCall | null {
+  if (!value || typeof value !== "object") return null;
+  const call = value as Record<string, unknown>;
+  const side = asSide(call.side);
+  if (!side || !["ace", "kill", "block"].includes(String(call.kind))) return null;
+  if (typeof call.id !== "string" || !call.id || call.id.length > 80) return null;
+  return { id: call.id, kind: call.kind as HighlightCall["kind"], side, atMs: asScore(call.atMs) };
+}
+
 export function parseMatchState(value: unknown): MatchState | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
@@ -92,6 +104,11 @@ export function parseMatchState(value: unknown): MatchState | null {
     activeTimeout: asSide(record.activeTimeout),
     timeoutEndsAtMs: asScore(record.timeoutEndsAtMs),
     completedSets,
+    boardTheme: record.boardTheme === "old-school" || record.boardTheme === "flip-clock" ? record.boardTheme : "classic",
+    runSide: asSide(record.runSide),
+    runLength: Math.min(999, asScore(record.runLength)),
+    pendingSet: record.pendingSet === true && !asSide(record.winner) && completedSets.length > 0,
+    lastHighlight: parseHighlight(record.lastHighlight),
     matchFormat: asFormat(record.matchFormat)
   }).match;
 }

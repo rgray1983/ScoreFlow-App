@@ -47,8 +47,12 @@ export function scoreFields(match: MatchState) {
     awayTimeouts: match.awayTimeouts,
     activeTimeout: match.activeTimeout || "",
     timeoutEndsAtMs: match.timeoutEndsAtMs || 0,
-    lastAlert: matchBanner(match),
-    ended: false
+    boardTheme: match.boardTheme,
+    runSide: match.runSide,
+    runLength: match.runLength,
+    pendingSet: match.pendingSet,
+    lastHighlight: match.lastHighlight ? { ...match.lastHighlight } : null,
+    lastAlert: matchBanner(match)
   };
 }
 

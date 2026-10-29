@@ -10,6 +10,9 @@ import {
 } from "../live";
 import { FanZone } from "../ui/FanZone";
 import { TeamName } from "../ui/TeamName";
+import { HighlightBurst, RunBadge, ScorerCredit, ScoreDigits } from "../ui/BoardAddons";
+import { SetBreakCard } from "../ui/SetBreakCard";
+import { boardEnergyAttributes } from "../ui/boardEnergy";
 import { LivePill } from "../ui/LivePill";
 import { LogoMark } from "../ui/LogoMark";
 import { ServingMark } from "../ui/ServingMark";
@@ -114,7 +117,7 @@ export function ViewerPage() {
         <SetHistoryTicker match={match} />
       </header>
 
-      <main className={styles.board} aria-label="Live volleyball scoreboard">
+      <main className={styles.board} {...boardEnergyAttributes(match)} aria-label="Live volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
             <div className={styles.logoStack}>
@@ -134,6 +137,7 @@ export function ViewerPage() {
                 color={match?.homeColor || "#d62828"}
                 testId="timeouts-home"
               />
+              {match ? <RunBadge match={match} side="home" /> : null}
             </div>
           </div>
         </section>
@@ -141,6 +145,7 @@ export function ViewerPage() {
         <section className={styles.center}>
           <div className={styles.titleBlock}>
             <h1 className={styles.title}>{match?.matchTitle || "ScoreFlow"}</h1>
+            <ScorerCredit name={game?.scorerName} />
             <p className={styles.setBox}><span>Set <strong>{match?.setNumber ?? 1}</strong></span></p>
             <p className={`${styles.race} ${alert ? styles.raceAlert : ""}`}>{banner}</p>
             {match ? (
@@ -154,9 +159,9 @@ export function ViewerPage() {
             ) : null}
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore}`} data-testid="home-score">{match?.homeScore ?? 0}</span>
+            <span className={`${styles.score} ${styles.homeScore}`} data-testid="home-score"><ScoreDigits value={match?.homeScore ?? 0} theme={match?.boardTheme ?? "classic"} /></span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${styles.awayScore}`} data-testid="away-score">{match?.awayScore ?? 0}</span>
+            <span className={`${styles.score} ${styles.awayScore}`} data-testid="away-score"><ScoreDigits value={match?.awayScore ?? 0} theme={match?.boardTheme ?? "classic"} /></span>
           </div>
         </section>
 
@@ -179,12 +184,16 @@ export function ViewerPage() {
                 color={match?.awayColor || "#1565c0"}
                 testId="timeouts-away"
               />
+              {match ? <RunBadge match={match} side="away" /> : null}
             </div>
           </div>
         </section>
 
         <p className={viewerStyles.chatHint}>Rotate for chat</p>
       </main>
+
+      <HighlightBurst match={watching && !ended ? match : null} />
+      {match && watching && !ended ? <SetBreakCard match={match} /> : null}
 
       {match && watching && !ended ? (
         <TimeoutOverlay match={match} remainingMs={timeoutRemaining} />
@@ -228,7 +237,7 @@ export function ViewerPage() {
           gameId={gameId}
           chatPaused={Boolean(game?.chatPaused)}
           ended={ended}
-          askName={watching && !ended}
+          askName={watching && !ended && !match?.pendingSet}
         />
       ) : null}
     </div>

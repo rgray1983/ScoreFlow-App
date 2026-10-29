@@ -8,7 +8,9 @@
     "preview": "vite preview --port 5173 --strictPort",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "firebase emulators:exec --only auth,firestore,storage --project demo-scoreflow \"playwright test\"",
+    "dev:emulators": "firebase emulators:start --only auth,firestore,storage --project demo-scoreflow",
+    "dev:test": "vite --mode e2e --host 127.0.0.1 --port 5174 --strictPort",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project scoreflow-6059f \"node tests/firestore.rules.test.mjs\""
   },
   "dependencies": {

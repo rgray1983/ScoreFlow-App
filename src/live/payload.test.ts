@@ -14,7 +14,7 @@ describe("live payloads", () => {
     expect(payload.activeTimeout).toBe("");
     expect(payload.timeoutEndsAtMs).toBe(0);
     expect(payload).not.toHaveProperty("homeLogo");
-    expect(payload.ended).toBe(false);
+    expect(payload).not.toHaveProperty("ended");
   });
 
   it("sends timeout lights and the clock end time", () => {
