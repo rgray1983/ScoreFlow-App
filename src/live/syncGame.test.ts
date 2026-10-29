@@ -41,6 +41,11 @@ describe("server revision and ownership fence", () => {
       ended: false,
     });
   });
+  it("sends the full player feed atomically with the score and terminal end", async () => {
+    const plays = [{ id: "p", kind: "ace" as const, side: "home" as const, atMs: 1, player: { id: "one", name: "Sophia", number: "12" } }];
+    await sendPendingGame({ ...job, ended: true, plays });
+    expect(mock.set.mock.calls[0][1]).toMatchObject({ ended: true, playByPlay: plays });
+  });
   it("ignores a delayed older revision", async () => {
     mock.data = { ownerId: "owner", syncRevision: 201 };
     await sendPendingGame(job);

@@ -6,13 +6,14 @@ import {
   setDoc,
   type Unsubscribe
 } from "firebase/firestore";
-import type { MatchState } from "../scoring";
-import { parseMatchState } from "../storage/matchEngine";
+import type { HighlightCall, MatchState } from "../scoring";
+import { parseHighlight, parseMatchState } from "../storage/matchEngine";
 import { ensureAnonymousAuth, getFirebase } from "./firebase";
 import { brandingFields, parseLiveLogo, scoreFields, type LiveBranding } from "./payload";
 
 export type LiveGameView = {
   match: MatchState;
+  plays: HighlightCall[];
   homeLogo: string;
   awayLogo: string;
   scorerName: string;
@@ -34,6 +35,7 @@ export function parseLiveGame(value: unknown): LiveGameView | null {
   if (!match) return null;
   return {
     match,
+    plays: (Array.isArray(record.playByPlay) ? record.playByPlay : []).map(parseHighlight).filter((p): p is HighlightCall => Boolean(p?.player && p.side === "home")),
     homeLogo: parseLiveLogo(record.homeLogo),
     awayLogo: parseLiveLogo(record.awayLogo),
     scorerName: String(record.scorerName || "").trim().slice(0, 32),

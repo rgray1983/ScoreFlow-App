@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   chatNameStorageKey,
+  mergeChatMessages,
+  chatWindowHasGap,
   cleanChatName,
   cleanChatText,
   isFreshFanEvent,
@@ -13,6 +15,18 @@ import {
 } from "./fanZone";
 
 describe("fan zone", () => {
+  it("merges paginated and live messages without duplicates or losing earlier messages, with stable timestamp ties", () => {
+    const a = parseChatMessage("a", { text: "old", createdAtMs: 1 })!;
+    const b = parseChatMessage("b", { text: "b", createdAtMs: 2 })!;
+    const c = parseChatMessage("c", { text: "c", createdAtMs: 2 })!;
+    expect(mergeChatMessages([c, a], [b, c])).toEqual([a, b, c]);
+  });
+  it("detects a missing reconnect window so older-page loading cannot skip messages", () => {
+    const messages = Array.from({ length: 90 }, (_, i) => parseChatMessage(String(i), { text: String(i), createdAtMs: i + 1 })!);
+    expect(chatWindowHasGap(messages.slice(0, 40), messages.slice(1, 41))).toBe(false);
+    expect(chatWindowHasGap(messages.slice(0, 40), messages.slice(50, 90))).toBe(true);
+    expect(chatWindowHasGap([], messages.slice(50, 90))).toBe(false);
+  });
   it("trims chat names and texts to the rule limits", () => {
     expect(cleanChatName("  Go  Blazers  ")).toBe("Go Blazers");
     expect(cleanChatName("x".repeat(40))).toHaveLength(24);

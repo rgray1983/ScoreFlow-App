@@ -27,6 +27,7 @@ export async function sendPendingGame(entry: PendingGame) {
       ref,
       {
         ...scoreFields(entry.match),
+        playByPlay: entry.plays || [],
         ...brandingFields(entry.branding),
         ownerId: entry.ownerId,
         syncRevision: entry.revision,

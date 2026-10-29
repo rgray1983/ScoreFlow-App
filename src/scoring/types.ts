@@ -9,6 +9,8 @@ export type HighlightCall = {
   kind: HighlightKind;
   side: Side;
   atMs: number;
+  player?: { id: string; name: string; number: string };
+  score?: { set: number; home: number; away: number };
 };
 
 export type CompletedSet = {

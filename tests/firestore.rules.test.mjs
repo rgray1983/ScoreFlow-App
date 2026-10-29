@@ -13,6 +13,8 @@ import {
   getDoc,
   getDocs,
   limit,
+  limitToLast,
+  documentId,
   orderBy,
   query,
   serverTimestamp,
@@ -187,6 +189,9 @@ async function run() {
     await assertFails(setDoc(doc(scorer, "volleyballGames", "game-live"), {
       ownerId: "viewer-1"
     }, { merge: true }));
+    const playByPlay = [{ id: "call-1", kind: "kill", side: "home", atMs: Date.now(), player: { id: "p1", name: "Sophia", number: "12" } }];
+    await assertSucceeds(setDoc(doc(scorer, "volleyballGames", "game-live"), { ownerId: "scorer-1", playByPlay }, { merge: true }));
+    await assertFails(setDoc(doc(viewer, "volleyballGames", "game-live"), { ownerId: "scorer-1", playByPlay: [] }, { merge: true }));
     await assertSucceeds(getDoc(doc(viewer, "volleyballGames", "game-live")));
   });
 
@@ -245,8 +250,8 @@ async function run() {
     const viewer = authedDb("viewer-1");
     const guest = guestDb();
 
-    await assertSucceeds(getDocs(query(collection(guest, "volleyballGames", "game-fan", "chat"), orderBy("createdAtMs", "asc"), limit(40))));
-    await assertSucceeds(getDocs(query(collection(guest, "volleyballGames", "game-fan", "reactions"), orderBy("createdAtMs", "asc"), limit(60))));
+    await assertSucceeds(getDocs(query(collection(guest, "volleyballGames", "game-fan", "chat"), orderBy("createdAtMs", "asc"), orderBy(documentId(), "asc"), limitToLast(40))));
+    await assertSucceeds(getDocs(query(collection(guest, "volleyballGames", "game-fan", "reactions"), orderBy("createdAtMs", "asc"), limitToLast(60))));
     await assertSucceeds(getDocs(query(collection(guest, "volleyballGames", "game-fan", "presence"), orderBy("updatedAtMs", "desc"), limit(100))));
 
     await assertFails(addDoc(collection(guest, "volleyballGames", "game-fan", "chat"), {

@@ -14,7 +14,7 @@
 
 .dock {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
   min-height: 0;
   padding: 10px 10px 0;
@@ -361,4 +361,15 @@
     opacity: 0;
     transform: translateX(-18px);
   }
+}
+
+.tabs { display: flex; gap: 6px; }
+.tabs button { flex: 1; min-height: 32px; border-radius: 10px; background: #ffffff0b; color: #bdc9db; font-size: 12px; font-weight: 800; }
+.tabs button[aria-selected="true"] { background: #f6c65b; color: #121827; }
+.earlier { min-height: 32px; color: #f6c65b; background: transparent; font-size: 12px; }
+.hiddenForm { display: none; }
+@media (orientation: portrait) and (max-height: 640px) {
+  .head { display: none; }
+  .dock { gap: 4px; padding-top: 5px; }
+  .message { padding: 5px 8px; font-size: 12px; }
 }

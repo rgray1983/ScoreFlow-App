@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { createMatch, reduce } from "./reducer";
+import { matchPlays, playText } from "./plays";
+import { parseMatchEngine } from "../storage/matchEngine";
+const call = { id: "one", kind: "kill" as const, side: "home" as const, atMs: 100, player: { id: "p", name: "Sophia", number: "12" } };
+describe("player scoring highlights", () => {
+  it.each(["ace", "kill", "block"] as const)("%s adds exactly one point; Undo removes the play and score", (kind) => {
+    const initial = createMatch();
+    const engine = reduce(initial, { type: "highlight", call: { ...call, kind } });
+    expect(engine.match.homeScore).toBe(1);
+    expect(matchPlays(engine)).toHaveLength(1);
+    expect(reduce(engine, { type: "undo" })).toEqual(initial);
+    expect(matchPlays(reduce(engine, { type: "undo" }))).toEqual([]);
+  });
+  it("survives reload and intervening rallies without repeating a call", () => {
+    let engine = reduce(createMatch(), { type: "highlight", call });
+    engine = reduce(engine, { type: "timeout", side: "home", nowMs: 101 });
+    engine = reduce(engine, { type: "endTimeout", nowMs: 102 });
+    engine = reduce(engine, { type: "point", side: "away" });
+    const loaded = parseMatchEngine(JSON.parse(JSON.stringify(engine)))!;
+    expect(matchPlays(loaded)).toHaveLength(1);
+    expect(playText(matchPlays(loaded)[0])).toBe("#12 Sophia — Kill!");
+    expect(matchPlays(loaded)[0].score).toEqual({ set: 1, home: 1, away: 0 });
+    expect(matchPlays(reduce(loaded, { type: "newMatch" }))).toEqual([]);
+  });
+  it("records the set-winning score before the board resets and respects the set gate", () => {
+    const engine = reduce(createMatch({ homeScore: 24, awayScore: 20 }), { type: "highlight", call });
+    expect(engine.match.pendingSet).toBe(true);
+    expect(matchPlays(engine)[0].score).toEqual({ set: 1, home: 25, away: 20 });
+    expect(reduce(engine, { type: "highlight", call: { ...call, id: "blocked" } })).toBe(engine);
+    expect(matchPlays(reduce(engine, { type: "continueSet" }))).toHaveLength(1);
+    expect(matchPlays(reduce(reduce(engine, { type: "continueSet" }), { type: "undo" }))).toEqual([]);
+  });
+  it("keeps team-only and opponent calls out of the player feed", () => {
+    const engine = reduce(createMatch(), { type: "highlight", call: { ...call, side: "away" } });
+    expect(matchPlays(engine)).toEqual([]);
+  });
+});

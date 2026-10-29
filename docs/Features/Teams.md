@@ -1,18 +1,20 @@
-# Teams and Organizations
+# Teams
 
-## Purpose
+## ScoreFlow Pro family scoreboard (PR-040)
 
-Support a single independent coach while scaling to schools and clubs with multiple teams.
+This feature is for a parent or assistant coach sharing a score link with families, not the official scorer or a coaching/statistics product.
 
-## Planned capabilities
+- Multiple device-saved team profiles: name, city/state, color, logo.
+- Optional names/jersey-number roster per team; no positions, rotations or statistics.
+- Select a home team before starting; preserve that match's roster/branding snapshot.
+- Scorer Roster drawer → player → Ace, Kill or Block: one point and a public player highlight.
+- Undo reverses the point and announcement. Ordinary +1 and team-level Call remain.
+- Portrait viewer Chat / Play by Play tabs; landscape fresh popups fade out.
+- Free users retain one Home Team; all linked viewers can see the feed without Pro.
+- Profiles/rosters remain local to this browser/device in this pass. Only announced player names/numbers are public, not the full roster.
 
-- Create school, club, or independent organizations
-- Create multiple teams such as Varsity, JV, and age groups
-- Assign staff roles by organization or team
-- Store team name, logo, colors, home court, and scoreboard defaults
-- Switch the active team from the Coach Hub
-- Archive teams without deleting historical records
+See [PR-040](../PRs/PR-040.md) and [setup](../SETUP.md).
 
-## Future connections
+## Separate future Coach scope
 
-Teams own seasons, rosters, schedules, rotations, matches, reports, portal access, and branding. The Teams implementation must not assume one user has only one team.
+Organizations, staff roles, seasons, scheduling, rotations, reports, player statistics and Coach Hub are separate future concepts. This Pro implementation does not create or enable those modules or their backend collections.

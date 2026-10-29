@@ -243,6 +243,7 @@ export function ViewerPage() {
       {gameId ? (
         <FanZone
           gameId={gameId}
+          plays={game?.plays}
           chatPaused={Boolean(game?.chatPaused)}
           ended={ended}
           askName={watching && !ended && !match?.pendingSet}

@@ -1,7 +1,10 @@
 import {
   addDoc,
   collection,
-  limit,
+  limitToLast,
+  documentId,
+  endBefore,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -129,7 +132,7 @@ export function parseReaction(id: string, value: unknown): ReactionEvent | null 
 }
 
 export function isFreshFanEvent(createdAtMs: number, now = Date.now()): boolean {
-  return createdAtMs > 0 && now - createdAtMs < FAN_EVENT_FRESH_MS;
+  return createdAtMs > 0 && now >= createdAtMs && now - createdAtMs < FAN_EVENT_FRESH_MS;
 }
 
 function chatCollection(gameId: string) {
@@ -147,9 +150,11 @@ export function listenChat(
   onMessages: (messages: ChatMessage[]) => void,
   onAdded?: (message: ChatMessage) => void
 ): Unsubscribe {
-  const chatQuery = query(chatCollection(gameId), orderBy("createdAtMs", "asc"), limit(CHAT_LISTEN_LIMIT));
-  return onSnapshot(chatQuery, (snap) => {
+  let initialized = false;
+  const chatQuery = query(chatCollection(gameId), orderBy("createdAtMs", "asc"), orderBy(documentId(), "asc"), limitToLast(CHAT_LISTEN_LIMIT));
+  return onSnapshot(chatQuery, { includeMetadataChanges: true }, (snap) => {
     onMessages(snap.docs.map((item) => parseChatMessage(item.id, item.data())).filter((item): item is ChatMessage => Boolean(item)));
+    if (!initialized) { if (!snap.metadata.fromCache) initialized = true; return; }
     if (!onAdded) return;
     snap.docChanges().forEach((change) => {
       if (change.type !== "added") return;
@@ -159,12 +164,31 @@ export function listenChat(
   }, () => onMessages([]));
 }
 
+export async function loadEarlierChat(gameId: string, before: ChatMessage): Promise<ChatMessage[]> {
+  const snap = await getDocs(query(chatCollection(gameId), orderBy("createdAtMs", "asc"), orderBy(documentId(), "asc"),
+    endBefore(before.createdAtMs, before.id), limitToLast(CHAT_LISTEN_LIMIT)));
+  return snap.docs.map((d) => parseChatMessage(d.id, d.data())).filter((m): m is ChatMessage => Boolean(m));
+}
+
+export function chatWindowHasGap(previous: ChatMessage[], incoming: ChatMessage[]): boolean {
+  if (!previous.length || incoming.length < CHAT_LISTEN_LIMIT) return false;
+  const ids = new Set(previous.map((m) => m.id));
+  return !incoming.some((m) => ids.has(m.id));
+}
+
+export function mergeChatMessages(previous: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
+  return [...new Map([...previous, ...incoming].map((m) => [m.id, m])).values()]
+    .sort((a, b) => a.createdAtMs - b.createdAtMs || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
 export function listenReactions(
   gameId: string,
   onReaction: (reaction: ReactionEvent) => void
 ): Unsubscribe {
-  const reactionQuery = query(reactionCollection(gameId), orderBy("createdAtMs", "asc"), limit(REACTION_LISTEN_LIMIT));
-  return onSnapshot(reactionQuery, (snap) => {
+  let initialized = false;
+  const reactionQuery = query(reactionCollection(gameId), orderBy("createdAtMs", "asc"), limitToLast(REACTION_LISTEN_LIMIT));
+  return onSnapshot(reactionQuery, { includeMetadataChanges: true }, (snap) => {
+    if (!initialized) { if (!snap.metadata.fromCache) initialized = true; return; }
     snap.docChanges().forEach((change) => {
       if (change.type !== "added") return;
       const reaction = parseReaction(change.doc.id, change.doc.data());

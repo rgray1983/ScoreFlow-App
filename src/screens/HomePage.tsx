@@ -136,7 +136,7 @@ export function HomePage() {
           style={homeTeam ? { ["--home-team-card-color" as string]: homeTeam.color } : undefined}
         >
           <div className={styles.cardHead}>
-            <h2>Home Team</h2>
+            <h2>{isPro ? "Your Teams" : "Home Team"}</h2>
             <small>Default team</small>
           </div>
           <div className={styles.teamRow}>
@@ -152,7 +152,7 @@ export function HomePage() {
               : "Set up your team once, then only enter the opponent when you start a match."}
           </p>
           <div className={styles.teamAction}>
-            <Button to="/team" tone="quiet">{homeTeam ? "Edit Home Team" : "Setup Your Home Team"}</Button>
+            <Button to="/team" tone="quiet">{isPro ? "Manage Teams & Rosters" : homeTeam ? "Edit Home Team" : "Setup Your Home Team"}</Button>
           </div>
         </section>
 

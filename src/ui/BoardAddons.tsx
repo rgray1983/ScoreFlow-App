@@ -89,7 +89,7 @@ export function HighlightBurst({ match }: { match?: MatchState | null }) {
     node.showPopover?.();
     return () => node.hidePopover?.();
   }, [call?.id]);
-  if (!call || !match) return null;
+  if (!call || !match || call.player) return null;
   const color = call.side === "home" ? match.homeColor : match.awayColor;
   const name = call.side === "home" ? match.homeName : match.awayName;
   return <div ref={ref} popover="manual" key={call.id} className={styles.burst} data-kind={call.kind}

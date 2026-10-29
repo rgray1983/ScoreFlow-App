@@ -71,13 +71,21 @@ export function parseCompletedSet(value: unknown): CompletedSet | null {
   };
 }
 
-function parseHighlight(value: unknown): HighlightCall | null {
+export function parseHighlight(value: unknown): HighlightCall | null {
   if (!value || typeof value !== "object") return null;
   const call = value as Record<string, unknown>;
   const side = asSide(call.side);
   if (!side || !["ace", "kill", "block"].includes(String(call.kind))) return null;
   if (typeof call.id !== "string" || !call.id || call.id.length > 80) return null;
-  return { id: call.id, kind: call.kind as HighlightCall["kind"], side, atMs: asScore(call.atMs) };
+  const player = call.player && typeof call.player === "object" ? call.player as Record<string, unknown> : null;
+  const score = call.score && typeof call.score === "object" ? call.score as Record<string, unknown> : null;
+  return {
+    id: call.id, kind: call.kind as HighlightCall["kind"], side, atMs: asScore(call.atMs),
+    ...(player && typeof player.name === "string" && player.name.trim() ? { player: {
+      id: String(player.id || "").slice(0, 80), name: player.name.trim().slice(0, 32), number: String(player.number || "").replace(/[^0-9]/g, "").slice(0, 3)
+    } } : {}),
+    ...(score ? { score: { set: Math.max(1, asScore(score.set)), home: asScore(score.home), away: asScore(score.away) } } : {})
+  };
 }
 
 export function parseMatchState(value: unknown): MatchState | null {

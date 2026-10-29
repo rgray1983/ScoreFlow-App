@@ -14,6 +14,9 @@ import {
   viewerSessionId,
   type ChatMessage
 } from "../live";
+import { loadEarlierChat, mergeChatMessages, chatWindowHasGap, CHAT_LISTEN_LIMIT } from "../live/fanZone";
+import { playText } from "../scoring/plays";
+import type { HighlightCall } from "../scoring";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { Field, TextInput } from "./Field";
@@ -22,6 +25,7 @@ import styles from "./FanZone.module.css";
 
 type FanZoneProps = {
   gameId: string;
+  plays?: HighlightCall[];
   chatPaused: boolean;
   ended: boolean;
   askName?: boolean;
@@ -29,10 +33,11 @@ type FanZoneProps = {
   onToggleChat?: () => void;
 };
 
-type Toast = ChatMessage & { leaving?: boolean };
+type Toast = ChatMessage & { leaving?: boolean; play?: boolean };
 
 export function FanZone({
   gameId,
+  plays,
   chatPaused,
   ended,
   askName = false,
@@ -52,6 +57,26 @@ export function FanZone({
   const chatCool = useRef(0);
   const reactionCool = useRef(0);
   const seenChat = useRef(new Set<string>());
+  const seenPlays = useRef<Set<string> | null>(null);
+  const [tab, setTab] = useState<"chat" | "plays">("chat");
+  const [unread, setUnread] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const timers = useRef(new Set<number>());
+  const generation = useRef(0);
+  const atBottom = useRef(true);
+  const scrollAnchor = useRef<number | null>(null);
+
+  function showToast(message: Toast) {
+    setToasts((current) => [...current.slice(-3), message]);
+    for (const [delay, leave] of [[2800, true], [3600, false]] as const) {
+      const timer = window.setTimeout(() => {
+        timers.current.delete(timer);
+        setToasts((current) => leave ? current.map((m) => m.id === message.id ? { ...m, leaving: true } : m) : current.filter((m) => m.id !== message.id));
+      }, delay);
+      timers.current.add(timer);
+    }
+  }
 
   useEffect(() => {
     if (role === "scorer") return;
@@ -78,34 +103,71 @@ export function FanZone({
   }, [ended]);
 
   useEffect(() => {
-    if (!gameId) {
-      setMessages([]);
-      setToasts([]);
-      return undefined;
-    }
+    const token = ++generation.current;
     seenChat.current.clear();
-    setMessages([]);
-    setToasts([]);
-    return listenChat(gameId, setMessages, (message) => {
-      if (seenChat.current.has(message.id)) return;
+    seenPlays.current = null;
+    setMessages([]); setToasts([]); setTab("chat"); setUnread(false); setLoadingOlder(false);
+    setHasOlder(false); atBottom.current = true;
+    let initial = true;
+    let previousWindow: ChatMessage[] = [];
+    const stop = gameId ? listenChat(gameId, (incoming) => {
+      if (generation.current !== token) return;
+      if (initial && incoming.length) { setHasOlder(incoming.length === CHAT_LISTEN_LIMIT); initial = false; }
+      // A reconnect can skip more than a subscription window. Restart from a
+      // contiguous latest page so Earlier messages can fill the entire gap.
+      if (chatWindowHasGap(previousWindow, incoming)) {
+        setMessages(incoming); setHasOlder(true); atBottom.current = true;
+      } else setMessages((current) => mergeChatMessages(current, incoming));
+      if (incoming.length) previousWindow = incoming;
+    }, (message) => {
+      if (generation.current !== token || seenChat.current.has(message.id)) return;
       seenChat.current.add(message.id);
-      if (!isFreshFanEvent(message.createdAtMs)) return;
-      setToasts((current) => [...current.slice(-3), message]);
-      window.setTimeout(() => {
-        setToasts((current) =>
-          current.map((item) => (item.id === message.id ? { ...item, leaving: true } : item))
-        );
-      }, 2800);
-      window.setTimeout(() => {
-        setToasts((current) => current.filter((item) => item.id !== message.id));
-      }, 3600);
-    });
+      if (isFreshFanEvent(message.createdAtMs)) showToast(message);
+    }) : undefined;
+    return () => {
+      generation.current++;
+      stop?.();
+      timers.current.forEach((id) => window.clearTimeout(id));
+      timers.current.clear();
+    };
   }, [gameId]);
 
   useEffect(() => {
+    if (!plays) return; // Wait for the first real game snapshot, then seed without replaying history.
+    if (!seenPlays.current) { seenPlays.current = new Set(plays.map((p) => p.id)); return; }
+    const currentIds = new Set(plays.map((p) => p.id));
+    if (!currentIds.size) setUnread(false);
+    setToasts((current) => current.filter((m) => !m.play || currentIds.has(m.id)));
+    for (const play of plays) {
+      if (seenPlays.current.has(play.id)) continue;
+      seenPlays.current.add(play.id);
+      if (tab !== "plays") setUnread(true);
+      if (isFreshFanEvent(play.atMs)) showToast({ id: play.id, text: playText(play), name: "Play by Play", role: "scorer", sessionId: "", uid: "", createdAtMs: play.atMs, play: true });
+    }
+  }, [plays]);
+
+  useEffect(() => {
     const feed = feedRef.current;
-    if (feed) feed.scrollTop = feed.scrollHeight;
-  }, [messages]);
+    if (!feed) return;
+    if (scrollAnchor.current !== null) {
+      feed.scrollTop += feed.scrollHeight - scrollAnchor.current;
+      scrollAnchor.current = null;
+    } else if (atBottom.current) feed.scrollTop = feed.scrollHeight;
+  }, [messages, plays, tab]);
+
+  async function earlier() {
+    if (loadingOlder || !messages[0]) return;
+    const token = generation.current;
+    setLoadingOlder(true);
+    try {
+      const older = await loadEarlierChat(gameId, messages[0]);
+      if (generation.current !== token) return;
+      scrollAnchor.current = feedRef.current?.scrollHeight ?? null;
+      setMessages((current) => mergeChatMessages(current, older));
+      setHasOlder(older.length === CHAT_LISTEN_LIMIT);
+    } catch { if (generation.current === token) setHint("Earlier messages could not load. Try again."); }
+    finally { if (generation.current === token) setLoadingOlder(false); }
+  }
 
   async function submitChat(event: FormEvent) {
     event.preventDefault();
@@ -171,7 +233,7 @@ export function FanZone({
   }
 
   const locked = ended || chatPaused || !gameId;
-  const empty = messages.length === 0;
+  const empty = tab === "chat" ? messages.length === 0 : !plays?.length;
   const copy = !gameId
     ? "Share Live to open chat with families"
     : chatPaused
@@ -194,9 +256,23 @@ export function FanZone({
             <span className={styles.livePill}>{gameId && !ended ? "Live" : "Off"}</span>
           )}
         </div>
-        <div className={styles.feed} ref={feedRef} aria-live="polite">
-          {empty ? <p className={styles.empty}>Be the first fan to cheer!</p> : null}
-          {messages.map((message) => (
+        <div className={styles.tabs} role="tablist" aria-label="Match conversation" onKeyDown={(e) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+          e.preventDefault();
+          const next = e.key === "Home" ? "chat" : e.key === "End" ? "plays" : tab === "chat" ? "plays" : "chat";
+          setTab(next); if (next === "plays") setUnread(false); atBottom.current = true;
+          document.getElementById(next === "chat" ? "chat-tab" : "plays-tab")?.focus();
+        }}>
+          <button type="button" role="tab" id="chat-tab" tabIndex={tab === "chat" ? 0 : -1} aria-controls="fan-feed" aria-selected={tab === "chat"} onClick={() => { setTab("chat"); atBottom.current = true; }}>Chat</button>
+          <button type="button" role="tab" id="plays-tab" tabIndex={tab === "plays" ? 0 : -1} aria-controls="fan-feed" aria-selected={tab === "plays"} onClick={() => { setTab("plays"); setUnread(false); atBottom.current = true; }}>Play by Play{unread ? " •" : ""}</button>
+        </div>
+        <div className={styles.feed} id="fan-feed" role="tabpanel" aria-labelledby={tab === "chat" ? "chat-tab" : "plays-tab"} ref={feedRef} aria-live="polite" onScroll={() => {
+          const feed = feedRef.current;
+          if (feed) atBottom.current = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
+        }}>
+          {tab === "chat" && hasOlder ? <button type="button" className={styles.earlier} disabled={loadingOlder} onClick={() => void earlier()}>{loadingOlder ? "Loading…" : "Earlier messages"}</button> : null}
+          {empty ? <p className={styles.empty}>{tab === "chat" ? "Be the first fan to cheer!" : "Player highlights will appear here."}</p> : null}
+          {tab === "chat" ? messages.map((message) => (
             <article
               key={message.id}
               className={`${styles.message} ${message.role === "scorer" ? styles.scorer : ""} ${message.sessionId === sessionId ? styles.own : ""}`}
@@ -204,7 +280,10 @@ export function FanZone({
               <strong>{message.name}</strong>
               <span>{message.text}</span>
             </article>
-          ))}
+          )) : plays?.map((play) => <article key={play.id} className={`${styles.message} ${styles.scorer}`} data-testid="play-event">
+            <strong>{playText(play)}</strong>
+            {play.score ? <span>Set {play.score.set} · {play.score.home}–{play.score.away}</span> : null}
+          </article>)}
         </div>
       </div>
       <div className={styles.reactions} aria-label="Send a reaction">
@@ -214,7 +293,7 @@ export function FanZone({
           </button>
         ))}
       </div>
-      <form className={styles.form} onSubmit={(event) => void submitChat(event)}>
+      <form className={`${styles.form} ${tab === "plays" ? styles.hiddenForm : ""}`} onSubmit={(event) => void submitChat(event)}>
         <input
           value={draft}
           maxLength={CHAT_TEXT_MAX}
@@ -231,9 +310,10 @@ export function FanZone({
         {toasts.map((message) => (
           <article
             key={message.id}
+            data-testid="fan-popup"
             className={`${styles.toast} ${message.role === "scorer" ? styles.scorer : ""} ${message.leaving ? styles.toastLeaving : ""}`}
           >
-            <strong>{message.role === "scorer" ? "Scorer:" : `${message.name}:`}</strong>
+            <strong>{message.play ? "Play:" : message.role === "scorer" ? "Scorer:" : `${message.name}:`}</strong>
             {" "}
             <span>{message.text}</span>
           </article>
