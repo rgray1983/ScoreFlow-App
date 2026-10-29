@@ -35,7 +35,6 @@ export function BoardStylePicker({ open, theme, onSelect, onClose, followScorer 
   followScorer?: { active: boolean; onSelect: () => void };
 }) {
   return <Dialog open={open} title="Board style" eyebrow={followScorer ? "Your view" : "Set the scene"}
-    copy={followScorer ? "Only changes your view. Your choice is remembered on this browser." : undefined}
     onCancel={onClose} cancelLabel="Done">
     {followScorer ? <button type="button" className={`${styles.styleChoice} ${styles.followChoice}`} aria-pressed={followScorer.active} onClick={followScorer.onSelect}>
       <strong>Follow scorer</strong><small>Use the scorer's current board style</small>
