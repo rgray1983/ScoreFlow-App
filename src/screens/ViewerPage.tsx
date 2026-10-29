@@ -10,7 +10,7 @@ import {
 } from "../live";
 import { FanZone } from "../ui/FanZone";
 import { TeamName } from "../ui/TeamName";
-import { HighlightBurst, RunBadge, ScorerCredit, ScoreDigits } from "../ui/BoardAddons";
+import { BoardStylePicker, HighlightBurst, RunBadge, ScorerCredit, ScoreDigits } from "../ui/BoardAddons";
 import { SetBreakCard } from "../ui/SetBreakCard";
 import { boardEnergyAttributes } from "../ui/boardEnergy";
 import { LivePill } from "../ui/LivePill";
@@ -24,6 +24,8 @@ import { BoardFxBanners } from "../ui/BoardFxBanners";
 import { SetHistoryTicker } from "../ui/SetHistoryTicker";
 import { ConfettiBurst } from "../ui/ConfettiBurst";
 import { useBoardFx } from "../ui/useBoardFx";
+import { loadViewerBoardStyle, saveViewerBoardStyle, viewerBoardTheme, type ViewerBoardStyle } from "../storage/viewerBoardStyle";
+import { toast } from "../state/toast";
 import { withBase } from "../lib/base";
 import styles from "./MatchPage.module.css";
 import viewerStyles from "./ViewerPage.module.css";
@@ -36,10 +38,17 @@ export function ViewerPage() {
   const [viewers, setViewers] = useState(0);
   const [watching, setWatching] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [stylePreference, setStylePreference] = useState(loadViewerBoardStyle);
+  function chooseStyle(style: ViewerBoardStyle) {
+    setStylePreference(style);
+    if (!saveViewerBoardStyle(style)) toast("Style changed for this visit. This browser could not save it.");
+  }
 
   useEffect(() => {
     setWatching(false);
     setResultsOpen(false);
+    setStyleOpen(false);
   }, [gameId]);
 
   useEffect(() => {
@@ -98,6 +107,7 @@ export function ViewerPage() {
   }, []);
 
   const match = game?.match;
+  const boardTheme = viewerBoardTheme(stylePreference, match?.boardTheme);
   const ended = Boolean(game?.ended);
   const matchWon = Boolean(match?.winner);
   const showCelebration = watching && matchWon && !ended;
@@ -116,7 +126,12 @@ export function ViewerPage() {
     >
       <header className={styles.topBar}>
         <div className={styles.left}>
-          <img className={styles.logo} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
+          <button className={styles.iconButton} type="button" aria-label="Board style" title="Change your board style" onClick={() => setStyleOpen(true)}>
+            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="3" /><path d="M12 4v16M3 12h18" />
+            </svg>
+          </button>
+          <img className={`${styles.logo} ${viewerStyles.viewerLogo}`} src={withBase("scoreflow-logo.png")} alt="ScoreFlow" />
         </div>
         <div className={styles.status}>
           <span className={styles.viewers}><span className={styles.viewersLabel}>Viewers </span>{viewers}</span>
@@ -125,7 +140,7 @@ export function ViewerPage() {
         <SetHistoryTicker match={match} />
       </header>
 
-      <main className={styles.board} {...boardEnergyAttributes(match)} aria-label="Live volleyball scoreboard">
+      <main className={styles.board} {...boardEnergyAttributes(match)} data-theme={boardTheme} aria-label="Live volleyball scoreboard">
         <section className={`${styles.team} ${styles.home}`}>
           <div className={styles.identity}>
             <div className={styles.logoStack}>
@@ -167,9 +182,9 @@ export function ViewerPage() {
             ) : null}
           </div>
           <div className={styles.scoreRow} aria-label="Current score">
-            <span className={`${styles.score} ${styles.homeScore}`} data-testid="home-score"><ScoreDigits value={match?.homeScore ?? 0} theme={match?.boardTheme ?? "classic"} /></span>
+            <span className={`${styles.score} ${styles.homeScore}`} data-testid="home-score"><ScoreDigits value={match?.homeScore ?? 0} theme={boardTheme} /></span>
             <span className={styles.colon} aria-hidden="true" />
-            <span className={`${styles.score} ${styles.awayScore}`} data-testid="away-score"><ScoreDigits value={match?.awayScore ?? 0} theme={match?.boardTheme ?? "classic"} /></span>
+            <span className={`${styles.score} ${styles.awayScore}`} data-testid="away-score"><ScoreDigits value={match?.awayScore ?? 0} theme={boardTheme} /></span>
           </div>
         </section>
 
@@ -199,6 +214,9 @@ export function ViewerPage() {
 
         <p className={viewerStyles.chatHint}>Rotate for chat</p>
       </main>
+
+      <BoardStylePicker open={styleOpen} theme={boardTheme} onSelect={chooseStyle} onClose={() => setStyleOpen(false)}
+        followScorer={{ active: stylePreference === "follow", onSelect: () => chooseStyle("follow") }} />
 
       {/* General team calls keep their large celebration as well as the feed entry. */}
       <HighlightBurst match={watching && !ended ? match : null} />

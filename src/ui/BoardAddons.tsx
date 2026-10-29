@@ -30,12 +30,18 @@ const BOARD_STYLES: { id: BoardTheme; name: string; description: string }[] = [
   { id: "flip-clock", name: "Flip Clock", description: "Split-flap digits" }
 ];
 
-export function BoardStylePicker({ open, theme, onSelect, onClose }: {
+export function BoardStylePicker({ open, theme, onSelect, onClose, followScorer }: {
   open: boolean; theme: BoardTheme; onSelect: (theme: BoardTheme) => void; onClose: () => void;
+  followScorer?: { active: boolean; onSelect: () => void };
 }) {
-  return <Dialog open={open} title="Board style" eyebrow="Set the scene" onCancel={onClose} cancelLabel="Done">
+  return <Dialog open={open} title="Board style" eyebrow={followScorer ? "Your view" : "Set the scene"}
+    copy={followScorer ? "Only changes your view. Your choice is remembered on this browser." : undefined}
+    onCancel={onClose} cancelLabel="Done">
+    {followScorer ? <button type="button" className={`${styles.styleChoice} ${styles.followChoice}`} aria-pressed={followScorer.active} onClick={followScorer.onSelect}>
+      <strong>Follow scorer</strong><small>Use the scorer's current board style</small>
+    </button> : null}
     <div className={styles.styles}>
-      {BOARD_STYLES.map((item) => <button type="button" key={item.id} aria-pressed={item.id === theme}
+      {BOARD_STYLES.map((item) => <button type="button" key={item.id} aria-pressed={!followScorer?.active && item.id === theme}
         className={styles.styleChoice} onClick={() => onSelect(item.id)}>
         <span className={styles.preview} data-look={item.id} aria-hidden="true">24<span>:</span>23</span>
         <strong>{item.name}</strong><small>{item.description}</small>

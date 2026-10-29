@@ -66,3 +66,7 @@
     font-size: 9px;
   }
 }
+
+@media (orientation: portrait) {
+  .page .viewerLogo { max-width: clamp(78px, 26vw, 140px); height: 24px; }
+}

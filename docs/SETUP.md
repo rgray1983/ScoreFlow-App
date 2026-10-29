@@ -53,6 +53,10 @@ Portrait viewers use **Chat / Play by Play** tabs; landscape viewers see fresh a
 
 Review commands and scenarios: [PR-040](PRs/PR-040.md). Browser tests use `demo-scoreflow` emulators and block production Firebase requests. No production Firebase data, auth, rules or hosting settings are changed.
 
+## Individual viewer board style
+
+The viewer header's Board style button selects Classic, Old School or Flip Clock for that browser only. `scoreflowViewerBoardStyleV1` stores the local preference. **Follow scorer** is the default and resumes live style-following when selected again. No style preference is sent to Firebase, and the scorer and other viewers keep their own styles. The full live match remains unmodified, so styling cannot change scoring or trigger new scoring effects. This control is available to all viewers. Name/logo panels now sit directly on the board artwork without a translucent rectangular backing.
+
 ## Remaining validation
 
 - Check physical iPhone/Android installs, safe areas, orientation and two devices on real gym Wi-Fi. Chromium emulation is not physical-device evidence.

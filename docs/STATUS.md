@@ -8,7 +8,7 @@ Current release: **PR-039 / [GitHub PR #40](https://github.com/rgray1983/ScoreFl
 
 ## Next review
 
-**PR-040** on `agent/pr-040-teams-play-by-play`: Pro saved teams and simple rosters, a scorer-side player → Ace/Kill/Block drawer, separate viewer Chat / Play by Play tabs, landscape fade-out announcements (including general team calls for either side), scorer landscape chat popups in the viewer position, and a rolling latest-message chat/reaction fix. See [PR-040](PRs/PR-040.md). Richie requested one PR for testing; leave it unmerged until approved.
+**PR-040** on `agent/pr-040-teams-play-by-play`: Pro saved teams and simple rosters, a scorer-side player → Ace/Kill/Block drawer, separate viewer Chat / Play by Play tabs, landscape fade-out announcements (including general team calls for either side), scorer landscape chat popups in the viewer position, a rolling latest-message chat/reaction fix, individual viewer board styles with a Follow scorer option, and clean team name/logo areas. See [PR-040](PRs/PR-040.md). Richie requested one PR for testing; leave it unmerged until approved.
 
 ## Phase 1 progress
 
